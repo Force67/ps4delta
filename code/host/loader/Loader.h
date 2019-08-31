@@ -24,17 +24,17 @@ namespace loaders
 	{
 	protected:
 
-		const std::wstring& file;
 		bool loaded;
 
 	public:
 
-		explicit AppLoader(const std::wstring&);
+		explicit AppLoader();
+		virtual ~AppLoader() = default;
 
 		// must be implemented
 		virtual LoadErrorCode Load() = 0;
 		virtual LoadErrorCode Unload() = 0;
 	};
 
-	std::unique_ptr<AppLoader> CreateLoader();
+	std::unique_ptr<AppLoader> CreateLoader(const std::wstring &);
 }

@@ -9,13 +9,13 @@ namespace loaders
 {
 	namespace
 	{
-		FileType IdentifyType(const std::wstring& file)
+		FileType IdentifyType(const uint8_t *data)
 		{
 			FileType type;
 
-#define CHECK_TYPE(name)                                                                         \
-    type = ##name _Loader::IdentifyType(file);                                                 \
-    if (FileType::Error != type)                                                                   \
+#define CHECK_TYPE(name)                             \
+    type = ##name##_Loader::IdentifyType(data);      \
+    if (FileType::UNKNOWN != type)                   \
         return type;
 
 				CHECK_TYPE(SELF)
@@ -26,8 +26,34 @@ namespace loaders
 		}
 	}
 
-	std::unique_ptr<AppLoader> CreateLoader()
-	{
+	AppLoader::AppLoader()
+		: loaded(false)
+	{}
 
+	std::unique_ptr<AppLoader> CreateLoader(const std::wstring &file)
+	{
+		FILE* fh = nullptr;
+		_wfopen_s(&fh, file.c_str(), L"rb");
+
+		if (fh) {
+
+			// determine the size
+			fseek(fh, 0, SEEK_END);
+			uint32_t len = ftell(fh);
+			auto* data = new uint8_t[len];
+
+			//read file in buffer
+			fseek(fh, 0, SEEK_SET);
+			fread(data, 1, len, fh);
+			fclose(fh);
+
+			FileType type = IdentifyType(data);
+			switch (type) {
+			case FileType::SELF: 
+				return std::make_unique<SELF_Loader>();
+			}
+		}
+
+		return nullptr;
 	}
 }

@@ -106,9 +106,11 @@ namespace loaders
 	{
 	public:
 
-		SELF_Loader(const std::wstring&);
+		SELF_Loader() :
+			AppLoader()
+		{}
 
-		static FileType IdentifyType();
+		static FileType IdentifyType(const uint8_t*);
 
 		LoadErrorCode Load() override;
 		LoadErrorCode Unload() override;
