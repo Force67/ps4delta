@@ -26,8 +26,9 @@ namespace loaders
 		}
 	}
 
-	AppLoader::AppLoader()
-		: loaded(false)
+	AppLoader::AppLoader(uint8_t *data)
+		: loaded(false),
+		  data(data)
 	{}
 
 	std::unique_ptr<AppLoader> CreateLoader(const std::wstring &file)
@@ -47,10 +48,13 @@ namespace loaders
 			fread(data, 1, len, fh);
 			fclose(fh);
 
+			std::printf(">image size %d\n", len);
+
 			FileType type = IdentifyType(data);
+
 			switch (type) {
 			case FileType::SELF: 
-				return std::make_unique<SELF_Loader>();
+				return std::make_unique<SELF_Loader>(data);
 			}
 		}
 

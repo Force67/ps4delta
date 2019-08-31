@@ -10,7 +10,9 @@ namespace loaders
 	enum class LoadErrorCode
 	{
 		UNKNOWN,
-		BadSELFMagic,
+		SUCCESS,
+		BADMAGIC,
+		BADARCH,
 	};
 
 	enum class FileType
@@ -25,10 +27,11 @@ namespace loaders
 	protected:
 
 		bool loaded;
+		uint8_t* data;
 
 	public:
 
-		explicit AppLoader();
+		explicit AppLoader(uint8_t*);
 		virtual ~AppLoader() = default;
 
 		// must be implemented
