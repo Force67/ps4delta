@@ -103,12 +103,15 @@ namespace loaders
 
 		std::printf("ELF TYPE %s\n", TypeToString());
 
-		segments = GetOffset<ELFPgHeader>(elf->phoff); // phoff should be 0x40
+		// phoff should be 0x40 relative to the elf header
+		segments = GetElfOfs<ELFPgHeader>(elf->phoff);
 
+		// section headers are always missing
 		if (elf->shoff == 0)
 			std::puts("section header table missing!");
 
 		SetLoaded();
+
 		if (MapSegments(vma))
 			return LoadErrorCode::SUCCESS;
 

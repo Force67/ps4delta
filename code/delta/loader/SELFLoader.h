@@ -115,8 +115,7 @@ namespace loaders
 		uint64_t paddr;
 		uint64_t filesz;
 		uint64_t memsz;
-		uint32_t flags1;
-		uint16_t align;
+		uint64_t align;
 	};
 
 	static_assert(sizeof(SELFHeader) == 32, "header size mismatch");
