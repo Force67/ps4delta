@@ -2,7 +2,9 @@
 // Copyright (C) 2019 Force67
 
 #include <Windows.h>
-#include <loader/Loader.h>
+#include <cstdio>
+
+#include <Delta.h>
 
 int wmain()
 {
@@ -15,10 +17,9 @@ int wmain()
 	freopen_s(&file, "CON", "w", stdout);
 	freopen_s(&file, "CONIN$", "r", stdin);
 
-	auto loader = loaders::CreateLoader(LR"(C:\Users\vince\Desktop\.nomad\JOURNEY_HD\CUSA02172\eboot.bin)");
-	if (loader) {
-		loader->Load();
-	}
+	auto& dt = Delta::Get();
+	dt.Boot(LR"(C:\Users\vince\Desktop\.nomad\Angry_Birds_Star_Wars_1_01_PS4-LFC\CUSA00184\eboot.bin)");
+	//LR"(C:\Users\vince\Desktop\.nomad\JOURNEY_HD\CUSA02172\eboot.bin)"
 
 	getchar();
 

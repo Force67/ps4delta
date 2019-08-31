@@ -63,16 +63,14 @@ namespace loaders
 		return FileType::UNKNOWN;
 	}
 
-	LoadErrorCode SELF_Loader::Load()
+	LoadErrorCode SELF_Loader::Load(krnl::VMAccessMgr& vma)
 	{
-		puts(__FUNCTION__);
-
 		auto* hdr = GetOffset<SELFHeader>(0);
 
 		auto* tables = GetOffset<SELFSegmentTable>(sizeof(SELFHeader));
 		for (int i = 0; i < hdr->numSegments; i++) {
 
-			const auto* p = &tables[i];
+			auto* p = &tables[i];
 
 			auto flag_set = [&](SegFlags flag) -> bool {
 				return p->flags & flag != 0;
@@ -86,13 +84,15 @@ namespace loaders
 				"Signed %d\n"
 				"Size compressed %llu\n"
 				"Size decompressed %llu\n"
-				"Offset %llu, (%llx)\n",
+				"Offset %llu, (%llx)\n"
+				"Segment Id %d\n",
 				i,
 				flag_set(SF_ORDR), flag_set(SF_ENCR), flag_set(SF_DFLG),
 				flag_set(SF_BFLG), flag_set(SF_SIGN),
 				p->encCompressedSize,
 				p->decCompressedSize,
-				p->offset, p->offset);
+				p->offset, p->offset,
+				p->Id());
 		}
 
 		// TODO: find a better way :D
@@ -108,13 +108,14 @@ namespace loaders
 		if (elf->shoff == 0)
 			std::puts("section header table missing!");
 
-		if (MapSegments())
+		SetLoaded();
+		if (MapSegments(vma))
 			return LoadErrorCode::SUCCESS;
 
 		return LoadErrorCode::UNKNOWN;
 	}
 
-	bool SELF_Loader::MapSegments()
+	bool SELF_Loader::MapSegments(krnl::VMAccessMgr& vma)
 	{
 		std::printf(__FUNCTION__ " %d segments, %d sections\n", elf->phnum, elf->shnum);
 
@@ -129,7 +130,9 @@ namespace loaders
 
 		for (uint16_t i = 0; i < elf->phnum; ++i) {
 			const auto* p = &segments[i];
-			
+			//if (p->type == PT_LOAD) {
+				std::printf("ELF SEG:%d, %lld (%llx), ELF TYPE %x\n", i, p->offset, p->offset, p->type);
+			//}
 		}
 
 		return true;

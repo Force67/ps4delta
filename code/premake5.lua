@@ -17,13 +17,8 @@ workspace "PS4Delta"
 	
     -- Enable position-independent-code generation
     pic "On"
-    startproject "Host"
-	
-	--if (os.getenv("DEVENV") == "F67") then
-		--targetdir "D:\\Games\\Ubisoft\\Watch_Dogs\\bin"
-	--else
-		targetdir '../bin/%{cfg.buildcfg}/'
-	--end
+    startproject "host"
+	targetdir '../bin/%{cfg.buildcfg}/'
 	
 	
     defines { "FXNAME=\"" .. FX_NAME .. "\"", 
@@ -45,7 +40,7 @@ workspace "PS4Delta"
         staticruntime "On"
         optimize "Speed"
 
-    filter {"system:windows", "configurations:Release", "kind:not StaticLib"}
+    filter {"system:windows", "kind:not StaticLib"}
          linkoptions { "/PDB:\"$(SolutionDir)\\symbols\\$(ProjectName)_%{cfg.buildcfg}.pdb\"" }
 
     filter { "system:windows", "kind:not StaticLib" }
@@ -68,7 +63,10 @@ workspace "PS4Delta"
         }
 
     group "core"
-	include "./host"
+	include "./delta"
+	
+	group "tools"
+	include "tools/sedit"
 	
 	
 -- Cleanup

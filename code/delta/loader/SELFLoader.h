@@ -24,7 +24,7 @@ namespace loaders
 		PUP = 4
 	};
 
-	enum SegFlags : uint64_t
+	enum SegFlags
 	{
 		SF_ORDR = 0x1,    // ordered?
 		SF_ENCR = 0x2,    // encrypted
@@ -53,12 +53,13 @@ namespace loaders
 
 	struct SELFSegmentTable
 	{
-		SegFlags flags;
+		uint64_t flags;
 		uint64_t offset;
 		uint64_t encCompressedSize;
 		uint64_t decCompressedSize;
 
-		uint32_t Id() { return static_cast<uint32_t>((uint64_t)flags >> 20); }
+		uint32_t Id() {
+			return static_cast<uint32_t>((uint64_t)flags >> 20); }
 	};
 
 	struct SCEContentId
@@ -138,7 +139,9 @@ namespace loaders
 			return (Type*)(data + dist);
 		}
 
-		bool MapSegments();
+		bool MapSegments(krnl::VMAccessMgr&);
+
+		// SELF_DEBUG
 		const char* TypeToString();
 
 	public:
@@ -147,7 +150,7 @@ namespace loaders
 
 		static FileType IdentifyType(const uint8_t*);
 
-		LoadErrorCode Load() override;
+		LoadErrorCode Load(krnl::VMAccessMgr&) override;
 		LoadErrorCode Unload() override;
 	};
 }

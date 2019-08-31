@@ -5,6 +5,10 @@
 #include <string>
 #include <memory>
 
+namespace krnl {
+	class VMAccessMgr;
+}
+
 namespace loaders
 {
 	enum class LoadErrorCode
@@ -29,13 +33,17 @@ namespace loaders
 		bool loaded;
 		uint8_t* data;
 
+		inline void SetLoaded() {
+			loaded = true;
+		}
+
 	public:
 
 		explicit AppLoader(uint8_t*);
 		virtual ~AppLoader() = default;
 
 		// must be implemented
-		virtual LoadErrorCode Load() = 0;
+		virtual LoadErrorCode Load(krnl::VMAccessMgr&) = 0;
 		virtual LoadErrorCode Unload() = 0;
 	};
 
