@@ -93,7 +93,7 @@ int main(int argc, char** argv)
 			ELFHeader* elf = (ELFHeader*)(data.get() + sizeof(SELFHeader) + (self->numSegments * 32));
 			fwrite(elf, 64, 1, file);
 
-			auto* segments = (ELFPgHeader*)(data.get() + elf->phoff);
+			auto* segments = (ELFPgHeader*)((uint8_t*)elf + elf->phoff);
 			fwrite(segments, sizeof(ELFPgHeader) * elf->phnum, 1, file);
 			fclose(file);
 		}

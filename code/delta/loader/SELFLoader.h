@@ -142,6 +142,7 @@ namespace loaders
 
 		// SELF_DEBUG
 		const char* TypeToString();
+		static const char* SecTypeToStr(uint32_t);
 
 	public:
 

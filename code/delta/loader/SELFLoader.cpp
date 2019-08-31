@@ -29,14 +29,30 @@
 #define PT_NOTE 4
 #define PT_SHLIB 5
 #define PT_PHDR 6
+#define PT_TLS  7
 #define PT_LOPROC 0x70000000
 #define PT_HIPROC 0x7FFFFFFF
+
+#define PT_SCE_DYNLIBDATA 0x61000000
+#define PT_SCE_PROCPARAM 0x61000001
+#define PT_SCE_MODULEPARAM 0x61000002
+#define PT_SCE_RELRO 0x61000010
+#define PT_SCE_COMMENT 0x6FFFFF00
+#define PT_SCE_VERSION 0x6FFFFF01
+#define PT_GNU_EH_FRAME 0x6474E550
 
 // Segment Memory Protection Flags
 #define PF_X 0x1
 #define PF_W 0x2
 #define PF_R 0x4
 #define PF_MASKPROC 0xF0000000
+
+void FormatFlag(uint32_t flag) {
+	std::printf("R:%d,W:%d,X:%d\n", 
+		(bool)flag & PF_R,
+		(bool)flag & PF_W,
+		(bool)flag & PF_X);
+}
 
 enum ElfType {
 	ET_NONE = 0,
@@ -85,7 +101,8 @@ namespace loaders
 				"Size compressed %llu\n"
 				"Size decompressed %llu\n"
 				"Offset %llu, (%llx)\n"
-				"Segment Id %d\n",
+				"Segment Id %d"
+				"\n===============\n",
 				i,
 				flag_set(SF_ORDR), flag_set(SF_ENCR), flag_set(SF_DFLG),
 				flag_set(SF_BFLG), flag_set(SF_SIGN),
@@ -134,7 +151,8 @@ namespace loaders
 		for (uint16_t i = 0; i < elf->phnum; ++i) {
 			const auto* p = &segments[i];
 			//if (p->type == PT_LOAD) {
-				std::printf("ELF SEG:%d, %lld (%llx), ELF TYPE %x\n", i, p->offset, p->offset, p->type);
+				std::printf("ELF SEG:%d, %llu (%llx), ELF TYPE %x (%s), SIZE %lld\n", (int)i, p->offset, p->offset, p->type, SecTypeToStr(p->type), p->filesz);
+				FormatFlag(p->flags);
 			//}
 		}
 
@@ -156,6 +174,34 @@ namespace loaders
 #undef AS_STR
 
 		return "Unknown";
+	}
+
+	const char* SELF_Loader::SecTypeToStr(uint32_t type)
+	{
+#define AS_STR(idx)                             \
+    if (type == idx)                   \
+        return #idx;
+
+			AS_STR(PT_LOAD)
+			AS_STR(PT_DYNAMIC)
+			AS_STR(PT_INTERP)
+			AS_STR(PT_NOTE)
+			AS_STR(PT_SHLIB)
+			AS_STR(PT_PHDR)
+			AS_STR(PT_TLS)
+			AS_STR(PT_LOPROC)
+			AS_STR(PT_HIPROC)
+			AS_STR(PT_SCE_DYNLIBDATA)
+			AS_STR(PT_SCE_PROCPARAM)
+			AS_STR(PT_SCE_MODULEPARAM)
+			AS_STR(PT_SCE_RELRO)
+			AS_STR(PT_SCE_COMMENT)
+			AS_STR(PT_SCE_VERSION)
+			AS_STR(PT_GNU_EH_FRAME)
+
+#undef AS_STR
+
+			return "Unknown";
 	}
 
 	LoadErrorCode SELF_Loader::Unload()
