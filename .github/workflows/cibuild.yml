@@ -11,3 +11,7 @@ jobs:
     - uses: actions/checkout@master
     - name: Invoke MSBuild
       run: cibuild.bat
+    - uses: actions/upload-artifact@master
+      with:
+        name: Artifacts
+        path: bin/Release
