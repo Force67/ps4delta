@@ -10,8 +10,6 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - name: Invoke Premake
-      run: 
-      pmake.bat
+      run: pmake.bat
     - name: Invoke MSBuild
-      run:
-      cibuild.bat
+      run: cibuild.bat
