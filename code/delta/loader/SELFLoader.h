@@ -86,6 +86,55 @@ namespace loaders
 		ET_SCE_DYNAMIC = 0xfe18,  // PS4 Dynamic PRX
 	};
 
+	enum ELFDynTag
+	{
+		DT_NULL,
+		DT_NEEDED,
+		DT_PLTRELSZ,
+		DT_PLTGOT,
+		DT_HASH,
+		DT_STRTAB,
+		DT_SYMTAB,
+		DT_RELA,
+		DT_RELASZ,
+		DT_RELAENT,
+		DT_STRSZ,
+		DT_SYMENT,
+		DT_INIT,
+		DT_FINI,
+		DT_SONAME,
+		DT_RPATH,
+		DT_SYMBOLIC,
+		DT_REL,
+		DT_RELSZ,
+		DT_RELENT,
+		DT_PLTREL,
+		DT_DEBUG,
+		DT_TEXTREL,
+		DT_JMPREL,
+		DT_BIND_NOW,
+		DT_INIT_ARRAY,
+		DT_FINI_ARRAY,
+		DT_INIT_ARRAYSZ,
+		DT_FINI_ARRAYSZ,
+		DT_RUNPATH,
+		DT_FLAGS,
+		DT_ENCODING,
+		DT_PREINIT_ARRAY,
+		DT_PREINIT_ARRAYSZ,
+
+		DT_SCE_FINGERPRINT = 0x61000007,
+		DT_SCE_ORIGFILENAME = 0x61000009,
+		DT_SCE_MODULEINFO = 0x6100000d,
+		DT_SCE_NEEDEDMODULE = 0x6100000f,
+		DT_SCE_MODULEATTR = 0x61000011,
+		DT_SCE_EXPLIB = 0x61000013,
+		DT_SCE_IMPLIB = 0x61000015,
+
+		DT_SCE_STRTAB = 0x61000035,
+		DT_SCE_STRSIZE = 0x61000037,
+	};
+
 	struct ELFHeader
 	{
 		uint8_t ident[16];
@@ -118,6 +167,12 @@ namespace loaders
 		uint64_t align;
 	};
 
+	struct ELFDyn
+	{
+		int64_t tag;
+		uint64_t value;
+	};
+
 	static_assert(sizeof(SELFHeader) == 32, "header size mismatch");
 	static_assert(sizeof(ELFPgHeader) == 56, "Elf program header size mismatch");
 	static_assert(sizeof(SELFSegmentTable) == 32, "segment table size mismatch");
@@ -138,6 +193,8 @@ namespace loaders
 			return (Type*)(data + dist);
 		}
 
+		void SetupDynamics(const ELFPgHeader*);
+		void SetupTLS(const ELFPgHeader*);
 		bool MapSegments(krnl::VMAccessMgr&);
 
 		// SELF_DEBUG

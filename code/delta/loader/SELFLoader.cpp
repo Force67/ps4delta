@@ -3,6 +3,7 @@
 
 #include <cstdio>
 #include <loader/SELFLoader.h>
+#include <kernel/VMA.h>	
 
 #define SHT_NULL 0
 #define SHT_PROGBITS 1
@@ -86,6 +87,7 @@ namespace loaders
 		auto* tables = GetOffset<SELFSegmentTable>(sizeof(SELFHeader));
 		for (int i = 0; i < hdr->numSegments; i++) {
 
+#if 0
 			auto* p = &tables[i];
 
 			auto flag_set = [&](SegFlags flag) -> bool {
@@ -110,6 +112,7 @@ namespace loaders
 				p->decCompressedSize,
 				p->offset, p->offset,
 				p->Id());
+#endif
 		}
 
 		// TODO: find a better way :D
@@ -118,14 +121,14 @@ namespace loaders
 		if (*GetElfOfs<uint32_t>(0) != 0x464C457F)
 			return LoadErrorCode::BADMAGIC;
 
-		std::printf("ELF TYPE %s\n", TypeToString());
+		std::printf("[+] Module Type %s\n", TypeToString());
 
 		// phoff should be 0x40 relative to the elf header
 		segments = GetElfOfs<ELFPgHeader>(elf->phoff);
 
 		// section headers are always missing
-		if (elf->shoff == 0)
-			std::puts("section header table missing!");
+		//if (elf->shoff == 0)
+		//	std::puts("section header table missing!");
 
 		SetLoaded();
 
@@ -137,43 +140,73 @@ namespace loaders
 
 	bool SELF_Loader::MapSegments(krnl::VMAccessMgr& vma)
 	{
-		std::printf(__FUNCTION__ " %d segments, %d sections\n", elf->phnum, elf->shnum);
-
 		// count total segment size
-		uint64_t total_size = 0;
+		uint32_t total_size = 0;
 		for (uint16_t i = 0; i < elf->phnum; ++i) {
 			const auto* p = &segments[i];
-			if (p->type == PT_LOAD) {
+			if (p->type == PT_LOAD || p->type == PT_SCE_RELRO) {
 				total_size += (p->memsz + 0xFFF) & ~0xFFF;
 			}
 		}
 
+		// reserve krnl memory
+		void* mem = vma.AllocateSeg(total_size);
+		std::printf("[+] Kernel Segment @%p <%d bytes>\n", mem, total_size);
+
 		for (uint16_t i = 0; i < elf->phnum; ++i) {
 			const auto* p = &segments[i];
 			//if (p->type == PT_LOAD) {
-				std::printf("ELF SEG:%d, %llu (%llx), ELF TYPE %x (%s), SIZE %lld\n", (int)i, p->offset, p->offset, p->type, SecTypeToStr(p->type), p->filesz);
-				FormatFlag(p->flags);
+				std::printf("ELF SEG:%d, %llu (%llx), %llu (%llx) ELF TYPE %s\n",
+					(int)i, p->offset, p->offset,
+					GetOffset<SELFHeader>(0)->headerSize + p->offset,
+					GetOffset<SELFHeader>(0)->headerSize + p->offset,
+					SecTypeToStr(p->type));
+				//FormatFlag(p->flags);
 			//}
+
+			switch (p->type) {
+			case PT_DYNAMIC: {
+				SetupDynamics(p);
+			} break;
+			case PT_TLS: {
+
+				// if the application uses TLS...
+				if (p->filesz > 0 && p->offset != 0)
+					SetupTLS(p);
+			} break;
+
+			}
 		}
 
 		return true;
 	}
 
+	void SELF_Loader::SetupDynamics(const ELFPgHeader* pg)
+	{
+		auto* dynamics = GetOffset<ELFDyn>(pg->offset);
+		for (uint32_t i = 0; i < pg->filesz / sizeof(ELFDyn); i++) {
+
+			const auto* p = &dynamics[i];
+			std::printf("%d dyamics found, dynamic type %x\n", i, p->tag);
+			
+		}
+	}
+
+	void SELF_Loader::SetupTLS(const ELFPgHeader* pg)
+	{
+
+	}
+
 	const char* SELF_Loader::TypeToString()
 	{
-#define AS_STR(idx)                             \
-    if (elf->type == idx)                   \
-        return #idx;
-
-		AS_STR(ET_SCE_EXEC)
-		AS_STR(ET_SCE_DYNEXEC)
-		AS_STR(ET_SCE_RELEXEC)
-		AS_STR(ET_SCE_STUBLIB)
-		AS_STR(ET_SCE_DYNAMIC)
-
-#undef AS_STR
-
-		return "Unknown";
+		switch (elf->type) {
+		case ET_SCE_EXEC: return "Executable";
+		case ET_SCE_DYNEXEC: return "Main module";
+		case ET_SCE_RELEXEC: return "Relocatable PRX";
+		case ET_SCE_STUBLIB: return "Stub library";
+		case ET_SCE_DYNAMIC: return "Dynamic PRX";
+		default: return "Unknown";
+		}
 	}
 
 	const char* SELF_Loader::SecTypeToStr(uint32_t type)
