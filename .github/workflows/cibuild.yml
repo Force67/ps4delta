@@ -9,5 +9,9 @@ jobs:
     
     steps:
     - uses: actions/checkout@master
-    - name: Run a one-line script
-      run: pmake.bat
+    - name: Invoke Premake
+      run: 
+      pmake.bat
+    - name: Invoke MSBuild
+      run:
+      cibuild.bat
