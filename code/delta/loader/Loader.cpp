@@ -48,7 +48,7 @@ namespace loaders
 			fread(data, 1, len, fh);
 			fclose(fh);
 
-			std::printf(">image size %d\n", len);
+			std::printf("[+] Processing file with size %d\n", len);
 
 			FileType type = IdentifyType(data);
 

@@ -74,8 +74,10 @@ namespace loaders
 	FileType SELF_Loader::IdentifyType(const uint8_t* data)
 	{
 		SELFHeader* hdr = (SELFHeader*)data;
-		if (hdr->magic == SELF_MAGIC && hdr->contentType == SELFContentType::SELF)
+		if (hdr->magic == SELF_MAGIC && hdr->contentType == SELFContentType::SELF) {
+			std::puts("[+] Identified file as Signed ELF (SELF)");
 			return FileType::SELF;
+		}
 
 		return FileType::UNKNOWN;
 	}
@@ -86,31 +88,22 @@ namespace loaders
 
 		auto* tables = GetOffset<SELFSegmentTable>(sizeof(SELFHeader));
 		for (int i = 0; i < hdr->numSegments; i++) {
-
-#if 0
 			auto* p = &tables[i];
 
+			if (p->fileSize != p->memSize) {
+				std::puts("Fatal: we cannot handle dec yet!");
+				return LoadErrorCode::BADARCH;
+			}
+
+#if 1
 			auto flag_set = [&](SegFlags flag) -> bool {
 				return p->flags & flag != 0;
 			};
 
-			printf("== Segment%d ==\n"
-				"Ordered %d\n"
-				"Encrypted %d\n"
-				"Deflated %d\n"
-				"Block Segment %d\n"
-				"Signed %d\n"
-				"Size compressed %llu\n"
-				"Size decompressed %llu\n"
-				"Offset %llu, (%llx)\n"
-				"Segment Id %d"
-				"\n===============\n",
+			printf("SCESeg:%d | Size: %llu | Offset: 0x%llx | SegID: %d\n",
 				i,
-				flag_set(SF_ORDR), flag_set(SF_ENCR), flag_set(SF_DFLG),
-				flag_set(SF_BFLG), flag_set(SF_SIGN),
-				p->encCompressedSize,
-				p->decCompressedSize,
-				p->offset, p->offset,
+				p->fileSize,
+				p->offset,
 				p->Id());
 #endif
 		}
@@ -121,8 +114,6 @@ namespace loaders
 		if (*GetElfOfs<uint32_t>(0) != 0x464C457F)
 			return LoadErrorCode::BADMAGIC;
 
-		std::printf("[+] Module Type %s\n", TypeToString());
-
 		// phoff should be 0x40 relative to the elf header
 		segments = GetElfOfs<ELFPgHeader>(elf->phoff);
 
@@ -130,7 +121,12 @@ namespace loaders
 		//if (elf->shoff == 0)
 		//	std::puts("section header table missing!");
 
-		SetLoaded();
+		// dont even ask
+		size_t offset = sizeof(ELFHeader) + (elf->phnum * sizeof(ELFPgHeader));
+		offset += 15; offset &= ~15; // align
+
+		SCESpecial* special = GetElfOfs<SCESpecial>(offset + 7);
+		std::printf("SCE special located at offset %llx, %x\n", ((uintptr_t)special - (uintptr_t)data), (uint8_t)special->authId);
 
 		if (MapSegments(vma))
 			return LoadErrorCode::SUCCESS;
@@ -140,7 +136,7 @@ namespace loaders
 
 	bool SELF_Loader::MapSegments(krnl::VMAccessMgr& vma)
 	{
-		// count total segment size
+		// count total segment size we are interested in
 		uint32_t total_size = 0;
 		for (uint16_t i = 0; i < elf->phnum; ++i) {
 			const auto* p = &segments[i];
@@ -149,18 +145,32 @@ namespace loaders
 			}
 		}
 
-		// reserve krnl memory
+		// reserve kernel memory
 		void* mem = vma.AllocateSeg(total_size);
-		std::printf("[+] Kernel Segment @%p <%d bytes>\n", mem, total_size);
+		std::printf("[+] Allocating  %s @%p <%d bytes>\n", TypeToString(), mem, total_size);
 
+		// process segments
+		uint32_t offset_hack = 0;
 		for (uint16_t i = 0; i < elf->phnum; ++i) {
+
 			const auto* p = &segments[i];
+
+			uint32_t hack = offset_hack;
+			offset_hack += p->filesz;
+
+			// ignore info segments
+			//if (p->filesz == 0)
+			//	continue;
+
 			//if (p->type == PT_LOAD) {
-				std::printf("ELF SEG:%d, %llu (%llx), %llu (%llx) ELF TYPE %s\n",
-					(int)i, p->offset, p->offset,
-					GetOffset<SELFHeader>(0)->headerSize + p->offset,
-					GetOffset<SELFHeader>(0)->headerSize + p->offset,
-					SecTypeToStr(p->type));
+				std::printf("ELF SEG:%d, %llu (%llx) ELF TYPE %s, VIRT %p, PHYS %p, FILESIZE %lld, VSIZE %lld, HEADER OFS %p, OFFSET HACK %x\n",
+					(int)i, (uint32_t)p->offset - p->align, (uint32_t)p->offset - p->align,
+					SecTypeToStr(p->type),
+					(void*)p->vaddr,
+					(void*)p->paddr,
+					p->filesz,
+					p->memsz,
+					(void*)((uintptr_t)p - (uintptr_t)data), hack);
 				//FormatFlag(p->flags);
 			//}
 
@@ -171,6 +181,7 @@ namespace loaders
 			case PT_TLS: {
 
 				// if the application uses TLS...
+				// TODO: check redudant..
 				if (p->filesz > 0 && p->offset != 0)
 					SetupTLS(p);
 			} break;
@@ -183,18 +194,18 @@ namespace loaders
 
 	void SELF_Loader::SetupDynamics(const ELFPgHeader* pg)
 	{
-		auto* dynamics = GetOffset<ELFDyn>(pg->offset);
+		/*auto* dynamics = GetOffset<ELFDyn>(pg->offset);
 		for (uint32_t i = 0; i < pg->filesz / sizeof(ELFDyn); i++) {
 
 			const auto* p = &dynamics[i];
 			std::printf("%d dyamics found, dynamic type %x\n", i, p->tag);
 			
-		}
+		}*/
 	}
 
 	void SELF_Loader::SetupTLS(const ELFPgHeader* pg)
 	{
-
+		//TODO: allocate TLS memory
 	}
 
 	const char* SELF_Loader::TypeToString()
