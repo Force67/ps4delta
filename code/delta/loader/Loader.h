@@ -5,6 +5,8 @@
 #include <string>
 #include <memory>
 
+#include <utilities/File.h>
+
 namespace krnl {
 	class VMAccessMgr;
 }
@@ -28,23 +30,20 @@ namespace loaders
 
 	class AppLoader
 	{
-	protected:
-
-		bool loaded;
-		uint8_t* data;
-
-		inline void SetLoaded() {
-			loaded = true;
-		}
-
 	public:
 
-		explicit AppLoader(uint8_t*);
+		explicit AppLoader(utl::FileHandle file) :
+			file(std::move(file))
+		{}
+
 		virtual ~AppLoader() = default;
 
 		// must be implemented
 		virtual LoadErrorCode Load(krnl::VMAccessMgr&) = 0;
 		virtual LoadErrorCode Unload() = 0;
+
+	protected:
+		utl::FileHandle file;
 	};
 
 	std::unique_ptr<AppLoader> CreateLoader(const std::wstring &);

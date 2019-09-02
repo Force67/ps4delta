@@ -4,6 +4,10 @@
 
 #include "Loader.h"
 
+namespace utl {
+	class File;
+}
+
 namespace loaders
 {
 	// increments by 0x10 for each new
@@ -187,9 +191,9 @@ namespace loaders
 
 	class SELF_Loader final : public AppLoader
 	{
-		ELFHeader* elf;
-		ELFPgHeader* segments;
-
+		ELFHeader elf;
+		std::vector<ELFPgHeader> segments;
+	
 		// ensure correct pointer casts
 		template<typename Type, typename TAdd>
 		Type* GetElfOfs(const TAdd dist) {
@@ -212,9 +216,9 @@ namespace loaders
 
 	public:
 
-		SELF_Loader(uint8_t*);
+		explicit SELF_Loader(utl::FileHandle);
 
-		static FileType IdentifyType(const uint8_t*);
+		static FileType IdentifyType(utl::FileHandle&);
 
 		LoadErrorCode Load(krnl::VMAccessMgr&) override;
 		LoadErrorCode Unload() override;

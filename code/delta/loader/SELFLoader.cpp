@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <loader/SELFLoader.h>
 #include <kernel/VMA.h>	
+#include <utilities/File.h>
 
 #define SHT_NULL 0
 #define SHT_PROGBITS 1
@@ -48,13 +49,6 @@
 #define PF_R 0x4
 #define PF_MASKPROC 0xF0000000
 
-void FormatFlag(uint32_t flag) {
-	std::printf("R:%d,W:%d,X:%d\n", 
-		(bool)flag & PF_R,
-		(bool)flag & PF_W,
-		(bool)flag & PF_X);
-}
-
 enum ElfType {
 	ET_NONE = 0,
 	ET_REL = 1,
@@ -67,14 +61,16 @@ enum ElfType {
 
 namespace loaders
 {
-	SELF_Loader::SELF_Loader(uint8_t *d) :
-		AppLoader(d)
+	SELF_Loader::SELF_Loader(utl::FileHandle file) :
+		AppLoader(std::move(file))
 	{}
 
-	FileType SELF_Loader::IdentifyType(const uint8_t* data)
+	FileType SELF_Loader::IdentifyType(utl::FileHandle& file)
 	{
-		SELFHeader* hdr = (SELFHeader*)data;
-		if (hdr->magic == SELF_MAGIC && hdr->contentType == SELFContentType::SELF) {
+		SELFHeader self{};
+		file->Read(self);
+
+		if (self.magic == SELF_MAGIC && self.contentType == SELFContentType::SELF) {
 			std::puts("[+] Identified file as Signed ELF (SELF)");
 			return FileType::SELF;
 		}
@@ -84,49 +80,41 @@ namespace loaders
 
 	LoadErrorCode SELF_Loader::Load(krnl::VMAccessMgr& vma)
 	{
-		auto* hdr = GetOffset<SELFHeader>(0);
+		// reset fp
+		file->Seek(0, utl::seekMode::seek_set);
 
-		auto* tables = GetOffset<SELFSegmentTable>(sizeof(SELFHeader));
-		for (int i = 0; i < hdr->numSegments; i++) {
-			auto* p = &tables[i];
+		// read the initial header
+		SELFHeader self{};
+		file->Read(self);
+	
+		// load all SCE segments
+		std::vector<SELFSegmentTable> scesegments(self.numSegments);
+		file->Read(scesegments);
 
-			if (p->fileSize != p->memSize) {
-				std::puts("Fatal: we cannot handle dec yet!");
-				return LoadErrorCode::BADARCH;
-			}
-
-#if 1
-			auto flag_set = [&](SegFlags flag) -> bool {
-				return p->flags & flag != 0;
-			};
-
-			printf("SCESeg:%d | Size: %llu | Offset: 0x%llx | SegID: %d\n",
-				i,
-				p->fileSize,
-				p->offset,
-				p->Id());
-#endif
+		// dump some info
+		for (auto& e : scesegments) {
+			std::printf("SceSeg >  Size: %llu | Offset: 0x%llx | SegID: %d\n",
+				e.fileSize, e.offset, e.Id());
 		}
 
-		// TODO: find a better way :D
-		elf = GetOffset<ELFHeader>(sizeof(SELFHeader) + (sizeof(SELFSegmentTable) * hdr->numSegments));
-
-		if (*GetElfOfs<uint32_t>(0) != 0x464C457F)
+		// find & verify elf header
+		file->Read(elf);
+		
+		/*if (*(uint32_t*)& elf != 0x464C457F) {
 			return LoadErrorCode::BADMAGIC;
+		}*/
 
-		// phoff should be 0x40 relative to the elf header
-		segments = GetElfOfs<ELFPgHeader>(elf->phoff);
+		// 0x40 relative to elf
+		file->Seek(elf.phoff, utl::seekMode::seek_cur);
+		segments.resize(elf.phnum);
+		file->Read(segments);
 
-		// section headers are always missing
-		//if (elf->shoff == 0)
-		//	std::puts("section header table missing!");
-
-		// dont even ask
+		/*// dont even ask
 		size_t offset = sizeof(ELFHeader) + (elf->phnum * sizeof(ELFPgHeader));
 		offset += 15; offset &= ~15; // align
 
 		SCESpecial* special = GetElfOfs<SCESpecial>(offset + 7);
-		std::printf("SCE special located at offset %llx, %x\n", ((uintptr_t)special - (uintptr_t)data), (uint8_t)special->authId);
+		std::printf("SCE special located at offset %llx, %x\n", ((uintptr_t)special - (uintptr_t)data), (uint8_t)special->authId);*/
 
 		if (MapSegments(vma))
 			return LoadErrorCode::SUCCESS;
@@ -138,13 +126,13 @@ namespace loaders
 	{
 		// count total segment size we are interested in
 		uint32_t total_size = 0;
-		for (uint16_t i = 0; i < elf->phnum; ++i) {
-			const auto* p = &segments[i];
-			if (p->type == PT_LOAD || p->type == PT_SCE_RELRO) {
-				total_size += (p->memsz + 0xFFF) & ~0xFFF;
+		for (auto& seg : segments) {
+			if (seg.type == PT_LOAD || seg.type == PT_SCE_RELRO) {
+				total_size += (seg.memsz + 0xFFF) & ~0xFFF;
 			}
 		}
-
+		
+#if 0
 		// reserve kernel memory
 		void* mem = vma.AllocateSeg(total_size);
 		std::printf("[+] Allocating  %s @%p <%d bytes>\n", TypeToString(), mem, total_size);
@@ -188,6 +176,7 @@ namespace loaders
 
 			}
 		}
+#endif
 
 		return true;
 	}
@@ -210,7 +199,7 @@ namespace loaders
 
 	const char* SELF_Loader::TypeToString()
 	{
-		switch (elf->type) {
+		switch (elf.type) {
 		case ET_SCE_EXEC: return "Executable";
 		case ET_SCE_DYNEXEC: return "Main module";
 		case ET_SCE_RELEXEC: return "Relocatable PRX";
@@ -248,8 +237,7 @@ namespace loaders
 			return "Unknown";
 	}
 
-	LoadErrorCode SELF_Loader::Unload()
-	{
+	LoadErrorCode SELF_Loader::Unload() {
 		return LoadErrorCode::UNKNOWN;
 	}
 }
