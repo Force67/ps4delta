@@ -15,55 +15,82 @@ namespace crypto
 
 		ELFHeader elf{};
 		std::vector<ELFPgHeader> sections;
-		std::unique_ptr<uint8_t[]> data;
-
-		size_t deltaSELF;
+		std::vector<uint8_t> data;
 
 	public:
 
 		explicit ElfBuilder(utl::FileHandle &f) :
-			file(f),
-			deltaSELF(0)
+			file(f)
 		{}
 
 		bool LoadHeaders(SELFHeader &self)
 		{
-			size_t selfdelta = sizeof(SELFHeader) + (sizeof(SELFSegmentTable) * self.numSegments);
+			size_t headerDelta = sizeof(SELFHeader) + (sizeof(SELFSegmentTable) * self.numSegments);
 
 			// get elf
-			file->Seek(selfdelta, utl::seekMode::seek_set);
-			file->Read(elf);
+			file->Seek(headerDelta, utl::seekMode::seek_set);
+			if (!file->Read(elf))
+				return false;
 
 			// valid elf?
 			if (elf.magic != 0x464C457F)
 				return false;
 
 			// read section info
-			sections.reserve(elf.phnum);
+			sections.resize(elf.phnum);
 			return file->Read(sections);
 		}
 
 		bool LoadData()
 		{
-			// skip SCE special (TODO: is it really always 41 bytes?!?)
-			uint64_t offset = file->Seek(41, utl::seekMode::seek_cur);
+			// align position
+			uint64_t pos = (file->Tell() + 0xF) & ~0xF;
+	
+			// todo: check is always 65?
+			uint64_t offset = file->Seek(pos + 0x41, utl::seekMode::seek_set);
+
+#ifdef DELTA_DBG
+			std::printf(__FUNCTION__ " offset %llx\n", offset);
+#endif
 
 			if (offset < file->GetSize()) {
-				size_t delta = file->GetSize() - offset;
-				data = std::make_unique<uint8_t[]>(delta);
 
-				return file->Read(static_cast<void*>(data.get()), delta);
+				size_t delta = file->GetSize() - offset;
+				data.resize(delta);
+			
+				return file->Read(data);
 			}
 
 			return false;
 		}
 
-		void ExportBuffer(std::unique_ptr<uint8_t[]> &&out) {
-			out = std::move(data);
+		// find a better way
+		void ExportBuffer(std::vector<uint8_t> &out) {
+			
+			// the delta to reserve
+			size_t delta = sizeof(ELFHeader) + (elf.phnum * sizeof(ELFPgHeader)) + data.size();
+			out.reserve(delta);
+
+			//std::memcpy()
+		}
+
+		bool MakeELFFile(const std::wstring &name)
+		{
+			utl::File file(name, utl::fileMode::write);
+			if (file.IsOpen()) {
+				file.Write(elf);
+				file.Write(sections);
+				file.Write(data);
+
+				return true;
+			}
+
+			return false;
 		}
 	};
 
-	bool convert_self(utl::FileHandle &file, std::unique_ptr<uint8_t[]>& out)
+	// todo: make less shit
+	bool convert_self(utl::FileHandle &file, std::vector<uint8_t> &&out)
 	{
 		// reset
 		file->Seek(0, utl::seekMode::seek_set);
@@ -93,15 +120,28 @@ namespace crypto
 		return false;
 	}
 
-	bool convert_self(utl::FileHandle& in, const std::wstring& to)
+	bool convert_self(utl::FileHandle& file, const std::wstring& to)
 	{
-		std::unique_ptr<uint8_t[]> newElf;
-		if (convert_self(in, newElf)) {
+		// reset
+		file->Seek(0, utl::seekMode::seek_set);
 
-			utl::File output(to);
-			if (output.IsOpen()) {
-				//output.Write()
+		SELFHeader self{};
+		file->Read(self);
+
+		if (self.magic == SELF_MAGIC) {
+			ElfBuilder builder(file);
+
+			if (!builder.LoadHeaders(self)) {
+				std::puts("Unable to parse SELF headers!");
+				return false;
 			}
+
+			if (!builder.LoadData()) {
+				std::puts("Unable to gather ELF data!");
+				return false;
+			}
+
+			return builder.MakeELFFile(to);
 		}
 
 		return false;

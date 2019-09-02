@@ -44,6 +44,7 @@ namespace utl
 		virtual uint64_t Read(void*, size_t) = 0;
 		virtual uint64_t Write(const void*, size_t) = 0;
 		virtual uint64_t Seek(int64_t, seekMode) = 0;
+		virtual uint64_t Tell() = 0;
 		virtual uint64_t GetSize() = 0;
 		virtual native_handle GetNativeHandle() = 0;
 	};
@@ -66,6 +67,7 @@ namespace utl
 		virtual uint64_t Write(const void*, size_t) override;
 		virtual uint64_t Seek(int64_t, seekMode) override;
 		virtual uint64_t GetSize() override;
+		virtual uint64_t Tell() override;
 		native_handle GetNativeHandle() override;
 
 		inline bool IsOpen() {
@@ -98,17 +100,17 @@ namespace utl
 
 		// Write POD unconditionally
 		template<typename T>
-		std::enable_if_t<std::is_pod<T>::value && !std::is_pointer<T>::value, const File&> Write(const T& data) const
+		std::enable_if_t<std::is_pod<T>::value && !std::is_pointer<T>::value, const File&> Write(const T& data)
 		{
-			/*if (*/Write(std::addressof(data), sizeof(T)) != sizeof(T);//)// xfail();
+			Write(std::addressof(data), sizeof(T));
 			return *this;
 		}
 
 		// Write POD std::vector unconditionally
 		template<typename T>
-		std::enable_if_t<std::is_pod<T>::value && !std::is_pointer<T>::value, const File&> Write(const std::vector<T>& vec) const
+		std::enable_if_t<std::is_pod<T>::value && !std::is_pointer<T>::value, const File&> Write(const std::vector<T>& vec)
 		{
-			/*if (*/Write(vec.data(), vec.size() * sizeof(T)) != vec.size() * sizeof(T);//) //xfail();
+			/*if (*/Write(vec.data(), vec.size() * sizeof(T));// != vec.size() * sizeof(T);//) //xfail();
 			return *this;
 		}
 	};

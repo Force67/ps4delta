@@ -34,7 +34,7 @@ workspace "PS4Delta"
          architecture "x86_64"
 
     filter "configurations:Debug"
-        defines { "GC_DBG" }
+        defines { "DELTA_DBG" }
 
     filter "configurations:Release"
         staticruntime "On"
