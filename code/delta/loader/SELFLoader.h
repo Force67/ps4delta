@@ -150,7 +150,8 @@ namespace loaders
 
 	struct ELFHeader
 	{
-		uint8_t ident[16];
+		uint32_t magic;
+		uint8_t ident[12]; // < actually 16
 		ELFTypeSCE type; //< sony custom
 		uint16_t machine;
 		uint32_t version;
