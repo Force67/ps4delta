@@ -178,8 +178,8 @@ namespace utl
 		file(std::make_unique<MemStream>(ptr, size))
 	{}
 
-	File::File() :
-		file(nullptr)
+	File::File(std::unique_ptr<fileBase>&& base) :
+		file(std::move(base))
 	{}
 
 	File::~File() {

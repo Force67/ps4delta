@@ -2,7 +2,10 @@
 
 // Copyright (C) Force67 2019
 
-#include "SELFLoader.h"
+#include <ELFTypes.h>
+#include <SCETypes.h>
+
+#include "loader/Loader.h"
 
 namespace loaders
 {
@@ -29,7 +32,7 @@ namespace loaders
 
 	public:
 
-		explicit ELF_Loader(std::unique_ptr<utl::File>);
+		explicit ELF_Loader(utl::File);
 
 		static FileType IdentifyType(utl::File&);
 

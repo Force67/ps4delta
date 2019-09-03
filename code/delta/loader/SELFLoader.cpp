@@ -35,6 +35,7 @@ enum ElfType {
 
 namespace loaders
 {
+#if 0
 	SELF_Loader::SELF_Loader(std::unique_ptr<utl::File> file) :
 		AppLoader(std::move(file))
 	{}
@@ -171,47 +172,8 @@ namespace loaders
 		//TODO: allocate TLS memory
 	}
 
-	const char* SELF_Loader::TypeToString()
-	{
-		switch (elf.type) {
-		case ET_SCE_EXEC: return "Executable";
-		case ET_SCE_DYNEXEC: return "Main module";
-		case ET_SCE_RELEXEC: return "Relocatable PRX";
-		case ET_SCE_STUBLIB: return "Stub library";
-		case ET_SCE_DYNAMIC: return "Dynamic PRX";
-		default: return "Unknown";
-		}
-	}
-
-	const char* SELF_Loader::SecTypeToStr(uint32_t type)
-	{
-#define AS_STR(idx)                             \
-    if (type == idx)                   \
-        return #idx;
-
-			AS_STR(PT_LOAD)
-			AS_STR(PT_DYNAMIC)
-			AS_STR(PT_INTERP)
-			AS_STR(PT_NOTE)
-			AS_STR(PT_SHLIB)
-			AS_STR(PT_PHDR)
-			AS_STR(PT_TLS)
-			AS_STR(PT_LOPROC)
-			AS_STR(PT_HIPROC)
-			AS_STR(PT_SCE_DYNLIBDATA)
-			AS_STR(PT_SCE_PROCPARAM)
-			AS_STR(PT_SCE_MODULEPARAM)
-			AS_STR(PT_SCE_RELRO)
-			AS_STR(PT_SCE_COMMENT)
-			AS_STR(PT_SCE_VERSION)
-			AS_STR(PT_GNU_EH_FRAME)
-
-#undef AS_STR
-
-			return "Unknown";
-	}
-
 	LoadErrorCode SELF_Loader::Unload() {
 		return LoadErrorCode::UNKNOWN;
 	}
+#endif
 }

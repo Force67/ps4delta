@@ -64,6 +64,7 @@ workspace "PS4Delta"
 
     group "core"
 	include "./delta"
+	include "./shared"
 	
 	group "tools"
 	include "tools/sedit"

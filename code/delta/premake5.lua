@@ -21,10 +21,16 @@ project "host"
     {
         ["*"] = "premake5.lua"
     }
+	
+	links
+	{
+		"shared"
+	}
 
     includedirs
     {
-        "."
+        ".",
+		"../shared"
     }
 
     files

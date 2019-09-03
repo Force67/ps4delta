@@ -3,6 +3,7 @@
 // Copyright (C) Force67 2019
 
 #include <cstdint>
+#include <algorithm>
 #include <string>
 #include <memory>
 #include <vector>
@@ -49,15 +50,20 @@ namespace utl
 
 	class File
 	{
-		std::unique_ptr<fileBase> file;
+		std::unique_ptr<fileBase> file{};
 
 	public:
 
-		// from disk
-		explicit File(const std::wstring&, fileMode mode = fileMode::read);
+		File(const std::wstring&, fileMode mode = fileMode::read);
+		File() = default;
 		File(const void*, size_t);
-		File();
+		File(std::unique_ptr<fileBase>&&);
 		~File();
+
+		// move
+		File(File& rhs) :
+			file(rhs.GetBase())
+		{}
 
 		void Close() {
 			if (file)
@@ -66,6 +72,10 @@ namespace utl
 
 		void Reset(std::unique_ptr<fileBase>&& ptr) {
 			file = std::move(ptr);
+		}
+
+		inline std::unique_ptr<fileBase> GetBase() {
+			return std::move(file);
 		}
 
 		inline uint64_t Read(void* ptr, size_t size) { return file->Read(ptr, size); }
@@ -188,8 +198,7 @@ namespace utl
 			const int64_t new_pos =
 				whence == seekMode::seek_set ? offset :
 				whence == seekMode::seek_cur ? offset + pos :
-				whence == seekMode::seek_end ? offset + size() :
-				();
+				whence == seekMode::seek_end ? offset + GetSize() : (0);
 
 			if (new_pos < 0)
 			{
@@ -204,13 +213,20 @@ namespace utl
 		uint64_t GetSize() override {
 			return obj.size();
 		}
+
+		native_handle GetNativeHandle() override {
+			return nullptr;
+		}
+
+		uint64_t Tell() override {
+			return pos;
+		}
 	};
 
-/*	template <typename T>
+	template <typename T>
 	File make_stream(T&& container = T{})
 	{
-		File result;
-		result.Reset(std::make_unique<ContainerStream<T>>(std::forward<T>(container)));
+		File result(std::make_unique<ContainerStream<T>>(std::forward<T>(container)));
 		return result;
-	}*/
+	}
 }

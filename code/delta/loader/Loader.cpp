@@ -19,7 +19,7 @@ namespace loaders
     if (FileType::UNKNOWN != type)                   \
         return type;
 
-				CHECK_TYPE(SELF)
+				//CHECK_TYPE(SELF)
 				CHECK_TYPE(ELF)
 
 #undef CHECK_TYPE
@@ -33,22 +33,28 @@ namespace loaders
 		auto file = std::make_unique<utl::File>(name);
 		if (file->IsOpen()) {
 
-			// identify type by magic
 			FileType type = IdentifyType(*file);
+			if (type == FileType::UNKNOWN)
+				return nullptr;
+
+			std::vector<uint8_t> buffer(file->GetSize());
+			file->Read(buffer);
 
 			switch (type) {
-
-			// before doing anything, convert to elf
-			case FileType::SELF: {
-
+			case FileType::SELF:
+			{
+				// convert to elf
 				bool result = crypto::convert_self(*file, LR"(C:\Users\vince\Desktop\.nomad\JOURNEY_HD\CUSA02172\decrypt.elf)");
 				if (!result)
 					__debugbreak();
 
-				//return std::make_unique<SELF_Loader>(std::move(file));
-
-			} break;
-			case FileType::ELF: return std::make_unique<ELF_Loader>(std::move(file));
+				break;
+			}
+			case FileType::ELF:
+			{
+				auto stream = utl::make_stream(std::move(buffer));
+				return std::make_unique<ELF_Loader>(stream);
+			}
 			}
 		}
 
