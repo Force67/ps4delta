@@ -65,10 +65,10 @@ namespace loaders
 		AppLoader(std::move(file))
 	{}
 
-	FileType SELF_Loader::IdentifyType(utl::FileHandle& file)
+	FileType SELF_Loader::IdentifyType(utl::File& file)
 	{
 		SELFHeader self{};
-		file->Read(self);
+		file.Read(self);
 
 		if (self.magic == SELF_MAGIC && self.contentType == SELFContentType::SELF) {
 			std::puts("[+] Identified file as Signed ELF (SELF)");

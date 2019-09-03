@@ -64,6 +64,13 @@ namespace crypto
 			return false;
 		}
 
+		void ShowHeaders()
+		{
+			for (auto& e : sections) {
+				std::printf("%s -> %llx\n", SELF_Loader::SecTypeToStr(e.type), e.offset);
+			}
+		}
+
 		// find a better way
 		void ExportBuffer(std::vector<uint8_t> &out) {
 			
@@ -74,7 +81,7 @@ namespace crypto
 			//std::memcpy()
 		}
 
-		bool MakeELFFile(const std::wstring &name)
+		bool MakeElf(const std::wstring &name)
 		{
 			utl::File file(name, utl::fileMode::write);
 			if (file.IsOpen()) {
@@ -120,7 +127,7 @@ namespace crypto
 		return false;
 	}
 
-	bool convert_self(utl::FileHandle& file, const std::wstring& to)
+	bool convert_self(utl::FileHandle& file, const std::wstring& target)
 	{
 		// reset
 		file->Seek(0, utl::seekMode::seek_set);
@@ -141,7 +148,8 @@ namespace crypto
 				return false;
 			}
 
-			return builder.MakeELFFile(to);
+			builder.ShowHeaders();
+			return builder.MakeElf(target);
 		}
 
 		return false;

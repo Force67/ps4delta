@@ -211,17 +211,17 @@ namespace loaders
 		void SetupTLS(const ELFPgHeader*);
 		bool MapSegments(krnl::VMAccessMgr&);
 
-		// image debug utility
-		const char* TypeToString();
-		static const char* SecTypeToStr(uint32_t);
-
 	public:
 
 		explicit SELF_Loader(utl::FileHandle);
 
-		static FileType IdentifyType(utl::FileHandle&);
+		static FileType IdentifyType(utl::File&);
 
 		LoadErrorCode Load(krnl::VMAccessMgr&) override;
 		LoadErrorCode Unload() override;
+
+		// image debug utility
+		const char* TypeToString();
+		static const char* SecTypeToStr(uint32_t);
 	};
 }

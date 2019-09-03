@@ -33,14 +33,12 @@ namespace utl
 
 	class fileBase
 	{
-	protected:
-		native_handle handle;
-
 	public:
 
 		virtual ~fileBase() = default;
 
-		virtual void Close() { handle = 0; }
+		virtual void Close() {};
+		virtual bool IsOpen() { return true; }
 		virtual uint64_t Read(void*, size_t) = 0;
 		virtual uint64_t Write(const void*, size_t) = 0;
 		virtual uint64_t Seek(int64_t, seekMode) = 0;
@@ -49,32 +47,35 @@ namespace utl
 		virtual native_handle GetNativeHandle() = 0;
 	};
 
-	// for now...
-	class File : public fileBase
+	class File
 	{
-		size_t sizeTracker;
+		std::unique_ptr<fileBase> file;
 
 	public:
 
+		// from disk
 		explicit File(const std::wstring&, fileMode mode = fileMode::read);
+		File(const void*, size_t);
+		File();
 		~File();
 
-		File(const File&) = delete; // non construction-copyable
-		File& operator=(const File&) = delete; // non copyable
-
-		void Close() override;
-		virtual uint64_t Read(void*, size_t) override;
-		virtual uint64_t Write(const void*, size_t) override;
-		virtual uint64_t Seek(int64_t, seekMode) override;
-		virtual uint64_t GetSize() override;
-		virtual uint64_t Tell() override;
-		native_handle GetNativeHandle() override;
-
-		inline bool IsOpen() {
-			return handle != nullptr;
+		void Close() {
+			if (file)
+			    file.reset();
 		}
 
-		// adapted from rpcs3:
+		void Reset(std::unique_ptr<fileBase>&& ptr) {
+			file = std::move(ptr);
+		}
+
+		inline uint64_t Read(void* ptr, size_t size) { return file->Read(ptr, size); }
+		inline uint64_t Write(const void* ptr, size_t size) { return file->Write(ptr, size); }
+		inline uint64_t Seek(uint64_t ofs, seekMode mods) { return file->Seek(ofs, mods); }
+		inline uint64_t GetSize() { return file->GetSize(); }
+		inline uint64_t Tell() { return file->Tell(); }
+		inline native_handle GetNativeHandle() { return file->GetNativeHandle(); }
+		inline bool IsOpen() { return file->IsOpen(); }
+		inline bool Exists() { return file.get(); }
 
 		// POD to std::vector
 		template<typename T>
@@ -116,4 +117,100 @@ namespace utl
 	};
 
 	using FileHandle = std::shared_ptr<File>;
+
+	template <typename T>
+	struct ContainerStream final : fileBase
+	{
+		// T can be a reference, but this is not recommended
+		using value_type = typename std::remove_reference_t<T>::value_type;
+
+		T obj;
+		uint64_t pos;
+
+		ContainerStream(T&& obj)
+			: obj(std::forward<T>(obj))
+			, pos(0)
+		{
+		}
+
+		~ContainerStream() override
+		{
+		}
+
+		uint64_t Read(void* buffer, uint64_t size) override
+		{
+			const uint64_t end = obj.size();
+
+			if (pos < end)
+			{
+				// Get readable size
+				if (const uint64_t max = std::min<uint64_t>(size, end - pos))
+				{
+					std::copy(obj.cbegin() + pos, obj.cbegin() + pos + max, static_cast<value_type*>(buffer));
+					pos = pos + max;
+					return max;
+				}
+			}
+
+			return 0;
+		}
+
+		uint64_t Write(const void* buffer, uint64_t size) override
+		{
+			const uint64_t old_size = obj.size();
+
+			if (old_size + size < old_size)
+			{
+				//fmt::raw_error("fs::container_stream<>::write(): overflow");
+			}
+
+			if (pos > old_size)
+			{
+				// Fill gap if necessary (default-initialized)
+				obj.resize(pos);
+			}
+
+			const auto src = static_cast<const value_type*>(buffer);
+
+			// Overwrite existing part
+			const uint64_t overlap = std::min<uint64_t>(obj.size() - pos, size);
+			std::copy(src, src + overlap, obj.begin() + pos);
+
+			// Append new data
+			obj.insert(obj.end(), src + overlap, src + size);
+			pos += size;
+
+			return size;
+		}
+
+		uint64_t Seek(int64_t offset, seekMode whence) override
+		{
+			const int64_t new_pos =
+				whence == seekMode::seek_set ? offset :
+				whence == seekMode::seek_cur ? offset + pos :
+				whence == seekMode::seek_end ? offset + size() :
+				();
+
+			if (new_pos < 0)
+			{
+				//fs::g_tls_error = fs::error::inval;
+				return -1;
+			}
+
+			pos = new_pos;
+			return pos;
+		}
+
+		uint64_t GetSize() override {
+			return obj.size();
+		}
+	};
+
+/*	template <typename T>
+	File make_stream(T&& container = T{})
+	{
+		File result;
+		result.Reset(std::make_unique<ContainerStream<T>>(std::forward<T>(container)));
+		return result;
+	}*/
 }

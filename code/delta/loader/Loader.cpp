@@ -9,7 +9,7 @@ namespace loaders
 {
 	namespace
 	{
-		FileType IdentifyType(utl::FileHandle &file)
+		FileType IdentifyType(utl::File &file)
 		{
 			FileType type;
 
@@ -32,14 +32,14 @@ namespace loaders
 		if (file->IsOpen()) {
 
 			// identify type by magic
-			FileType type = IdentifyType(file);
+			FileType type = IdentifyType(*file);
 
 			switch (type) {
 
 			// before doing anything, convert to elf
 			case FileType::SELF: {
 
-				bool result = crypto::convert_self(file, LR"(C:\Users\vince\Desktop\.nomad\Angry_Birds_Star_Wars_1_01_PS4-LFC\CUSA00184\decrypt.elf)");
+				bool result = crypto::convert_self(file, LR"(C:\Users\vince\Desktop\.nomad\JOURNEY_HD\CUSA02172\decrypt.elf)");
 				if (!result)
 					__debugbreak();
 
