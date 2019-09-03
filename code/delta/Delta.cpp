@@ -34,6 +34,9 @@ void Delta::Boot(const std::wstring& fromdir)
 			return;
 		}
 	}
+	else {
+		std::puts("[!] Unknown file type");
+	}
 
 
 }

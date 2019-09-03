@@ -11,7 +11,7 @@ namespace crypto
 	class ElfBuilder
 	{
 		// in file
-		utl::FileHandle &file;
+		utl::File &file;
 
 		ELFHeader elf{};
 		std::vector<ELFPgHeader> sections;
@@ -19,7 +19,7 @@ namespace crypto
 
 	public:
 
-		explicit ElfBuilder(utl::FileHandle &f) :
+		ElfBuilder(utl::File &f) :
 			file(f)
 		{}
 
@@ -28,8 +28,8 @@ namespace crypto
 			size_t headerDelta = sizeof(SELFHeader) + (sizeof(SELFSegmentTable) * self.numSegments);
 
 			// get elf
-			file->Seek(headerDelta, utl::seekMode::seek_set);
-			if (!file->Read(elf))
+			file.Seek(headerDelta, utl::seekMode::seek_set);
+			if (!file.Read(elf))
 				return false;
 
 			// valid elf?
@@ -38,27 +38,27 @@ namespace crypto
 
 			// read section info
 			sections.resize(elf.phnum);
-			return file->Read(sections);
+			return file.Read(sections);
 		}
 
 		bool LoadData()
 		{
 			// align position
-			uint64_t pos = (file->Tell() + 0xF) & ~0xF;
+			uint64_t pos = (file.Tell() + 0xF) & ~0xF;
 	
 			// todo: check is always 65?
-			uint64_t offset = file->Seek(pos + 0x41, utl::seekMode::seek_set);
+			uint64_t offset = file.Seek(pos + 0x41, utl::seekMode::seek_set);
 
 #ifdef DELTA_DBG
 			std::printf(__FUNCTION__ " offset %llx\n", offset);
 #endif
 
-			if (offset < file->GetSize()) {
+			if (offset < file.GetSize()) {
 
-				size_t delta = file->GetSize() - offset;
+				size_t delta = file.GetSize() - offset;
 				data.resize(delta);
 			
-				return file->Read(data);
+				return file.Read(data);
 			}
 
 			return false;
@@ -97,13 +97,13 @@ namespace crypto
 	};
 
 	// todo: make less shit
-	bool convert_self(utl::FileHandle &file, std::vector<uint8_t> &&out)
+	bool convert_self(utl::File &file, std::vector<uint8_t> &&out)
 	{
 		// reset
-		file->Seek(0, utl::seekMode::seek_set);
+		file.Seek(0, utl::seekMode::seek_set);
 
 		SELFHeader self{};
-		file->Read(self);
+		file.Read(self);
 
 		if (self.magic == SELF_MAGIC /*&& NotDebugging()*/) {
 			ElfBuilder builder(file);
@@ -127,13 +127,13 @@ namespace crypto
 		return false;
 	}
 
-	bool convert_self(utl::FileHandle& file, const std::wstring& target)
+	bool convert_self(utl::File& file, const std::wstring& target)
 	{
 		// reset
-		file->Seek(0, utl::seekMode::seek_set);
+		file.Seek(0, utl::seekMode::seek_set);
 
 		SELFHeader self{};
-		file->Read(self);
+		file.Read(self);
 
 		if (self.magic == SELF_MAGIC) {
 			ElfBuilder builder(file);

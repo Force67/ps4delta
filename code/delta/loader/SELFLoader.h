@@ -146,6 +146,35 @@ namespace loaders
 		DT_SCE_STRSIZE = 0x61000037,
 	};
 
+	enum ElfSegType
+	{
+		PT_NULL,
+		PT_LOAD,
+		PT_DYNAMIC,
+		PT_INTERP,
+		PT_NOTE,
+		PT_SHLIB,
+		PT_PHDR,
+		PT_TLS,
+		PT_LOPROC = 0x70000000,
+		PT_HIPROC = 0x7FFFFFFF,
+		PT_SCE_DYNLIBDATA = 0x61000000,
+		PT_SCE_PROCPARAM = 0x61000001,
+		PT_SCE_MODULEPARAM = 0x61000002,
+		PT_SCE_RELRO = 0x61000010,
+		PT_SCE_COMMENT = 0x6FFFFF00,
+		PT_SCE_VERSION = 0x6FFFFF01,
+		PT_GNU_EH_FRAME = 0x6474E550
+	};
+
+	enum ElfFlags
+	{
+		PF_X = 1,
+		PF_W = 2,
+		PF_R = 4,
+		PF_MASKPROC = 0xF0000000
+	};
+
 	static constexpr uint16_t ELF_MACHINE_X86_64 = 0x3E;
 
 	struct ELFHeader
@@ -166,6 +195,8 @@ namespace loaders
 		uint16_t shnum;
 		uint16_t shstrndx;
 	};
+
+	static constexpr uint32_t ELF_MAGIC = 0x464C457F;
 
 	struct ELFPgHeader
 	{
@@ -213,7 +244,7 @@ namespace loaders
 
 	public:
 
-		explicit SELF_Loader(utl::FileHandle);
+		explicit SELF_Loader(std::unique_ptr<utl::File> file);
 
 		static FileType IdentifyType(utl::File&);
 

@@ -23,32 +23,6 @@
 #define SHT_LOUSER 0x80000000
 #define SHT_HIUSER 0xFFFFFFFF
 
-// Segment Types
-#define PT_NULL 0
-#define PT_LOAD 1
-#define PT_DYNAMIC 2
-#define PT_INTERP 3
-#define PT_NOTE 4
-#define PT_SHLIB 5
-#define PT_PHDR 6
-#define PT_TLS  7
-#define PT_LOPROC 0x70000000
-#define PT_HIPROC 0x7FFFFFFF
-
-#define PT_SCE_DYNLIBDATA 0x61000000
-#define PT_SCE_PROCPARAM 0x61000001
-#define PT_SCE_MODULEPARAM 0x61000002
-#define PT_SCE_RELRO 0x61000010
-#define PT_SCE_COMMENT 0x6FFFFF00
-#define PT_SCE_VERSION 0x6FFFFF01
-#define PT_GNU_EH_FRAME 0x6474E550
-
-// Segment Memory Protection Flags
-#define PF_X 0x1
-#define PF_W 0x2
-#define PF_R 0x4
-#define PF_MASKPROC 0xF0000000
-
 enum ElfType {
 	ET_NONE = 0,
 	ET_REL = 1,
@@ -61,7 +35,7 @@ enum ElfType {
 
 namespace loaders
 {
-	SELF_Loader::SELF_Loader(utl::FileHandle file) :
+	SELF_Loader::SELF_Loader(std::unique_ptr<utl::File> file) :
 		AppLoader(std::move(file))
 	{}
 

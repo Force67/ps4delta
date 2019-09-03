@@ -19,11 +19,14 @@ namespace loaders
 		SUCCESS,
 		BADMAGIC,
 		BADARCH,
+		BADSEG,
+		BADALIGN,
 	};
 
 	enum class FileType
 	{
 		UNKNOWN,
+		ELF,
 		SELF,
 		SPRX
 	};
@@ -32,7 +35,7 @@ namespace loaders
 	{
 	public:
 
-		explicit AppLoader(utl::FileHandle file) :
+		explicit AppLoader(std::unique_ptr<utl::File> file) :
 			file(std::move(file))
 		{}
 
@@ -43,7 +46,7 @@ namespace loaders
 		virtual LoadErrorCode Unload() = 0;
 
 	protected:
-		utl::FileHandle file;
+		std::unique_ptr<utl::File> file;
 	};
 
 	std::unique_ptr<AppLoader> CreateLoader(const std::wstring &);

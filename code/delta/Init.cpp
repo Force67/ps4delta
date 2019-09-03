@@ -21,7 +21,7 @@ int DeltaMain()
 		return -1;
 	}
 
-	const std::wstring game(LR"(C:\Users\vince\Desktop\.nomad\JOURNEY_HD\CUSA02172\eboot.bin)");
+	const std::wstring game(LR"(C:\Users\vince\Desktop\.nomad\JOURNEY_HD\CUSA02172\eboot.bin-decrypted)");
 	/*
 	//dt.Boot(LR"(C:\Users\vince\Desktop\.nomad\JOURNEY_HD\CUSA02172\Journey\Journey.elf)");
 	//dt.Boot(LR"(C:\Users\vince\Desktop\pup\PS4UPDATE1.PUP.dec)");

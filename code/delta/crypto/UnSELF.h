@@ -14,6 +14,6 @@ namespace crypto
 	};
 
 	// convert SELF to elf and return new image in out
-	bool convert_self(utl::FileHandle&, std::vector<uint8_t> &&out);
-	bool convert_self(utl::FileHandle&, const std::wstring& dest);
+	bool convert_self(utl::File&, std::vector<uint8_t> &&out);
+	bool convert_self(utl::File&, const std::wstring& dest);
 }

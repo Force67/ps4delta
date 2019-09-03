@@ -3,6 +3,7 @@
 
 #include <loader/Loader.h>
 #include <loader/SELFLoader.h>
+#include <loader/ELFLoader.h>
 #include <crypto/UnSELF.h>
 
 namespace loaders
@@ -19,6 +20,7 @@ namespace loaders
         return type;
 
 				CHECK_TYPE(SELF)
+				CHECK_TYPE(ELF)
 
 #undef CHECK_TYPE
 
@@ -28,7 +30,7 @@ namespace loaders
 
 	std::unique_ptr<AppLoader> CreateLoader(const std::wstring &name)
 	{
-		auto file = std::make_shared<utl::File>(name);
+		auto file = std::make_unique<utl::File>(name);
 		if (file->IsOpen()) {
 
 			// identify type by magic
@@ -39,14 +41,14 @@ namespace loaders
 			// before doing anything, convert to elf
 			case FileType::SELF: {
 
-				bool result = crypto::convert_self(file, LR"(C:\Users\vince\Desktop\.nomad\JOURNEY_HD\CUSA02172\decrypt.elf)");
+				bool result = crypto::convert_self(*file, LR"(C:\Users\vince\Desktop\.nomad\JOURNEY_HD\CUSA02172\decrypt.elf)");
 				if (!result)
 					__debugbreak();
 
-			} break;
-
-
 				//return std::make_unique<SELF_Loader>(std::move(file));
+
+			} break;
+			case FileType::ELF: return std::make_unique<ELF_Loader>(std::move(file));
 			}
 		}
 
