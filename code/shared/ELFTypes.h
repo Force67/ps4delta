@@ -41,7 +41,6 @@ enum ELFDynTag
 	DT_ENCODING,
 	DT_PREINIT_ARRAY,
 	DT_PREINIT_ARRAYSZ,
-
 	DT_SCE_FINGERPRINT = 0x61000007,
 	DT_SCE_ORIGFILENAME = 0x61000009,
 	DT_SCE_MODULEINFO = 0x6100000d,
@@ -49,9 +48,13 @@ enum ELFDynTag
 	DT_SCE_MODULEATTR = 0x61000011,
 	DT_SCE_EXPLIB = 0x61000013,
 	DT_SCE_IMPLIB = 0x61000015,
-
 	DT_SCE_STRTAB = 0x61000035,
 	DT_SCE_STRSIZE = 0x61000037,
+	DT_SCE_JMPREL = 0x61000029,
+	DT_SCE_PLTREL = 0x6100002b,
+	DT_SCE_PLTRELSZ = 0x6100002d,
+	DT_SCE_SYMTAB = 0x61000039,
+	DT_SCE_SYMTABSZ = 0x6100003f
 };
 
 enum ElfSegType
@@ -73,6 +76,11 @@ enum ElfSegType
 	PT_SCE_COMMENT = 0x6FFFFF00,
 	PT_SCE_LIBVERSION = 0x6FFFFF01,
 	PT_GNU_EH_FRAME = 0x6474E550
+};
+
+enum ElfRelType
+{
+	R_X86_64_JUMP_SLOT = 7
 };
 
 enum ElfFlags
@@ -129,7 +137,27 @@ struct ELFPgHeader
 struct ELFDyn
 {
 	int64_t tag;
-	uint64_t value;
+	union {
+		uint64_t value;
+		uint64_t ptr;
+	} un;
+};
+
+struct ElfRel
+{
+	uint64_t offset;
+	uint64_t info;
+	int64_t added;
+};
+
+struct ElfSym
+{
+	uint32_t st_name;
+	uint8_t st_info;
+	uint8_t st_other;
+	uint16_t st_shndx;
+	uint64_t st_value;
+	uint64_t st_size;
 };
 
 static_assert(sizeof(ELFPgHeader) == 56, "Elf program header size mismatch");
@@ -174,3 +202,6 @@ inline const char* SceTypeToString(uint32_t type)
 
 		return "Unknown";
 }
+
+#define ELF64_R_SYM(i) ((i) >> 32)
+#define ELF64_R_TYPE(i)((i) & 0xffffffff)

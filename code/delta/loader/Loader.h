@@ -35,8 +35,8 @@ namespace loaders
 	{
 	public:
 
-		explicit AppLoader(utl::File file) :
-			file(std::move(file))
+		explicit AppLoader(std::unique_ptr<uint8_t[]> file) :
+			data(std::move(file))
 		{}
 
 		virtual ~AppLoader() = default;
@@ -46,7 +46,7 @@ namespace loaders
 		virtual LoadErrorCode Unload() = 0;
 
 	protected:
-		utl::File file;
+		std::unique_ptr<uint8_t[]> data;
 	};
 
 	std::unique_ptr<AppLoader> CreateLoader(const std::wstring &);

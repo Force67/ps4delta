@@ -13,11 +13,25 @@ namespace loaders
 	// elf images
 	class ELF_Loader final : public AppLoader
 	{
-		ELFHeader elf;
-		std::vector<ELFPgHeader> segments;
+		// headers
+		ELFHeader *elf;
+		ELFPgHeader* segments;
+		ElfRel* jmpslots;
+		ElfSym* symbols;
 
-		uint64_t stringTable;
-		uint64_t strTableSize;
+		struct Table
+		{
+			char* ptr;
+			size_t size;
+		};
+
+		Table strtab;
+		Table symtab;
+		Table dynld;
+
+		int32_t numJmpSlots;
+		int32_t numSymbols;
+
 
 		struct LibraryInfo
 		{
@@ -26,13 +40,20 @@ namespace loaders
 			bool exp;
 		};
 
+		template<typename Type, typename TAdd>
+		Type* GetOffset(const TAdd dist) {
+			return (Type*)(data.get() + dist);
+		}
+
 		//std::
 
 		void DoDynamics(ELFPgHeader&);
+		void DoModules(ELFPgHeader&);
+		bool ResolveImports();
 
 	public:
 
-		explicit ELF_Loader(utl::File);
+		explicit ELF_Loader(std::unique_ptr<uint8_t[]>);
 
 		static FileType IdentifyType(utl::File&);
 

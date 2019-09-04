@@ -30,7 +30,7 @@ namespace loaders
 					std::vector<uint8_t> data(e.fileSize);
 					file.Read(data);
 
-					//return utl::make_stream(data);
+					return utl::make_stream(std::move(data));
 				}
 			}
 		}

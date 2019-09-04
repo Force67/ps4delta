@@ -30,21 +30,24 @@ namespace loaders
 
 	std::unique_ptr<AppLoader> CreateLoader(const std::wstring &name)
 	{
-		auto file = std::make_unique<utl::File>(name);
-		if (file->IsOpen()) {
+		utl::File file(name);
+		if (file.IsOpen()) {
 
-			FileType type = IdentifyType(*file);
+			FileType type = IdentifyType(file);
 			if (type == FileType::UNKNOWN)
 				return nullptr;
 
-			std::vector<uint8_t> buffer(file->GetSize());
-			file->Read(buffer);
+			// allocate a temp buffer
+			file.Seek(0, utl::seekMode::seek_set);
+
+			auto buf = std::make_unique<uint8_t[]>(file.GetSize());
+			file.Read(buf.get(), file.GetSize());
 
 			switch (type) {
 			case FileType::SELF:
 			{
 				// convert to elf
-				bool result = crypto::convert_self(*file, LR"(C:\Users\vince\Desktop\.nomad\JOURNEY_HD\CUSA02172\decrypt.elf)");
+				bool result = crypto::convert_self(file, LR"(C:\Users\vince\Desktop\.nomad\JOURNEY_HD\CUSA02172\decrypt.elf)");
 				if (!result)
 					__debugbreak();
 
@@ -52,8 +55,7 @@ namespace loaders
 			}
 			case FileType::ELF:
 			{
-				auto stream = utl::make_stream(std::move(buffer));
-				return std::make_unique<ELF_Loader>(stream);
+				return std::make_unique<ELF_Loader>(std::move(buf));
 			}
 			}
 		}
