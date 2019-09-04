@@ -5,6 +5,7 @@
 #include <ELFTypes.h>
 #include <SCETypes.h>
 
+#include "kernel/Process.h"
 #include "loader/Loader.h"
 
 namespace loaders
@@ -45,10 +46,19 @@ namespace loaders
 			return (Type*)(data.get() + dist);
 		}
 
-		//std::
+		template<typename Type = ELFPgHeader>
+		Type* GetSegment(ElfSegType type) {
+			for (uint16_t i = 0; i < elf->phnum; i++) {
+				auto s = &segments[i];
+				if (s->type == type)
+					return reinterpret_cast<Type*>(s);
+			}
 
-		void DoDynamics(ELFPgHeader&);
-		void DoModules(ELFPgHeader&);
+			return nullptr;
+		}
+
+		void DoDynamics();
+		bool MapImage(krnl::Process&);
 		bool ResolveImports();
 
 	public:
@@ -57,7 +67,7 @@ namespace loaders
 
 		static FileType IdentifyType(utl::File&);
 
-		LoadErrorCode Load(krnl::VMAccessMgr&) override;
+		LoadErrorCode Load(krnl::Process&) override;
 		LoadErrorCode Unload() override;
 	};
 }

@@ -2,6 +2,7 @@
 // Copyright (C) Force67 2019
 
 #include "loader/ELFLoader.h"
+#include "kernel/Process.h"
 
 namespace loaders
 {
@@ -24,13 +25,14 @@ namespace loaders
 		return FileType::UNKNOWN;
 	}
 
-	LoadErrorCode ELF_Loader::Load(krnl::VMAccessMgr& vma)
+	LoadErrorCode ELF_Loader::Load(krnl::Process& proc)
 	{
 		elf = GetOffset<ELFHeader>(0);
 		segments = GetOffset<ELFPgHeader>(elf->phoff);
 
 		for (uint16_t i = 0; i < elf->phnum; i++) {
 			auto s = &segments[i];
+			std::printf("SEGMENTTYPE %x\n", s->type);
 			switch (s->type) {
 			case PT_LOAD:
 			{
@@ -52,12 +54,23 @@ namespace loaders
 
 				break;
 			}
+			case PT_SCE_DYNLIBDATA:
+			{
+				if (s->filesz == 0) {
+					//__debugbreak();
+					return LoadErrorCode::BADSEG;
+				}
+
+				dynld.ptr = GetOffset<char>(s->offset);
+				dynld.size = s->filesz;
+
+				std::printf("DYNLD OFS %llx\n", s->offset);
+				break;
+			}
 			case PT_DYNAMIC:
 			{
 				if (s->filesz > s->memsz)
 					return LoadErrorCode::BADSEG;
-
-				DoDynamics(*s);
 				break;
 			}
 			case PT_SCE_MODULEPARAM:
@@ -114,37 +127,39 @@ namespace loaders
 				}
 				break;
 			}
-			case PT_SCE_DYNLIBDATA:
-			{
-				dynld.ptr = GetOffset<char>(s->offset);
-				dynld.size = s->filesz;
-				break;
-			}
 			}
 		}
 
-		//if (!ResolveImports()) {
-		//	return LoadErrorCode::UNKNOWN;
-		//}
+		DoDynamics();
+
+		if (!MapImage(proc)) {
+			return LoadErrorCode::BADMAP;
+		}
+
+		if (!ResolveImports()) {
+			return LoadErrorCode::BADIMP;
+		}
 
 		return LoadErrorCode::SUCCESS;
 	}
 
-	void ELF_Loader::DoDynamics(ELFPgHeader& s)
+	void ELF_Loader::DoDynamics()
 	{
-		ELFDyn* dynamics = GetOffset<ELFDyn>(s.offset);
-		for (int32_t i = 0; i < (s.filesz / sizeof(ELFDyn)); i++) {
+		auto* s = GetSegment(ElfSegType::PT_DYNAMIC);
+		ELFDyn* dynamics = GetOffset<ELFDyn>(s->offset);
+		for (int32_t i = 0; i < (s->filesz / sizeof(ELFDyn)); i++) {
 			auto* d = &dynamics[i];
 
 			switch (d->tag) {
 			case DT_SCE_JMPREL:
 			{
-				if (d->un.ptr > s.filesz) {
+				if (d->un.ptr > dynld.size) {
 					std::printf("invalid JMPREL offset: %llx\n", d->un.ptr);
 					continue;
 				}
 
 				jmpslots = (ElfRel*)(dynld.ptr + d->un.ptr);
+				std::printf("the jumpslots are at %llx\n", jmpslots);
 				break;
 			}
 			case DT_SCE_PLTRELSZ:
@@ -192,26 +207,89 @@ namespace loaders
 			}
 		}
 
-		//DoModules(s);
-	}
-
-	void ELF_Loader::DoModules(ELFPgHeader &s)
-	{
-		ELFDyn* dynamics = GetOffset<ELFDyn>(s.offset);
-		for (int32_t i = 0; i < (s.filesz / sizeof(ELFDyn)); i++) {
+		for (int32_t i = 0; i < (s->filesz / sizeof(ELFDyn)); i++) {
 			auto* d = &dynamics[i];
 			switch (d->tag) {
-			case DT_NEEDED:
+			/*case DT_NEEDED:
 			{
 				std::printf("%i: DT_NEEDED %s\n", i, (char*)(strtab.ptr + d->un.value));
 				break;
-			}
+			}*/
+			case DT_SCE_NEEDED_MODULE:
+				std::printf("NEEDED MODULE %s\n", (char*)(strtab.ptr + (d->un.value & 0xFFFFFFFF)));
+				break;
 			}
 		}
 	}
 
+	bool ELF_Loader::MapImage(krnl::Process& proc)
+	{
+		// the stuff we actually care about
+		uint32_t totalimage = 0;
+		for (uint16_t i = 0; i < elf->phnum; ++i) {
+			const auto* p = &segments[i];
+			if (p->type == PT_LOAD || PT_SCE_RELRO) {
+				totalimage += (p->memsz + 0xFFF) & ~0xFFF;
+			}
+		}
+
+		// could also check if INTERP exists
+		if (totalimage == 0)
+			return false;
+
+		// reserve segment
+		char* mem = (char*)proc.GetVirtualMemory().AllocateSeg(totalimage);
+
+		// and move it!
+		for (uint16_t i = 0; i < elf->phnum; i++) {
+			auto s = &segments[i];
+			if (s->type == PT_LOAD || PT_SCE_RELRO) {
+				uint32_t perm = s->flags & (PF_R | PF_W | PF_X);
+				switch (perm) {
+
+				// todo: module segment collection :D
+				case (PF_R | PF_X):
+				{
+					// its a codepage
+					std::memcpy(mem + s->vaddr, GetOffset<void>(s->offset), s->filesz);
+					break;
+				}
+				case (PF_R):
+				{
+					//Reserve a rdata segment
+					std::memcpy(mem + s->vaddr, GetOffset<void>(s->offset), s->filesz);
+					break;
+				}
+				case (PF_R | PF_W):
+				{
+					// reserve a read write data seg
+					std::memcpy(mem + s->vaddr, GetOffset<void>(s->offset), s->filesz);
+					break;
+				}
+				default:
+				{
+					std::puts("UNKNOWN param!");
+
+				}
+				}
+			}
+		}
+
+		// register it to module chain
+		auto entry = std::make_shared<krnl::Module>();
+		entry->base = reinterpret_cast<uintptr_t*>(mem);
+		entry->entry = reinterpret_cast<uintptr_t*>(mem + elf->entry);
+		entry->size = totalimage;
+		entry->name = "#MAIN#";
+		proc.RegisterModule(std::move(entry));
+
+		return true;
+	}
+
 	bool ELF_Loader::ResolveImports()
 	{
+		return true;
+
 		for (size_t i = 0; i < numJmpSlots; i++) {
 			auto* r = &jmpslots[i];
 

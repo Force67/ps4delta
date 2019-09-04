@@ -37,7 +37,6 @@ workspace "PS4Delta"
         defines { "DELTA_DBG" }
 
     filter "configurations:Release"
-        staticruntime "On"
         optimize "Speed"
 
     filter {"system:windows", "kind:not StaticLib"}

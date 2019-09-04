@@ -8,7 +8,7 @@
 #include <utilities/File.h>
 
 namespace krnl {
-	class VMAccessMgr;
+	class Process;
 }
 
 namespace loaders
@@ -17,8 +17,8 @@ namespace loaders
 	{
 		UNKNOWN,
 		SUCCESS,
-		BADMAGIC,
-		BADARCH,
+		BADIMP,
+		BADMAP,
 		BADSEG,
 		BADALIGN,
 	};
@@ -42,7 +42,7 @@ namespace loaders
 		virtual ~AppLoader() = default;
 
 		// must be implemented
-		virtual LoadErrorCode Load(krnl::VMAccessMgr&) = 0;
+		virtual LoadErrorCode Load(krnl::Process&) = 0;
 		virtual LoadErrorCode Unload() = 0;
 
 	protected:
