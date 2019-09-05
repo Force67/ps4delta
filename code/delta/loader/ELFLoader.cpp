@@ -4,8 +4,56 @@
 #include "loader/ELFLoader.h"
 #include "kernel/Process.h"
 
+#include "modules/Module.h"
+
 namespace loaders
 {
+	// TODO: move + proper imp
+	int decode_base64(const char* str, int* a2)
+	{
+		char chr; // dl@1
+		int v3; // rcx@1
+		const char* v4; // rdi@2
+		int v5; // rcx@3
+		int result; // rax@11
+
+		chr = *str;
+		v3 = 0LL;
+		if (*str) {
+			v4 = str + 1;
+			v3 = 0LL;
+			do {
+				v5 = v3 << 6;
+				if ((unsigned __int8)(chr - 0x61) > 0x19u) {
+					if ((unsigned __int8)(chr - 0x41) > 0x19u) {
+						if ((unsigned __int8)(chr - 0x30) > 9u) {
+							if (chr == '-')
+								v3 = v5 | 0x3F;
+							else {
+								result = 22LL;
+								if (chr != '+')
+									return result;
+								v3 = v5 | 0x3E;
+							}
+						}
+						else {
+							v3 = chr + (v5 | 4);
+						}
+					}
+					else {
+						v3 = v5 + chr - 0x41;
+					}
+				}
+				else {
+					v3 = v5 + chr - 0x47;
+				}
+				chr = *v4++;
+			} while (chr);
+		}
+		*a2 = v3;
+		return 0LL;
+	}
+
 	// based on: https://github.com/idc/uplift/blob/master/uplift/src/program_info.cpp
 
 	ELF_Loader::ELF_Loader(std::unique_ptr<uint8_t[]> d) :
@@ -32,7 +80,6 @@ namespace loaders
 
 		for (uint16_t i = 0; i < elf->phnum; i++) {
 			auto s = &segments[i];
-			std::printf("SEGMENTTYPE %x\n", s->type);
 			switch (s->type) {
 			case PT_LOAD:
 			{
@@ -63,8 +110,6 @@ namespace loaders
 
 				dynld.ptr = GetOffset<char>(s->offset);
 				dynld.size = s->filesz;
-
-				std::printf("DYNLD OFS %llx\n", s->offset);
 				break;
 			}
 			case PT_DYNAMIC:
@@ -117,7 +162,7 @@ namespace loaders
 							uint32_t version = *(uint32_t*)& sec[i + 1];
 							uint8_t* vptr = (uint8_t*)& version;
 
-							std::printf("lib <%s>, version %x.%x.%x.%x\n", name.c_str(), vptr[0], vptr[1], vptr[2], vptr[3]);
+							//std::printf("lib <%s>, version %x.%x.%x.%x\n", name.c_str(), vptr[0], vptr[1], vptr[2], vptr[3]);
 							break;
 						}
 					}
@@ -154,12 +199,11 @@ namespace loaders
 			case DT_SCE_JMPREL:
 			{
 				if (d->un.ptr > dynld.size) {
-					std::printf("invalid JMPREL offset: %llx\n", d->un.ptr);
+					std::printf("[!] bad JMPREL offset: %llx\n", d->un.ptr);
 					continue;
 				}
 
 				jmpslots = (ElfRel*)(dynld.ptr + d->un.ptr);
-				std::printf("the jumpslots are at %llx\n", jmpslots);
 				break;
 			}
 			case DT_SCE_PLTRELSZ:
@@ -170,7 +214,7 @@ namespace loaders
 			case DT_SCE_STRTAB:
 			{
 				if (d->un.ptr > dynld.size) {
-					std::printf("invalid STRTAB offset: %llx", d->un.ptr);
+					std::printf("[!] bad STRTAB offset: %llx", d->un.ptr);
 					continue;
 				}
 
@@ -192,7 +236,7 @@ namespace loaders
 			case DT_SCE_SYMTAB:
 			{
 				if (d->un.ptr > dynld.size) {
-					std::printf("invalid SYMTAB offset: %llx", d->un.ptr);
+					std::printf("[!] bad SYMTAB offset: %llx", d->un.ptr);
 					continue;
 				}
 
@@ -210,14 +254,18 @@ namespace loaders
 		for (int32_t i = 0; i < (s->filesz / sizeof(ELFDyn)); i++) {
 			auto* d = &dynamics[i];
 			switch (d->tag) {
-			/*case DT_NEEDED:
-			{
-				std::printf("%i: DT_NEEDED %s\n", i, (char*)(strtab.ptr + d->un.value));
-				break;
-			}*/
-			case DT_SCE_NEEDED_MODULE:
-				std::printf("NEEDED MODULE %s\n", (char*)(strtab.ptr + (d->un.value & 0xFFFFFFFF)));
-				break;
+				/*case DT_NEEDED:
+				{
+					std::printf("%i: DT_NEEDED %s\n", i, (char*)(strtab.ptr + d->un.value));
+					break;
+				}*/
+				case DT_SCE_NEEDED_MODULE:
+				{
+					auto& e = implibs.emplace_back();
+					e.name = (const char*)(strtab.ptr + (d->un.value & 0xFFFFFFFF));
+					e.modid = d->un.value >> 48;
+					break;
+				}
 			}
 		}
 	}
@@ -228,7 +276,7 @@ namespace loaders
 		uint32_t totalimage = 0;
 		for (uint16_t i = 0; i < elf->phnum; ++i) {
 			const auto* p = &segments[i];
-			if (p->type == PT_LOAD || PT_SCE_RELRO) {
+			if (p->type == PT_LOAD /*|| PT_SCE_RELRO*/) {
 				totalimage += (p->memsz + 0xFFF) & ~0xFFF;
 			}
 		}
@@ -238,12 +286,12 @@ namespace loaders
 			return false;
 
 		// reserve segment
-		char* mem = (char*)proc.GetVirtualMemory().AllocateSeg(totalimage);
+		targetbase = (char*)proc.GetVirtualMemory().AllocateSeg(totalimage);
 
 		// and move it!
 		for (uint16_t i = 0; i < elf->phnum; i++) {
 			auto s = &segments[i];
-			if (s->type == PT_LOAD || PT_SCE_RELRO) {
+			if (s->type == PT_LOAD /*|| PT_SCE_RELRO*/) {
 				uint32_t perm = s->flags & (PF_R | PF_W | PF_X);
 				switch (perm) {
 
@@ -251,19 +299,19 @@ namespace loaders
 				case (PF_R | PF_X):
 				{
 					// its a codepage
-					std::memcpy(mem + s->vaddr, GetOffset<void>(s->offset), s->filesz);
+					std::memcpy(targetbase + s->vaddr, GetOffset<void>(s->offset), s->filesz);
 					break;
 				}
 				case (PF_R):
 				{
 					//Reserve a rdata segment
-					std::memcpy(mem + s->vaddr, GetOffset<void>(s->offset), s->filesz);
+					std::memcpy(targetbase + s->vaddr, GetOffset<void>(s->offset), s->filesz);
 					break;
 				}
 				case (PF_R | PF_W):
 				{
 					// reserve a read write data seg
-					std::memcpy(mem + s->vaddr, GetOffset<void>(s->offset), s->filesz);
+					std::memcpy(targetbase + s->vaddr, GetOffset<void>(s->offset), s->filesz);
 					break;
 				}
 				default:
@@ -277,42 +325,62 @@ namespace loaders
 
 		// register it to module chain
 		auto entry = std::make_shared<krnl::Module>();
-		entry->base = reinterpret_cast<uintptr_t*>(mem);
-		entry->entry = reinterpret_cast<uintptr_t*>(mem + elf->entry);
+		entry->base = reinterpret_cast<uintptr_t*>(targetbase);
+		entry->entry = reinterpret_cast<uintptr_t*>(targetbase + elf->entry);
 		entry->size = totalimage;
 		entry->name = "#MAIN#";
 		proc.RegisterModule(std::move(entry));
+
+#if 0
+		{
+			utl::File f(LR"(C:\Users\vince\Desktop\.nomad\ps4delta\bin\Debug\proc.bin)", utl::fileMode::write);
+			f.Write(targetbase, totalimage);
+		}
+#endif
 
 		return true;
 	}
 
 	bool ELF_Loader::ResolveImports()
 	{
-		return true;
-
-		for (size_t i = 0; i < numJmpSlots; i++) {
+		for (int32_t i = 0; i < numJmpSlots; i++) {
 			auto* r = &jmpslots[i];
 
 			int32_t type = ELF64_R_TYPE(r->info);
 			int32_t isym = ELF64_R_SYM(r->info);
 
-			if (type != R_X86_64_JUMP_SLOT) {
-				std::printf("Unexpected reloc type %i for jump slot %i", type, i);
-				continue;
-			}
-
-			if (isym >= numSymbols) {
-				std::printf("Invalid symbol index %i for relocation %i", isym, i);
-				continue;
-			}
-
-			if (symbols[isym].st_name >= strtab.size) {
-				std::printf("Invalid symbol string offset %x of symbol %i for relocation %i", symbols[isym].st_name, isym, i);
+			if (isym >= numSymbols ||
+				symbols[isym].st_name >= strtab.size) {
+				std::printf("Bad symbol idx %d for relocation %d\n", isym, i);
 				continue;
 			}
 
 			const char* name = &strtab.ptr[symbols[isym].st_name];
-			std::printf("IMPORT NAME %s\n", name);
+
+			// example: weDug8QD-lE#L#M
+			//					    ^ ^
+			// see above: libid, modid
+
+			if (std::strlen(name) == 15) {
+
+				auto *ptr = &name[14];
+
+				int32_t modid = 0;
+				decode_base64(ptr, &modid);
+
+				char hashname[12]{};
+				strncpy(hashname, name, 11);
+
+				// fetch the import module name
+				for (auto& imp : implibs) {
+					if (imp.modid == modid) {
+
+					// ... and set the import address
+					*GetAddress<uintptr_t>(r->offset) = modules::get_import(imp.name, hashname);
+					break;
+				}
+				}
+			}
 		}
 
 		return true;

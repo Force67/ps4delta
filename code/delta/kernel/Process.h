@@ -16,8 +16,6 @@ namespace krnl
 		uintptr_t* base;
 		size_t size;
 		uintptr_t *entry;
-
-
 		//todo: store section pointers
 	};
 
@@ -41,10 +39,15 @@ namespace krnl
 
 		// like dlls
 		void RegisterModule(ModuleHandle);
+		void DumpModule(const std::string&);
 		void RegisterModuleNotifaction(ModuleCallback);
 
 		inline VMAccessMgr& GetVirtualMemory() {
 			return vmem;
+		}
+
+		inline ModuleHandle& GetMainModule() {
+			return modulelist[0];
 		}
 	};
 }
