@@ -40,7 +40,13 @@ void Delta::Boot(const std::wstring& fromdir)
 		}
 
 		std::puts("Delta: starting Process!");
-		proc->Start();
+
+		std::vector<std::string> args;
+		args.push_back("");
+		args.push_back("");
+		args.push_back("");
+		args.push_back("");
+		proc->Start(args);
 	}
 	else {
 		std::puts("[!] Unknown file type");

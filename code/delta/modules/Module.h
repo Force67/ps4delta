@@ -36,5 +36,5 @@ namespace modules
 #define MODULE_INIT(tname) \
 void init_##tname() { \
 static modules::ModuleInfo info{ \
-(modules::FunctionInfo*)&functions, (sizeof(functions) / sizeof(modules::FunctionInfo)) + 1, #tname}; \
+(modules::FunctionInfo*)&functions, (sizeof(functions) / sizeof(modules::FunctionInfo)), #tname}; \
 modules::register_module(&info); }

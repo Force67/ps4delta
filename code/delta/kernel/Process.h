@@ -13,9 +13,10 @@ namespace krnl
 	{
 		std::string name;
 		uint32_t type;
-		uintptr_t* base;
-		size_t size;
-		uintptr_t *entry;
+		uint8_t* base;
+		uint8_t* entry;
+		size_t sizeCode;
+		uint32_t tlsSlot;
 		//todo: store section pointers
 	};
 
@@ -27,6 +28,8 @@ namespace krnl
 		// the virtual memory owned by the process
 		VMAccessMgr vmem;
 
+		// the owned modules
+		int32_t tlsSlots;
 		std::vector<ModuleHandle> modulelist;
 		std::vector<ModuleCallback> modulenotification;
 
@@ -35,7 +38,7 @@ namespace krnl
 	public:
 
 		Process();
-		void Start();
+		void Start(const std::vector<std::string>&);
 
 		// like dlls
 		void RegisterModule(ModuleHandle);

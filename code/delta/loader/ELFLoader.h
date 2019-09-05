@@ -65,6 +65,7 @@ namespace loaders
 		}
 
 		void DoDynamics();
+		void InstallExceptionHandlers();
 		bool MapImage(krnl::Process&);
 		bool ResolveImports();
 		bool ProcessRelocations();

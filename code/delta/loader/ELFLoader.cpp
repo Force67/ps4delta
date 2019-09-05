@@ -189,6 +189,8 @@ namespace loaders
 			return LoadErrorCode::BADIMP;
 		}
 
+		InstallExceptionHandlers();
+
 		return LoadErrorCode::SUCCESS;
 	}
 
@@ -337,12 +339,16 @@ namespace loaders
 			}
 		}
 
+		// kind of a hack tbh
+		static int32_t tlsIdx{0};
+
 		// register it to module chain
 		auto entry = std::make_shared<krnl::Module>();
-		entry->base = reinterpret_cast<uintptr_t*>(targetbase);
-		entry->entry = reinterpret_cast<uintptr_t*>(targetbase + elf->entry);
-		entry->size = totalimage;
+		entry->base = reinterpret_cast<uint8_t*>(targetbase);
+		entry->entry = reinterpret_cast<uint8_t*>(targetbase + elf->entry);
+		entry->sizeCode = totalimage;
 		entry->name = "#MAIN#";
+		entry->tlsSlot = tlsIdx;
 		proc.RegisterModule(std::move(entry));
 
 #if 0
@@ -363,13 +369,16 @@ namespace loaders
 			int32_t type = ELF64_R_TYPE(r->info);
 			int32_t isym = ELF64_R_SYM(r->info);
 
+			ElfSym* sym = &symbols[isym];
+
 			if (isym >= numSymbols ||
-				symbols[isym].st_name >= strtab.size) {
+				sym->st_name >= strtab.size) {
 				std::printf("Bad symbol idx %d for relocation %d\n", isym, i);
 				continue;
 			}
 
-			const char* name = &strtab.ptr[symbols[isym].st_name];
+			const char* name = &strtab.ptr[sym->st_name];
+			//std::printf("SYMBOL binding %s, BINDING: %x, TYPE: %x\n", name, sym->st_info >> 4, sym->st_info & 0x0f);
 
 			// example: weDug8QD-lE#L#M
 			//					    ^ ^
@@ -443,6 +452,90 @@ namespace loaders
 		}
 
 		return true;
+	}
+
+	// taken from idc's "uplift" project
+	void ELF_Loader::InstallExceptionHandlers()
+	{
+		const auto* p = GetSegment(PT_GNU_EH_FRAME);
+		if (p->filesz > p->memsz)
+			return;
+
+		// custom struct for eh_frame_hdr 
+		struct GnuExceptionInfo
+		{
+			uint8_t version;
+			uint8_t encoding;
+			uint8_t fdeCount;
+			uint8_t encodingTable;
+			uint8_t first;
+		};
+
+		auto* info = GetOffset<GnuExceptionInfo>(p->offset);
+
+		if (info->version != 1)
+			return;
+
+		uint8_t* data_buffer = nullptr;
+		uint8_t* current = &info->first;
+
+		if (info->encoding == 0x03) // relative to base address
+		{
+			auto offset = *reinterpret_cast<uint32_t*>(current);
+			current += 4;
+			data_buffer = (uint8_t*)&targetbase[offset];
+		}
+		else if (info->encoding == 0x1B) // relative to eh_frame
+		{
+			auto offset = *reinterpret_cast<int32_t*>(current);
+			current += 4;
+			data_buffer = &current[offset];
+		}
+		else
+		{
+			return;
+		}
+
+		if (!data_buffer)
+		{
+			return;
+		}
+
+		uint8_t* data_buffer_end = data_buffer;
+		while (true)
+		{
+			size_t size = *reinterpret_cast<int32_t*>(data_buffer_end);
+			if (size == 0)
+			{
+				data_buffer_end = &data_buffer_end[4];
+				break;
+			}
+			if (size == -1)
+			{
+				size = 12 + *reinterpret_cast<size_t*>(&data_buffer_end[4]);
+			}
+			else
+			{
+				size = 4 + size;
+			}
+			data_buffer_end = &data_buffer_end[size];
+		}
+
+		size_t fde_count;
+		if (info->fdeCount == 0x03) // absolute
+		{
+			fde_count = *reinterpret_cast<uint32_t*>(current);
+			current += 4;
+		}
+		else
+		{
+			return;
+		}
+
+		if (info->encodingTable != 0x3B) // relative to eh_frame
+		{
+			return;
+		}
 	}
 
 	LoadErrorCode ELF_Loader::Unload()

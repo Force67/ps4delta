@@ -28,7 +28,6 @@ workspace "PS4Delta"
 	{
 		"./shared/Lib",
 	}
-
 	
     filter "platforms:x64"
          architecture "x86_64"

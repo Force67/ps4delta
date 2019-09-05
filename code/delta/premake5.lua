@@ -2,7 +2,6 @@
 project "host"
     language "C++"
     kind "WindowedApp"
-	optimize "Speed"
 	flags "NoManifest"
 	targetname "%{wks.name}"
 
