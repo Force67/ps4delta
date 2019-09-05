@@ -18,6 +18,7 @@ namespace loaders
 		UNKNOWN,
 		SUCCESS,
 		BADIMP,
+		BADREL,
 		BADMAP,
 		BADSEG,
 		BADALIGN,

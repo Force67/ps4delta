@@ -31,6 +31,7 @@ namespace loaders
 		ELFHeader *elf;
 		ELFPgHeader* segments;
 		ElfRel* jmpslots;
+		ElfRel* rela;
 		ElfSym* symbols;
 
 		Table strtab;
@@ -39,6 +40,7 @@ namespace loaders
 
 		int32_t numJmpSlots;
 		int32_t numSymbols;
+		int32_t numRela;
 		char* targetbase;
 
 		template<typename Type, typename TAdd>
@@ -65,6 +67,7 @@ namespace loaders
 		void DoDynamics();
 		bool MapImage(krnl::Process&);
 		bool ResolveImports();
+		bool ProcessRelocations();
 
 	public:
 

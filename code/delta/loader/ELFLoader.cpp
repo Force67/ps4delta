@@ -181,6 +181,10 @@ namespace loaders
 			return LoadErrorCode::BADMAP;
 		}
 
+		if (!ProcessRelocations()) {
+			return LoadErrorCode::BADREL;
+		}
+
 		if (!ResolveImports()) {
 			return LoadErrorCode::BADIMP;
 		}
@@ -246,6 +250,16 @@ namespace loaders
 			case DT_SCE_SYMTABSZ:
 			{
 				numSymbols = d->un.value / sizeof(ElfSym);
+				break;
+			}
+			case DT_SCE_RELA:
+			{
+				rela = (ElfRel*)(dynld.ptr + d->un.ptr);
+				break;
+			}
+			case DT_SCE_RELASZ:
+			{
+				numRela = d->un.value / sizeof(ElfRel);
 				break;
 			}
 			}
@@ -380,6 +394,51 @@ namespace loaders
 					break;
 				}
 				}
+			}
+		}
+
+		return true;
+	}
+
+	bool ELF_Loader::ProcessRelocations()
+	{
+		for (size_t i = 0; i < numRela; i++) {
+			auto* r = &rela[i];
+
+			uint32_t isym = ELF64_R_SYM(r->info);
+			int32_t type = ELF64_R_TYPE(r->info);
+
+			if (isym >= numSymbols) {
+				std::printf("[!] Invalid symbol index %d\n", isym);
+				continue;
+			}
+
+			switch (type) {
+			case R_X86_64_NONE: break;
+			case R_X86_64_64:
+			{
+				*GetAddress<uint64_t>(r->offset) = symbols[isym].st_value + r->addend;
+				break;
+			}
+			case R_X86_64_RELATIVE: /* base + ofs*/
+			{
+				*GetAddress<int64_t>(r->offset) = (int64_t)GetAddress<int64_t>(r->addend);
+				break;
+			}
+			case R_X86_64_GLOB_DAT:
+			{
+				*GetAddress<uint64_t>(r->offset) = symbols[isym].st_value;
+				break;
+			}
+			case R_X86_64_PC32:
+			{
+				*GetAddress<uint32_t>(r->offset) = (uint32_t)(symbols[isym].st_value + r->addend - (uint64_t)GetAddress<uint64_t>(r->offset));
+				break;
+			}
+			case R_X86_64_TPOFF64:
+			case R_X86_64_TPOFF32:
+			default: return false;
+
 			}
 		}
 

@@ -22,9 +22,20 @@ static int _atexit(void(*handler)())
 	return 0;
 }
 
+static void _exit(int code, void* unk)
+{
+
+}
+
+static void _catchReturnFromMain(int code)
+{
+}
+
 static const modules::FunctionInfo functions[] = {
 	{0, &_init_env, "bzQExy189ZI"},
 	{1, &_atexit, "8G2LB+A3rzg"},
+	//ENTRY: exit
+	{4, &_catchReturnFromMain, "XKRegsFpEpk"},
 };
 
 MODULE_INIT(libc)
