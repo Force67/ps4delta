@@ -15,8 +15,8 @@ namespace krnl
 		uint32_t type;
 		uint8_t* base;
 		uint8_t* entry;
+		uint16_t tlsSlot;
 		size_t sizeCode;
-		uint32_t tlsSlot;
 		//todo: store section pointers
 	};
 
@@ -42,7 +42,7 @@ namespace krnl
 
 		// like dlls
 		void RegisterModule(ModuleHandle);
-		void DumpModule(const std::string&);
+		ModuleHandle GetModule(const std::string &name);
 		void RegisterModuleNotifaction(ModuleCallback);
 
 		inline VMAccessMgr& GetVirtualMemory() {

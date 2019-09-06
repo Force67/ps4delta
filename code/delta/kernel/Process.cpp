@@ -90,13 +90,15 @@ namespace krnl
 		modulelist.emplace_back(handle);
 	}
 
-	void Process::DumpModule(const std::string &name)
+	ModuleHandle Process::GetModule(const std::string& name)
 	{
-		for (auto& e : modulelist) {
-			if (e->name == name) {
-			
+		for (auto& it : modulelist) {
+			if (it->name == name) {
+				return it;
 			}
 		}
+
+		return {};
 	}
 
 	void Process::RegisterModuleNotifaction(ModuleCallback cb)

@@ -1,5 +1,5 @@
 
-project "sedit"
+project "unpup"
     language "C++"
     kind "ConsoleApp"
 
@@ -10,8 +10,11 @@ project "sedit"
 
     includedirs
     {
-        "."
+        ".",
+		"../../shared",
     }
+	
+	links "shared"
 
     files
     {

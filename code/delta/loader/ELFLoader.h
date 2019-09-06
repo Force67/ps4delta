@@ -38,9 +38,9 @@ namespace loaders
 		Table symtab;
 		Table dynld;
 
-		int32_t numJmpSlots;
-		int32_t numSymbols;
-		int32_t numRela;
+		uint32_t numJmpSlots;
+		uint32_t numSymbols;
+		uint32_t numRela;
 		char* targetbase;
 
 		template<typename Type, typename TAdd>
@@ -76,7 +76,10 @@ namespace loaders
 
 		static FileType IdentifyType(utl::File&);
 
+		FileType GetFileType() override {
+			return FileType::ELF;
+		}
+
 		LoadErrorCode Load(krnl::Process&) override;
-		LoadErrorCode Unload() override;
 	};
 }

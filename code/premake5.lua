@@ -66,6 +66,7 @@ workspace "PS4Delta"
 	
 	group "tools"
 	include "tools/sedit"
+	include "tools/unpup"
 	
 	
 -- Cleanup

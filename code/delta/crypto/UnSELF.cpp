@@ -67,7 +67,7 @@ namespace crypto
 		void ShowHeaders()
 		{
 			for (auto& e : sections) {
-				std::printf("%s -> %llx\n", SceTypeToString(e.type), e.offset);
+				std::printf("%s -> %llx\n", SegTypeToString(e.type), e.offset);
 			}
 		}
 

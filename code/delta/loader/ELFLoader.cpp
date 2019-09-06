@@ -80,6 +80,7 @@ namespace loaders
 
 		for (uint16_t i = 0; i < elf->phnum; i++) {
 			auto s = &segments[i];
+			//std::printf("seg %s, %llx, %\n", SegTypeToString(s->type), s->offset, s->filesz);
 			switch (s->type) {
 			case PT_LOAD:
 			{
@@ -118,9 +119,21 @@ namespace loaders
 					return LoadErrorCode::BADSEG;
 				break;
 			}
-			case PT_SCE_MODULEPARAM:
+			case PT_SCE_PROCPARAM:
 			{
-				std::printf("FOUND PROCPARAM %llx (%llx byts big)\n", s->offset, s->filesz);
+				struct SCEPROC
+				{
+					uint32_t length;
+					uint32_t unk;
+					uint32_t magic;
+					uint32_t version;
+					uint32_t ofs;
+				};
+
+				SCEPROC* pr = GetOffset<SCEPROC>(s->offset);
+
+
+				//std::printf("FOUND PROCPARAM %llx (%llx byts big) proc ofs %llx, %llx\n", s->offset, s->filesz, pr->ofs, GetOffset<uintptr_t>(pr->ofs));
 
 			} break;
 
@@ -212,9 +225,10 @@ namespace loaders
 				jmpslots = (ElfRel*)(dynld.ptr + d->un.ptr);
 				break;
 			}
+			case DT_PLTRELSZ:
 			case DT_SCE_PLTRELSZ:
 			{
-				numJmpSlots = d->un.value / sizeof(ElfRel);
+				numJmpSlots = static_cast<uint32_t>(d->un.value / sizeof(ElfRel));
 				break;
 			}
 			case DT_SCE_STRTAB:
@@ -251,7 +265,7 @@ namespace loaders
 			}
 			case DT_SCE_SYMTABSZ:
 			{
-				numSymbols = d->un.value / sizeof(ElfSym);
+				numSymbols = static_cast<uint32_t>(d->un.value / sizeof(ElfSym));
 				break;
 			}
 			case DT_SCE_RELA:
@@ -259,9 +273,10 @@ namespace loaders
 				rela = (ElfRel*)(dynld.ptr + d->un.ptr);
 				break;
 			}
+			case DT_RELASZ:
 			case DT_SCE_RELASZ:
 			{
-				numRela = d->un.value / sizeof(ElfRel);
+				numRela = static_cast<uint32_t>(d->un.value / sizeof(ElfRel));
 				break;
 			}
 			}
@@ -288,6 +303,13 @@ namespace loaders
 
 	bool ELF_Loader::MapImage(krnl::Process& proc)
 	{
+	/*	auto* it = GetSegment(PT_SCE_RELRO);
+		if (it) {
+			for (int i = 0; i < it->filesz; i += 8) {
+				std::printf("RELRO entry %llx\n", *GetOffset<uintptr_t>(it->offset + i));
+			}
+		}*/
+
 		// the stuff we actually care about
 		uint32_t totalimage = 0;
 		for (uint16_t i = 0; i < elf->phnum; ++i) {
@@ -361,9 +383,10 @@ namespace loaders
 		return true;
 	}
 
+	// pltrela_table_offset 
 	bool ELF_Loader::ResolveImports()
 	{
-		for (int32_t i = 0; i < numJmpSlots; i++) {
+		for (uint32_t i = 0; i < numJmpSlots; i++) {
 			auto* r = &jmpslots[i];
 
 			int32_t type = ELF64_R_TYPE(r->info);
@@ -371,14 +394,19 @@ namespace loaders
 
 			ElfSym* sym = &symbols[isym];
 
-			if (isym >= numSymbols ||
+			if (type != R_X86_64_JUMP_SLOT) {
+				std::printf("Bad jmpslot %d\n", i);
+				continue;;
+			}
+
+			if ((uint32_t)isym >= numSymbols ||
 				sym->st_name >= strtab.size) {
 				std::printf("Bad symbol idx %d for relocation %d\n", isym, i);
 				continue;
 			}
 
 			const char* name = &strtab.ptr[sym->st_name];
-			//std::printf("SYMBOL binding %s, BINDING: %x, TYPE: %x\n", name, sym->st_info >> 4, sym->st_info & 0x0f);
+			//std::printf("SYMBOL binding %s, BINDING: %d, TYPE: %d\n", name, sym->st_info >> 4, sym->st_info & 0x0f);
 
 			// example: weDug8QD-lE#L#M
 			//					    ^ ^
@@ -536,10 +564,5 @@ namespace loaders
 		{
 			return;
 		}
-	}
-
-	LoadErrorCode ELF_Loader::Unload()
-	{
-		return LoadErrorCode::UNKNOWN;
 	}
 }

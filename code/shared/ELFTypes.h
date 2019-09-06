@@ -177,7 +177,7 @@ inline const char* ElfTypeToString(uint32_t type)
 	}
 }
 
-inline const char* SceTypeToString(uint32_t type)
+inline const char* SegTypeToString(uint32_t type)
 {
 #define AS_STR(idx)      \
     if (type == idx)     \

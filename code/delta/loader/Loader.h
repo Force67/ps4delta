@@ -5,7 +5,7 @@
 #include <string>
 #include <memory>
 
-#include <utilities/File.h>
+#include <utl/File.h>
 
 namespace krnl {
 	class Process;
@@ -43,8 +43,8 @@ namespace loaders
 		virtual ~AppLoader() = default;
 
 		// must be implemented
+		virtual FileType GetFileType() { return FileType::UNKNOWN; }
 		virtual LoadErrorCode Load(krnl::Process&) = 0;
-		virtual LoadErrorCode Unload() = 0;
 
 	protected:
 		std::unique_ptr<uint8_t[]> data;
