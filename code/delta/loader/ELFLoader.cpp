@@ -78,10 +78,10 @@ namespace loaders
 	{
 		elf = GetOffset<ELFHeader>(0);
 		segments = GetOffset<ELFPgHeader>(elf->phoff);
-
 		// verify the most important segments
 		for (uint16_t i = 0; i < elf->phnum; i++) {
 			auto s = &segments[i];
+			std::printf("SEGMENT %d, %llx, %llx -> TYPE %s, size %d\n", i, s->offset, s->vaddr, SegTypeToString(s->type), s->filesz);
 			switch (s->type) {
 			case PT_LOAD:
 			{
@@ -165,6 +165,12 @@ namespace loaders
 			auto* d = &dynamics[i];
 
 			switch (d->tag) {
+			case DT_INIT:
+			case DT_INIT_ARRAY:
+			{
+				std::printf("DT_INIT %llx\n", d->un.value);
+				break;
+			}
 			case DT_SCE_JMPREL:
 			{
 				if (d->un.ptr > dynld.size) {
@@ -264,7 +270,7 @@ namespace loaders
 		totalimage = 0;
 		for (uint16_t i = 0; i < elf->phnum; ++i) {
 			const auto* p = &segments[i];
-			if (p->type == PT_LOAD /*|| PT_SCE_RELRO*/) {
+			if (p->type == PT_LOAD) {
 				totalimage += (p->memsz + 0xFFF) & ~0xFFF;
 			}
 		}
@@ -281,7 +287,7 @@ namespace loaders
 		// and move it!
 		for (uint16_t i = 0; i < elf->phnum; i++) {
 			auto s = &segments[i];
-			if (s->type == PT_LOAD /*|| PT_SCE_RELRO*/) {
+			if (s->type == PT_LOAD) {
 				uint32_t perm = s->flags & (PF_R | PF_W | PF_X);
 				switch (perm) {
 
@@ -289,19 +295,19 @@ namespace loaders
 				case (PF_R | PF_X):
 				{
 					// its a codepage
-					std::memcpy(targetbase + s->vaddr, GetOffset<void>(s->offset), s->filesz);
+					std::memcpy(GetAddress<void>(s->vaddr), GetOffset<void>(s->offset), s->filesz);
 					break;
 				}
 				case (PF_R):
 				{
 					//Reserve a rdata segment
-					std::memcpy(targetbase + s->vaddr, GetOffset<void>(s->offset), s->filesz);
+					std::memcpy(GetAddress<void>(s->vaddr), GetOffset<void>(s->offset), s->filesz);
 					break;
 				}
 				case (PF_R | PF_W):
 				{
 					// reserve a read write data seg
-					std::memcpy(targetbase + s->vaddr, GetOffset<void>(s->offset), s->filesz);
+					std::memcpy(GetAddress<void>(s->vaddr), GetOffset<void>(s->offset), s->filesz);
 					break;
 				}
 				default:
@@ -310,6 +316,9 @@ namespace loaders
 
 				}
 				}
+			}
+			else if (s->type == PT_SCE_RELRO) {
+				memcpy(GetAddress<void>(s->vaddr), GetOffset<void>(s->offset), s->filesz);
 			}
 		}
 
@@ -356,6 +365,12 @@ namespace loaders
 			//					    ^ ^
 			// see above: libid, modid
 
+			int32_t binding = ELF64_ST_BIND(sym->st_info);
+			if (binding == STB_LOCAL) {
+				*GetAddress<uintptr_t>(r->offset) = (uintptr_t)GetAddress<uintptr_t>(sym->st_value);
+				break;
+			}
+
 			if (std::strlen(name) == 15) {
 
 				auto *ptr = &name[14];
@@ -389,6 +404,8 @@ namespace loaders
 			uint32_t isym = ELF64_R_SYM(r->info);
 			int32_t type = ELF64_R_TYPE(r->info);
 
+			ElfSym* sym = &symbols[isym];
+
 			if (isym >= numSymbols) {
 				std::printf("[!] Invalid symbol index %d\n", isym);
 				continue;
@@ -398,7 +415,9 @@ namespace loaders
 			case R_X86_64_NONE: break;
 			case R_X86_64_64:
 			{
-				*GetAddress<uint64_t>(r->offset) = symbols[isym].st_value + r->addend;
+				// class type info and such..
+				//std::printf("RELOCATION SHIT %s\n", (char*)& strtab.ptr[sym->st_name]);
+				*GetAddress<uint64_t>(r->offset) = sym->st_value + r->addend;
 				break;
 			}
 			case R_X86_64_RELATIVE: /* base + ofs*/
@@ -408,12 +427,12 @@ namespace loaders
 			}
 			case R_X86_64_GLOB_DAT:
 			{
-				*GetAddress<uint64_t>(r->offset) = symbols[isym].st_value;
+				*GetAddress<uint64_t>(r->offset) = sym->st_value;
 				break;
 			}
 			case R_X86_64_PC32:
 			{
-				*GetAddress<uint32_t>(r->offset) = (uint32_t)(symbols[isym].st_value + r->addend - (uint64_t)GetAddress<uint64_t>(r->offset));
+				*GetAddress<uint32_t>(r->offset) = (uint32_t)(sym->st_value + r->addend - (uint64_t)GetAddress<uint64_t>(r->offset));
 				break;
 			}
 			case R_X86_64_DTPMOD64:

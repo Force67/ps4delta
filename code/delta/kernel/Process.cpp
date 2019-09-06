@@ -1,6 +1,6 @@
 
 // Copyright (C) Force67 2019
-
+#include <Windows.h>
 #include <kernel/Process.h>
 #include <xbyak/xbyak.h>
 
@@ -48,11 +48,11 @@ namespace krnl
 
 		auto& main = GetMainModule();
 
-		// HACK HACK HACK: initialize stack cookie this way...
-		/*static uint64_t leet = 0x1337;
-		static uint64_t s2 = 1234;
-		*(uint64_t*)(main->base + 0x47EDE8) = (uint64_t)&leet;
-		*(uint64_t*)(main->base + 0xA47D18) = (uint64_t)& s2;*/
+		//memset(&main->base[0x11164DE], 0x90, 7);
+
+		// giant hack
+		//memset(&main->base[0x20], 0xC3, 1);
+
 
 		// generate a entry point push context
 		EntryGen trampoline(main->entry);

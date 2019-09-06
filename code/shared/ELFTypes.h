@@ -252,3 +252,13 @@ inline const char* SegTypeToString(uint32_t type)
 #define R_X86_64_IRELATIVE       37 /* Adjust indirectly by program base */
 #define R_X86_64_RELATIVE64      38 /* 64bit adjust by program base */
 #define R_X86_64_ORBIS_GOTPCREL_LOAD   40
+
+#define ELF_ST_BIND(x)		((x) >> 4)
+#define ELF_ST_TYPE(x)		(((unsigned int) x) & 0xf)
+#define ELF32_ST_BIND(x)	ELF_ST_BIND(x)
+#define ELF32_ST_TYPE(x)	ELF_ST_TYPE(x)
+#define ELF64_ST_BIND(x)	ELF_ST_BIND(x)
+#define ELF64_ST_TYPE(x)	ELF_ST_TYPE(x)
+
+#define STB_LOCAL  0
+#define STB_GLOBAL 1
