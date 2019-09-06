@@ -5,6 +5,7 @@
 #include <intrin.h>
 
 extern void init_libc();
+extern void init_libkernel();
 
 namespace modules
 {
@@ -17,6 +18,7 @@ namespace modules
 	void init_modules()
 	{
 		init_libc();
+		init_libkernel();
 
 		// and load the cache
 	}

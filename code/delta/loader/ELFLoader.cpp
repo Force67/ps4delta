@@ -143,10 +143,14 @@ namespace loaders
 		// and register the entry...
 		auto entry = std::make_shared<krnl::Module>();
 		entry->name = "#MODULE#";
-		entry->base = reinterpret_cast<uint8_t*>(targetbase);
-		entry->entry = reinterpret_cast<uint8_t*>(targetbase + elf->entry);
+		entry->base = targetbase;
 		entry->sizeCode = totalimage;
 		entry->tlsSlot = tlsslot;
+
+		if (elf->entry == 0)
+			entry->entry = nullptr;
+		else
+			entry->entry = targetbase + elf->entry;
 
 		proc.RegisterModule(std::move(entry));
 
@@ -270,7 +274,7 @@ namespace loaders
 			return false;
 
 		// reserve segment
-		targetbase = (char*)proc.GetVirtualMemory().AllocateSeg(totalimage);
+		targetbase = (uint8_t*)proc.GetVirtualMemory().AllocateSeg(totalimage);
 		if (!targetbase)
 			return false;
 

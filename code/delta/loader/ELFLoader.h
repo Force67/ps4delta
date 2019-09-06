@@ -41,7 +41,7 @@ namespace loaders
 		uint32_t numJmpSlots;
 		uint32_t numSymbols;
 		uint32_t numRela;
-		char* targetbase;
+		uint8_t* targetbase;
 
 		uint16_t tlsslot;
 		uint32_t totalimage;
