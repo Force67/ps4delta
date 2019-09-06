@@ -27,8 +27,8 @@ int DeltaMain()
 	//dt.Boot(LR"(C:\Users\vince\Desktop\pup\PS4UPDATE1.PUP.dec)");
 	dt.Boot(LR"(C:\Users\vince\Desktop\.nomad\JOURNEY_HD\CUSA02172\eboot.bin)");
 	//dt.Boot(LR"(C:\Users\vince\Desktop\.nomad\Angry_Birds_Star_Wars_1_01_PS4-LFC\CUSA00184\eboot.bin)");*/
-	const std::wstring game(LR"(C:\Users\vince\Desktop\.nomad\Angry_Birds_Star_Wars_1_01_PS4-LFC\CUSA00184\eboot.bin-decrypted)");
-
+	//const std::wstring game(LR"(C:\Users\vince\Desktop\.nomad\Angry_Birds_Star_Wars_1_01_PS4-LFC\CUSA00184\eboot.bin-decrypted)");
+	const std::wstring game(LR"(C:\Users\vince\Desktop\.nomad\Angry_Birds_Star_Wars_1_01_PS4-LFC\CUSA00184\sce_module\libc.prx-decrypted)");
 	// create a delta instance
 	auto& dt = Delta::Get();
 	

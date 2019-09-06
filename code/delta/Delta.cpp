@@ -30,10 +30,11 @@ void Delta::Boot(const std::wstring& fromdir)
 		// init module store
 		modules::init_modules();
 
-		if (loader->Load(*proc)
-			!= loaders::LoadErrorCode::SUCCESS) {
+		auto ec = loader->Load(*proc);
+		if (ec != loaders::LoadErrorCode::SUCCESS) {
 
 			// todo: cry and abort
+			std::printf("Error code %d\n", (int)ec);
 
 			__debugbreak();
 			return;

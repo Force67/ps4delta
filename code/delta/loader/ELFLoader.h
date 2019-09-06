@@ -43,6 +43,9 @@ namespace loaders
 		uint32_t numRela;
 		char* targetbase;
 
+		uint16_t tlsslot;
+		uint32_t totalimage;
+
 		template<typename Type, typename TAdd>
 		Type* GetOffset(const TAdd dist) {
 			return (Type*)(data.get() + dist);
@@ -65,7 +68,9 @@ namespace loaders
 		}
 
 		void DoDynamics();
+		void LogDebugInfo();
 		void InstallExceptionHandlers();
+		bool SetupTLS(krnl::Process&);
 		bool MapImage(krnl::Process&);
 		bool ResolveImports();
 		bool ProcessRelocations();

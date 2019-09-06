@@ -57,7 +57,8 @@ namespace loaders
 	// based on: https://github.com/idc/uplift/blob/master/uplift/src/program_info.cpp
 
 	ELF_Loader::ELF_Loader(std::unique_ptr<uint8_t[]> d) :
-		AppLoader(std::move(d))
+		AppLoader(std::move(d)),
+		tlsslot(-1)
 	{}
 
 	FileType ELF_Loader::IdentifyType(utl::File& file)
@@ -78,9 +79,9 @@ namespace loaders
 		elf = GetOffset<ELFHeader>(0);
 		segments = GetOffset<ELFPgHeader>(elf->phoff);
 
+		// verify the most important segments
 		for (uint16_t i = 0; i < elf->phnum; i++) {
 			auto s = &segments[i];
-			//std::printf("seg %s, %llx, %\n", SegTypeToString(s->type), s->offset, s->filesz);
 			switch (s->type) {
 			case PT_LOAD:
 			{
@@ -119,80 +120,15 @@ namespace loaders
 					return LoadErrorCode::BADSEG;
 				break;
 			}
-			case PT_SCE_PROCPARAM:
-			{
-				struct SCEPROC
-				{
-					uint32_t length;
-					uint32_t unk;
-					uint32_t magic;
-					uint32_t version;
-					uint32_t ofs;
-				};
-
-				SCEPROC* pr = GetOffset<SCEPROC>(s->offset);
-
-
-				//std::printf("FOUND PROCPARAM %llx (%llx byts big) proc ofs %llx, %llx\n", s->offset, s->filesz, pr->ofs, GetOffset<uintptr_t>(pr->ofs));
-
-			} break;
-
-			// like the PDB path on windows
-			case PT_SCE_COMMENT:
-			{
-				auto* comment = GetOffset<SCEComment>(s->offset);
-
-				std::string name;
-				name.resize(comment->pathLength);
-				memcpy(name.data(), GetOffset<void>(s->offset + sizeof(SCEComment)), comment->pathLength);
-
-				std::printf("Comment %s, %d\n", name.c_str(), comment->unk);
-				break;
-			}
-			case PT_SCE_LIBVERSION:
-			{
-				uint8_t* sec = GetOffset<uint8_t>(s->offset);
-
-				// count entries
-				int32_t index = 0;
-				while (index <= s->filesz) {
-
-					int8_t cb = sec[index];
-
-					// skip control byte
-					index++;
-
-					for (int i = index; i < (index + cb); i++)
-					{
-						if (sec[i] == 0x3A) {
-
-							size_t length = i - index;
-
-							std::string name;
-							name.resize(length);
-							memcpy(name.data(), &sec[index], length);
-
-							uint32_t version = *(uint32_t*)& sec[i + 1];
-							uint8_t* vptr = (uint8_t*)& version;
-
-							//std::printf("lib <%s>, version %x.%x.%x.%x\n", name.c_str(), vptr[0], vptr[1], vptr[2], vptr[3]);
-							break;
-						}
-					}
-
-					// skip forward
-					index += cb;
-				}
-				break;
-			}
 			}
 		}
 
 		DoDynamics();
+		LogDebugInfo();
 
-		if (!MapImage(proc)) {
+		if (!MapImage(proc) ||
+			!SetupTLS(proc))
 			return LoadErrorCode::BADMAP;
-		}
 
 		if (!ProcessRelocations()) {
 			return LoadErrorCode::BADREL;
@@ -203,6 +139,16 @@ namespace loaders
 		}
 
 		InstallExceptionHandlers();
+
+		// and register the entry...
+		auto entry = std::make_shared<krnl::Module>();
+		entry->name = "#MODULE#";
+		entry->base = reinterpret_cast<uint8_t*>(targetbase);
+		entry->entry = reinterpret_cast<uint8_t*>(targetbase + elf->entry);
+		entry->sizeCode = totalimage;
+		entry->tlsSlot = tlsslot;
+
+		proc.RegisterModule(std::move(entry));
 
 		return LoadErrorCode::SUCCESS;
 	}
@@ -301,7 +247,7 @@ namespace loaders
 		}
 	}
 
-	bool ELF_Loader::MapImage(krnl::Process& proc)
+	bool ELF_Loader::MapImage(krnl::Process &proc)
 	{
 	/*	auto* it = GetSegment(PT_SCE_RELRO);
 		if (it) {
@@ -311,7 +257,7 @@ namespace loaders
 		}*/
 
 		// the stuff we actually care about
-		uint32_t totalimage = 0;
+		totalimage = 0;
 		for (uint16_t i = 0; i < elf->phnum; ++i) {
 			const auto* p = &segments[i];
 			if (p->type == PT_LOAD /*|| PT_SCE_RELRO*/) {
@@ -325,6 +271,8 @@ namespace loaders
 
 		// reserve segment
 		targetbase = (char*)proc.GetVirtualMemory().AllocateSeg(totalimage);
+		if (!targetbase)
+			return false;
 
 		// and move it!
 		for (uint16_t i = 0; i < elf->phnum; i++) {
@@ -361,24 +309,16 @@ namespace loaders
 			}
 		}
 
-		// kind of a hack tbh
-		static int32_t tlsIdx{0};
+		return true;
+	}
 
-		// register it to module chain
-		auto entry = std::make_shared<krnl::Module>();
-		entry->base = reinterpret_cast<uint8_t*>(targetbase);
-		entry->entry = reinterpret_cast<uint8_t*>(targetbase + elf->entry);
-		entry->sizeCode = totalimage;
-		entry->name = "#MAIN#";
-		entry->tlsSlot = tlsIdx;
-		proc.RegisterModule(std::move(entry));
+	bool ELF_Loader::SetupTLS(krnl::Process& proc)
+	{
+		auto* p = GetSegment(PT_TLS);
+		if (p) {
 
-#if 0
-		{
-			utl::File f(LR"(C:\Users\vince\Desktop\.nomad\ps4delta\bin\Debug\proc.bin)", utl::fileMode::write);
-			f.Write(targetbase, totalimage);
+			tlsslot = proc.GetNextFreeTls();
 		}
-#endif
 
 		return true;
 	}
@@ -472,9 +412,19 @@ namespace loaders
 				*GetAddress<uint32_t>(r->offset) = (uint32_t)(symbols[isym].st_value + r->addend - (uint64_t)GetAddress<uint64_t>(r->offset));
 				break;
 			}
+			case R_X86_64_DTPMOD64:
+			{
+				// set tls index for image
+				*GetAddress<uint16_t>(r->offset) = tlsslot;
+				break;
+			}
 			case R_X86_64_TPOFF64:
-			case R_X86_64_TPOFF32:
-			default: return false;
+			case R_X86_64_TPOFF32: 
+			default:
+			{
+				std::printf("unknown relocation type %d\n", type);
+				return false;
+			}
 
 			}
 		}
@@ -563,6 +513,81 @@ namespace loaders
 		if (info->encodingTable != 0x3B) // relative to eh_frame
 		{
 			return;
+		}
+	}
+
+	void ELF_Loader::LogDebugInfo()
+	{
+		for (uint16_t i = 0; i < elf->phnum; i++) {
+			auto s = &segments[i];
+			switch (s->type) {
+			case PT_SCE_PROCPARAM:
+			{
+				struct SCEPROC
+				{
+					uint32_t length;
+					uint32_t unk;
+					uint32_t magic;
+					uint32_t version;
+					uint32_t ofs;
+				};
+
+				SCEPROC* pr = GetOffset<SCEPROC>(s->offset);
+
+
+				//std::printf("FOUND PROCPARAM %llx (%llx byts big) proc ofs %llx, %llx\n", s->offset, s->filesz, pr->ofs, GetOffset<uintptr_t>(pr->ofs));
+
+			} break;
+
+			// like the PDB path on windows
+			case PT_SCE_COMMENT:
+			{
+				auto* comment = GetOffset<SCEComment>(s->offset);
+
+				std::string name;
+				name.resize(comment->pathLength);
+				memcpy(name.data(), GetOffset<void>(s->offset + sizeof(SCEComment)), comment->pathLength);
+
+				std::printf("Comment %s, %d\n", name.c_str(), comment->unk);
+				break;
+			}
+			case PT_SCE_LIBVERSION:
+			{
+				uint8_t* sec = GetOffset<uint8_t>(s->offset);
+
+				// count entries
+				int32_t index = 0;
+				while (index <= s->filesz) {
+
+					int8_t cb = sec[index];
+
+					// skip control byte
+					index++;
+
+					for (int i = index; i < (index + cb); i++)
+					{
+						if (sec[i] == 0x3A) {
+
+							size_t length = i - index;
+
+							std::string name;
+							name.resize(length);
+							memcpy(name.data(), &sec[index], length);
+
+							uint32_t version = *(uint32_t*)& sec[i + 1];
+							uint8_t* vptr = (uint8_t*)& version;
+
+							//std::printf("lib <%s>, version %x.%x.%x.%x\n", name.c_str(), vptr[0], vptr[1], vptr[2], vptr[3]);
+							break;
+						}
+					}
+
+					// skip forward
+					index += cb;
+				}
+				break;
+			}
+			}
 		}
 	}
 }

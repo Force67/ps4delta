@@ -29,7 +29,7 @@ namespace krnl
 		VMAccessMgr vmem;
 
 		// the owned modules
-		int32_t tlsSlots;
+		uint16_t tlsSlots;
 		std::vector<ModuleHandle> modulelist;
 		std::vector<ModuleCallback> modulenotification;
 
@@ -51,6 +51,10 @@ namespace krnl
 
 		inline ModuleHandle& GetMainModule() {
 			return modulelist[0];
+		}
+
+		inline uint16_t GetNextFreeTls() {
+			return tlsSlots;
 		}
 	};
 }
