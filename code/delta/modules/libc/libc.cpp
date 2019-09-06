@@ -1,7 +1,7 @@
 
 // Copyright (C) Force67 2019
 
-#include "../Module.h"
+#include "../ModuleLinker.h"
 
 #include <stdlib.h>
 
@@ -37,7 +37,7 @@ static void _set_constraint_handler_s(void* handler)
 {
 }
 
-static const modules::FunctionInfo functions[] = {
+static const mlink::FunctionInfo functions[] = {
 	{0, &_init_env, "bzQExy189ZI"},
 	{1, &_atexit, "8G2LB+A3rzg"},
 	//ENTRY: exit

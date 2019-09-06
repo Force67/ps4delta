@@ -5,7 +5,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace modules
+namespace mlink
 {
 	struct FunctionInfo
 	{
@@ -35,6 +35,6 @@ namespace modules
 
 #define MODULE_INIT(tname) \
 void init_##tname() { \
-static modules::ModuleInfo info{ \
-(modules::FunctionInfo*)&functions, (sizeof(functions) / sizeof(modules::FunctionInfo)), #tname}; \
-modules::register_module(&info); }
+static mlink::ModuleInfo info{ \
+(mlink::FunctionInfo*)&functions, (sizeof(functions) / sizeof(mlink::FunctionInfo)), #tname}; \
+mlink::register_module(&info); }

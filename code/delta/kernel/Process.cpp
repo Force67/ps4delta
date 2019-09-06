@@ -6,34 +6,41 @@
 
 namespace krnl
 {
-	namespace
+	class EntryGen : public Xbyak::CodeGenerator
 	{
-		class EntryGen : public Xbyak::CodeGenerator
+	public:
+		EntryGen(void* target)
 		{
-		public:
-			EntryGen(void* target)
-			{
-				push(rbp);
-				mov(rbp, rsp);
-				push(r12); push(r13); push(r14); push(r15);
-				push(rdi); push(rsi); push(rbx);
+			push(rbp);
+			mov(rbp, rsp);
+			push(r12);
+			push(r13);
+			push(r14);
+			push(r15);
+			push(rdi);
+			push(rsi);
+			push(rbx);
 
-				sub(rsp, 8);
+			sub(rsp, 8);
 
-				mov(rdi, rcx);
-				mov(rax, (size_t)target);
+			mov(rdi, rcx);
+			mov(rax, (size_t)target);
 
-				call(rax);
+			call(rax);
 
-				add(rsp, 8);
+			add(rsp, 8);
 
-				pop(rbx); pop(rsi); pop(rdi);
-				pop(r15); pop(r14); pop(r13); pop(r12);
-				pop(rbp);
-				ret();
-			}
-		};
-	}
+			pop(rbx);
+			pop(rsi);
+			pop(rdi);
+			pop(r15); 
+			pop(r14); 
+			pop(r13); 
+			pop(r12);
+			pop(rbp);
+			ret();
+		}
+	};
 
 	Process::Process() :
 		creationStamp(std::chrono::steady_clock::now()),

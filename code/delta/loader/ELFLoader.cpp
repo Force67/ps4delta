@@ -4,7 +4,7 @@
 #include "loader/ELFLoader.h"
 #include "kernel/Process.h"
 
-#include "modules/Module.h"
+#include "modules/ModuleLinker.h"
 
 namespace loaders
 {
@@ -386,7 +386,7 @@ namespace loaders
 					if (imp.modid == modid) {
 
 					// ... and set the import address
-					*GetAddress<uintptr_t>(r->offset) = modules::get_import(imp.name, hashname);
+					*GetAddress<uintptr_t>(r->offset) = mlink::get_import(imp.name, hashname);
 					break;
 				}
 				}

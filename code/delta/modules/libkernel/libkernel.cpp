@@ -1,7 +1,7 @@
 
 // Copyright (C) Force67 2019
 
-#include "../Module.h"
+#include "../ModuleLinker.h"
 
 struct sceProcParam
 {
@@ -17,7 +17,7 @@ static void sceKernelRtldSetApplicationHeapAPI(void* api) {
 
 }
 
-static const modules::FunctionInfo functions[] = {
+static const mlink::FunctionInfo functions[] = {
 	{0, &sceKernelGetProcParam, "959qrazPIrg"},
 	{1, &sceKernelRtldSetApplicationHeapAPI, "p5EcQeEeJAE"},
 };

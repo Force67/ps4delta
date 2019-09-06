@@ -3,7 +3,7 @@
 
 #include <Delta.h>
 #include <loader/Loader.h>
-#include <modules/Module.h>
+#include <modules/ModuleLinker.h>
 
 Delta& Delta::Get() {
 	static Delta s_instance;
@@ -27,8 +27,8 @@ void Delta::Boot(const std::wstring& fromdir)
 	auto loader = loaders::CreateLoader(fromdir);
 	if (loader) {
 
-		// init module store
-		modules::init_modules();
+		// init superhle module linker
+		mlink::init_modules();
 
 		auto ec = loader->Load(*proc);
 		if (ec != loaders::LoadErrorCode::SUCCESS) {
