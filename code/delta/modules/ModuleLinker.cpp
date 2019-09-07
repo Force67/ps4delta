@@ -18,10 +18,10 @@ namespace mlink
 		const char* lib;
 		const void* func;
 
-		static void PrintName(const char* str, const char *lib)
+		static void PrintName(const char* lib, const char *fun)
 		{
 			char buf[256]{};
-			snprintf(buf, _countof(buf), "Invoking %s!%s\n", lib, str);
+			snprintf(buf, _countof(buf), "Invoking %s!%s\n", lib, fun);
 
 			OutputDebugStringA(buf);
 		}
@@ -40,8 +40,8 @@ namespace mlink
 
 			sub(rsp, 0x28);
 
-			mov(rcx, (uint64_t)name);
-			mov(rdx, (uint64_t)lib);
+			mov(rcx, (uint64_t)lib);
+			mov(rdx, (uint64_t)name);
 			mov(rax, (uint64_t)PrintName);
 
 			call(rax);
@@ -66,8 +66,8 @@ namespace mlink
 
 	void init_modules()
 	{
-		init_libc();
-		init_libkernel();
+		// register modules
+		utl::init_function::init();
 
 		// and load the cache
 	}
@@ -77,7 +77,36 @@ namespace mlink
 		__debugbreak();
 	}
 
-	uintptr_t get_import(const char* lib, const char* symm) {
+	// base64 fast lookup
+	bool decode_nid(const char* subset, size_t len, uint64_t &out)
+	{
+		const char lookup[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
+
+		for (size_t i = 0; i < len; i++) {
+			auto pos = std::strchr(lookup, subset[i]);
+
+			// invalid NID?
+			if (!pos) {
+				return false;
+			}
+
+			auto offset = static_cast<uint32_t>(pos - lookup);
+
+			// max NID is 11
+			if (i < 10) {
+				out <<= 6;
+				out |= offset;
+			}
+			else {
+				out <<= 4;
+				out |= (offset >> 2);
+			}
+		}
+
+		return true;
+	}
+
+	uintptr_t get_import(const char* lib, uint64_t hid) {
 
 		const ModuleInfo* table = nullptr;
 
@@ -89,26 +118,28 @@ namespace mlink
 			}
 		}
 
+#if 0
 		auto wrap = [&](const void *addr, const char *name)
 		{
-#ifdef _DEBUG
+#ifdef 0
 			auto* stub = new SymStub(addr, table ? table->name : "unresolved", name);
 			return reinterpret_cast<uintptr_t>(stub->getCode<void*>());
 #else
 			return reinterpret_cast<uintptr_t>(addr);
 #endif
 		};
+#endif
 
 		if (table) {
 			// search the table
-			for (int i = 0; i < table->funccount; i++) {
+			for (int i = 0; i < table->fcount; i++) {
 				auto* f = &table->functions[i];
-				if (std::strcmp(symm, f->name) == 0) {
-					return wrap(f->address, f->name);
+				if (f->hid == hid) {
+					return reinterpret_cast<uintptr_t>(f->address);
 				}
 			}
 		}
 
-		return wrap(&debugstub, symm);
+		return reinterpret_cast<uintptr_t>(&debugstub);
 	}
 }

@@ -11,7 +11,7 @@ workspace "PS4Delta"
 	
 	platforms { "x64" }
     targetprefix ""
-    buildoptions "/std:c++latest"
+    buildoptions "/std:c++17"
     symbols "On"
     characterset "Unicode"
 	
@@ -67,7 +67,7 @@ workspace "PS4Delta"
 	group "tools"
 	include "tools/sedit"
 	include "tools/unpup"
-	
+	include "tools/imputil"
 	
 -- Cleanup
 if _ACTION == "clean" then

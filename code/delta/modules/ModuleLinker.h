@@ -3,38 +3,34 @@
 // Copyright (C) Force67 2019
 
 #include <string>
-#include <unordered_map>
+#include <utl/InitFunction.h>
 
 namespace mlink
 {
 	struct FunctionInfo
 	{
-		const int32_t index;
+		uint64_t hid;
 		const void* address;
-		const char* name;
-
-		FunctionInfo(const int32_t index, const void *handler, const char *name) :
-			index(index),
-			address(handler),
-			name(name)
-		{}
 	};
 
 	struct ModuleInfo
 	{
 		FunctionInfo *functions;
-		size_t funccount;
+		size_t fcount;
 		const char* name;
 	};
 
 	void init_modules();
 	void register_module(const ModuleInfo*);
 
-	uintptr_t get_import(const char *lib, const char *sym);
+	bool decode_nid(const char* subset, size_t len, uint64_t&);
+	uintptr_t get_import(const char *lib, uint64_t hid);
 }
 
 #define MODULE_INIT(tname) \
-void init_##tname() { \
-static mlink::ModuleInfo info{ \
-(mlink::FunctionInfo*)&functions, (sizeof(functions) / sizeof(mlink::FunctionInfo)), #tname}; \
-mlink::register_module(&info); }
+static const mlink::ModuleInfo info_##tname{(mlink::FunctionInfo*)&functions, (sizeof(functions) / sizeof(mlink::FunctionInfo)), #tname}; \
+static utl::init_function init_##tname([](){ mlink::register_module(&info_##tname); })
+
+#define UNIMPLEMENTED_FUNC \
+std::puts(__FUNCTION__ " is not implemented!"); \
+__debugbreak()

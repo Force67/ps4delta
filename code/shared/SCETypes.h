@@ -95,3 +95,5 @@ struct SCEComment
 
 static_assert(sizeof(SELFHeader) == 32, "header size mismatch");
 static_assert(sizeof(SELFSegmentTable) == 32, "segment table size mismatch");
+
+#define SCE_OK 0

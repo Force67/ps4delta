@@ -18,6 +18,8 @@ project "host"
 
     vpaths
     {
+        ["*"] = { "**.hpp", "**.h" },
+        ["*"] = "**.cpp",
         ["*"] = "premake5.lua"
     }
 	

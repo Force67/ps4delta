@@ -8,52 +8,6 @@
 
 namespace loaders
 {
-	// TODO: move + proper imp
-	int decode_base64(const char* str, int* a2)
-	{
-		char chr; // dl@1
-		int v3; // rcx@1
-		const char* v4; // rdi@2
-		int v5; // rcx@3
-		int result; // rax@11
-
-		chr = *str;
-		v3 = 0LL;
-		if (*str) {
-			v4 = str + 1;
-			v3 = 0LL;
-			do {
-				v5 = v3 << 6;
-				if ((unsigned __int8)(chr - 0x61) > 0x19u) {
-					if ((unsigned __int8)(chr - 0x41) > 0x19u) {
-						if ((unsigned __int8)(chr - 0x30) > 9u) {
-							if (chr == '-')
-								v3 = v5 | 0x3F;
-							else {
-								result = 22LL;
-								if (chr != '+')
-									return result;
-								v3 = v5 | 0x3E;
-							}
-						}
-						else {
-							v3 = chr + (v5 | 4);
-						}
-					}
-					else {
-						v3 = v5 + chr - 0x41;
-					}
-				}
-				else {
-					v3 = v5 + chr - 0x47;
-				}
-				chr = *v4++;
-			} while (chr);
-		}
-		*a2 = v3;
-		return 0LL;
-	}
-
 	// based on: https://github.com/idc/uplift/blob/master/uplift/src/program_info.cpp
 
 	ELF_Loader::ELF_Loader(std::unique_ptr<uint8_t[]> d) :
@@ -251,6 +205,8 @@ namespace loaders
 					auto& e = implibs.emplace_back();
 					e.name = (const char*)(strtab.ptr + (d->un.value & 0xFFFFFFFF));
 					e.modid = d->un.value >> 48;
+
+				//	std::printf("%s\n", e.name);
 					break;
 				}
 			}
@@ -318,7 +274,7 @@ namespace loaders
 				}
 			}
 			else if (s->type == PT_SCE_RELRO) {
-				memcpy(GetAddress<void>(s->vaddr), GetOffset<void>(s->offset), s->filesz);
+				std::memcpy(GetAddress<void>(s->vaddr), GetOffset<void>(s->offset), s->filesz);
 			}
 		}
 
@@ -375,22 +331,27 @@ namespace loaders
 
 				auto *ptr = &name[14];
 
-				int32_t modid = 0;
-				decode_base64(ptr, &modid);
+				uint64_t modid = 0;
+				mlink::decode_nid(ptr, 1, modid);
 
-				char hashname[12]{};
-				strncpy(hashname, name, 11);
-
+				//char encoded[12]{};
+				//strncpy(encoded, name, 11);
+		
+				// use ps4libdoc to find real name
+				uint64_t hid = 0;
+				if (!mlink::decode_nid(name, 11, hid))
+					return false;
+	
 				// fetch the import module name
 				for (auto& imp : implibs) {
-					if (imp.modid == modid) {
+					if (imp.modid == static_cast<int32_t>(modid)) {
 
 					// ... and set the import address
-					*GetAddress<uintptr_t>(r->offset) = mlink::get_import(imp.name, hashname);
+					*GetAddress<uintptr_t>(r->offset) = mlink::get_import(imp.name, hid);
 					break;
 				}
 				}
-			}
+			} 
 		}
 
 		return true;
