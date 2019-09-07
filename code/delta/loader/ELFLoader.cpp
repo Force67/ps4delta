@@ -35,7 +35,7 @@ namespace loaders
 		// verify the most important segments
 		for (uint16_t i = 0; i < elf->phnum; i++) {
 			auto s = &segments[i];
-			std::printf("SEGMENT %d, %llx, %llx -> TYPE %s, size %d\n", i, s->offset, s->vaddr, SegTypeToString(s->type), s->filesz);
+			std::printf("SEGMENT %d, %llx, %llx -> TYPE %s, size %lld\n", i, s->offset, s->vaddr, SegTypeToString(s->type), s->filesz);
 			switch (s->type) {
 			case PT_LOAD:
 			{
@@ -105,6 +105,14 @@ namespace loaders
 			entry->entry = nullptr;
 		else
 			entry->entry = targetbase + elf->entry;
+
+		{
+			utl::File proc(L"proc.bin", utl::fileMode::write);
+			if (proc.IsOpen()) {
+				proc.Write(entry->base, entry->sizeCode);
+			}
+		}
+
 
 		proc.RegisterModule(std::move(entry));
 

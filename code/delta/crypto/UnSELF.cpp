@@ -50,7 +50,7 @@ namespace crypto
 			uint64_t offset = file.Seek(pos + 0x41, utl::seekMode::seek_set);
 
 #ifdef DELTA_DBG
-			std::printf(__FUNCTION__ " offset %llx\n", offset);
+		//	std::printf(__FUNCTION__ " offset %llx\n", offset);
 #endif
 
 			if (offset < file.GetSize()) {
@@ -119,7 +119,7 @@ namespace crypto
 			}
 
 			// export it for us
-			builder.ExportBuffer(std::move(out));
+			//builder.ExportBuffer(std::move(out));
 
 			return true;
 		}

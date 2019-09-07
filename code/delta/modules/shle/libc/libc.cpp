@@ -11622,6 +11622,9 @@ int scec_atanl()
 	return 0;
 }
 
+typedef void(*pfunc_cxa_exit_handler)(void*);
+typedef void(*pfunc_exit_handler)(void);
+
 int scec_atexit()
 {
 	//UNIMPLEMENTED_FUNC;

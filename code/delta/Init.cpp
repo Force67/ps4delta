@@ -21,14 +21,7 @@ int DeltaMain()
 		return -1;
 	}
 
-	//const std::wstring game(LR"(C:\Users\vince\Desktop\.nomad\JOURNEY_HD\CUSA02172\eboot.bin-decrypted)");
-	/*
-	//dt.Boot(LR"(C:\Users\vince\Desktop\.nomad\JOURNEY_HD\CUSA02172\Journey\Journey.elf)");
-	dt.Boot(LR"(C:\Users\vince\Desktop\.nomad\JOURNEY_HD\CUSA02172\eboot.bin)");
-	//dt.Boot(LR"(C:\Users\vince\Desktop\.nomad\Angry_Birds_Star_Wars_1_01_PS4-LFC\CUSA00184\eboot.bin)");*/
-	//const std::wstring game(LR"(C:\Users\vince\Desktop\.nomad\Angry_Birds_Star_Wars_1_01_PS4-LFC\CUSA00184\eboot.bin-decrypted)");
-	//const std::wstring game(LR"(C:\Users\vince\Desktop\.nomad\Angry_Birds_Star_Wars_1_01_PS4-LFC\CUSA00184\sce_module\libc.prx-decrypted)");
-	const std::wstring game(LR"(C:\Users\vince\Desktop\ISHALLRISE\eboot.bin-decrypted)");
+	const std::wstring game(LR"(C:\Users\vince\Desktop\AUTOMATEME\eboot.bin-decrypted)");
 	// create a delta instance
 	auto& dt = Delta::Get();
 	
