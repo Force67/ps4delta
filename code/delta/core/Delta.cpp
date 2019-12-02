@@ -5,7 +5,7 @@
 #include <loader/Loader.h>
 #include <modules/ModuleLinker.h>
 
-#include <log/logger.h>
+#include <logger/logger.h>
 
 delta& delta::get() {
 	static delta s_instance;
