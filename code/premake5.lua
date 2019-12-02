@@ -61,7 +61,8 @@ workspace "PS4Delta"
         }
 
     group "core"
-	include "./delta"
+	include "delta/host"
+	include "delta/core"
 	include "./shared"
 	
 	group "tools"
