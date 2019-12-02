@@ -5,22 +5,23 @@
 #include <loader/Loader.h>
 #include <modules/ModuleLinker.h>
 
-Delta& Delta::Get() {
-	static Delta s_instance;
+#include <log/logger.h>
+
+delta& delta::get() {
+	static delta s_instance;
 	return s_instance;
 }
 
-Delta::Delta()
+void delta::boot(const std::wstring& fromdir)
 {
-}
+	utl::createLogger(L"delta.log");
+	LOG_INFO("Booting {}", "TEST");
 
-void Delta::Boot(const std::wstring& fromdir)
-{
 	// create the process
 	proc = std::make_unique<krnl::Process>();
 	proc->RegisterModuleNotifaction([](krnl::ModuleHandle& mod)
 	{
-		std::printf("Delta: Module %s loaded at 0x%llx\n", mod->name.c_str(), reinterpret_cast<uintptr_t>(mod->base));
+		LOG_INFO("Delta: Module %s loaded at 0x%llx\n", mod->name.c_str(), reinterpret_cast<uintptr_t>(mod->base));
 	});
 
 	// initialize with correct loader type
@@ -34,13 +35,13 @@ void Delta::Boot(const std::wstring& fromdir)
 		if (ec != loaders::LoadErrorCode::SUCCESS) {
 
 			// todo: cry and abort
-			std::printf("Error code %d\n", (int)ec);
+			LOG_ERROR("Error code %d\n", (int)ec);
 
 			__debugbreak();
 			return;
 		}
 
-		std::puts("Delta: starting Process!");
+		LOG_INFO("Delta: starting Process!");
 
 		std::vector<std::string> args;
 		args.push_back("");
@@ -50,6 +51,6 @@ void Delta::Boot(const std::wstring& fromdir)
 		proc->Start(args);
 	}
 	else {
-		std::puts("[!] Unknown file type");
+		LOG_ERROR("[!] Unknown file type");
 	}
 }

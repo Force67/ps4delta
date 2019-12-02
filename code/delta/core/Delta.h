@@ -6,16 +6,12 @@
 #include <memory>
 #include <kernel/Process.h>
 
-class Delta
+class delta
 {
-	// current process
-	std::unique_ptr<krnl::Process> proc;
-
 public:
+	void boot(const std::wstring& fromdir);
 
-	Delta();
-
-	void Boot(const std::wstring& fromdir);
-
-	static Delta& Get();
+	static delta& get();
+private:
+	std::unique_ptr<krnl::Process> proc;
 };

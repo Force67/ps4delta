@@ -14,13 +14,15 @@ static bool ValidateCPU()
 #ifdef _WIN32
 
 // windows platform init
-int wmain()
+int wmain(int argc, wchar_t **argv)
 {
+	//C:\Users\vince\Desktop\AUTOMATEME\eboot.bin-decrypted
+
 	auto* temp = LoadLibraryW(L"dcore.dll");
 	if (temp) {
-		auto boot = (int(*)())GetProcAddress(temp, "deltaBoot");
+		auto boot = (int(*)(const wchar_t*))GetProcAddress(temp, "deltaBoot");
 		if (boot)
-			return boot();
+			return boot(argv[0]);
 	}
 
 	return -1;

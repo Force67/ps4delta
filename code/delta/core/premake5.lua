@@ -21,12 +21,16 @@ project "dcore"
 
     includedirs {
         ".",
-		"../../shared"
+		"../../shared",
+		"../../shared/fmtlib", --temp
+		"../../shared/utl"
     }
 
 	defines {
 		'COMPILING_CORE'
 	}
+
+	defines "FMT_HEADER_ONLY"
 	
 	links {
         "shared",
