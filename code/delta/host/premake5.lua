@@ -31,13 +31,13 @@ project "host"
     includedirs
     {
         ".",
-		"../shared"
+		"../../shared"
     }
 
     files
     {
-		"_res/host.rc",
         "premake5.lua",
+		"_res/host.rc",
         "**.h",
         "**.cpp"
     }

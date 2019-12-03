@@ -161,7 +161,6 @@ namespace utl
 				//UNREACHABLE();
 		}
 #undef LVL
-
 		return nullptr;
 	}
 

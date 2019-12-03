@@ -22,6 +22,5 @@ EXP int dcoreMain(int argc, char** argv)
 	auto app = std::make_unique<deltaCore>(argc, argv);
 	app->boot(argv[1]);
 
-	getchar();
 	return 0;
 }

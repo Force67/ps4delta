@@ -5,14 +5,6 @@
 #include <Windows.h>
 #endif
 
-// THIS IS MAINLY INTENDED FOR DEBUGGING
-
-// todo: check if cpu supports same hardware ext
-static bool ValidateCPU()
-{
-	return true;
-}
-
 #ifdef _WIN32
 
 // windows platform init
