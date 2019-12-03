@@ -1,7 +1,11 @@
 
+-- reconfigure paths with qt support
 premake.path = premake.path .. ";build"
+package.path = package.path .. ";../tools/premake/premake-qt/?.lua"
 
-local FX_NAME = "PS4Delta"
+-- qt support 
+require("qt")
+qt = premake.extensions.qt
 
 workspace "PS4Delta"
     configurations { "Debug", "Release" }
@@ -15,14 +19,16 @@ workspace "PS4Delta"
     symbols "On"
     characterset "Unicode"
 	
-    -- Enable position-independent-code generation
+	-- multi threaded compilation
+	flags "MultiProcessorCompile"
+	
     pic "On"
     startproject "host"
 	targetdir '../bin/%{cfg.buildcfg}/'
 	
 	
-    defines { "FXNAME=\"" .. FX_NAME .. "\"", 
-			  "FXNAME_WIDE=L\"" .. FX_NAME .. "\""}
+    defines { "FXNAME=\"%{wks.name}\"", 
+			  "FXNAME_WIDE=L\"%{wks.name}\""}
 
 	libdirs
 	{

@@ -5,7 +5,7 @@ project "host"
 	flags "NoManifest"
 	targetname "%{wks.name}"
 
-	linkoptions "/ENTRY:wmainCRTStartup"
+	linkoptions "/ENTRY:mainCRTStartup"
 
 	defines { "rsc_company=\"AlpinDEV\"",
 			  "rsc_copyright=\"© Force67. All rights reserved\"",
