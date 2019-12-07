@@ -6,6 +6,7 @@
 
 namespace krnl
 {
+#if 0
 	class EntryGen : public Xbyak::CodeGenerator
 	{
 	public:
@@ -41,7 +42,7 @@ namespace krnl
 			ret();
 		}
 	};
-
+#endif
 	Process::Process() :
 		creationStamp(std::chrono::steady_clock::now()),
 		tlsSlots(0)
@@ -60,7 +61,7 @@ namespace krnl
 		// giant hack
 		//memset(&main->base[0x20], 0xC3, 1);
 
-
+#if 0
 		// generate a entry point push context
 		EntryGen trampoline(main->entry);
 		auto func = trampoline.getCode<void* (*)(void*)>();
@@ -87,6 +88,7 @@ namespace krnl
 		(*s++).ptr = nullptr;
 
 		func(stack);
+#endif
 	}
 
 	void Process::RegisterModule(ModuleHandle handle)

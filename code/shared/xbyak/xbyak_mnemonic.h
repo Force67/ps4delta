@@ -1,3 +1,13 @@
+
+#ifndef XBYAK_NO_OP_NAMES
+#define XBYAK_NO_OP_NAMES
+#endif
+
+#include "xbyak.h"
+
+#if 0
+//using namespace Xbyak;
+
 const char *getVersionString() const { return "5.80"; }
 void adc(const Operand& op, uint32 imm) { opRM_I(op, imm, 0x10, 2); }
 void adc(const Operand& op1, const Operand& op2) { opRM_RM(op1, op2, 0x10); }
@@ -1973,5 +1983,6 @@ void vshufi64x2(const Ymm& y1, const Ymm& y2, const Operand& op, uint8 imm) { op
 void kmovq(const Opmask& k, const Reg64& r) { opVex(k, 0, r, T_L0 | T_0F | T_F2 | T_W1, 0x92); }
 void kmovq(const Reg64& r, const Opmask& k) { opVex(r, 0, k, T_L0 | T_0F | T_F2 | T_W1, 0x93); }
 void vpbroadcastq(const Xmm& x, const Reg64& r) { opVex(x, 0, r, T_66 | T_0F38 | T_EW1 | T_YMM | T_MUST_EVEX, 0x7C); }
+#endif
 #endif
 #endif

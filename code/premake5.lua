@@ -1,7 +1,17 @@
 
+require('vstudio')
+
 -- reconfigure paths with qt support
 premake.path = premake.path .. ";build"
 package.path = package.path .. ";../tools/premake/premake-qt/?.lua"
+
+-- use clang instead of msvc on windows
+premake.override(premake.vstudio.vc2010, 'platformToolset', function(base, cfg)
+
+	--_p(1,'<PlatformToolset>portable</DebugType>')
+	premake.vstudio.vc2010.element("PlatformToolset", nil, "LLVM_v142")
+end)
+
 
 -- qt support 
 require("qt")

@@ -11,7 +11,7 @@
 */
 #ifndef XBYAK_NO_OP_NAMES
 	#if not +0 // trick to detect whether 'not' is operator or not
-		#error "use -fno-operator-names option if you want to use and(), or(), xor(), not() as function names, Or define XBYAK_NO_OP_NAMES and use and_(), or_(), xor_(), not_()."
+		//#error "use -fno-operator-names option if you want to use and(), or(), xor(), not() as function names, Or define XBYAK_NO_OP_NAMES and use and_(), or_(), xor_(), not_()."
 	#endif
 #endif
 

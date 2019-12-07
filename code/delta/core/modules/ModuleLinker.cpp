@@ -12,6 +12,7 @@ extern void init_libkernel();
 
 namespace mlink
 {
+#if 0
 	class SymStub : public Xbyak::CodeGenerator
 	{
 		const char* name;
@@ -57,6 +58,7 @@ namespace mlink
 			jmp(rax);
 		}
 	};
+#endif
 
 	static std::vector<const ModuleInfo*> g_tables;
 

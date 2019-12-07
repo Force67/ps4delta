@@ -31,6 +31,4 @@ namespace mlink
 static const mlink::ModuleInfo info_##tname{(mlink::FunctionInfo*)&functions, (sizeof(functions) / sizeof(mlink::FunctionInfo)), #tname}; \
 static utl::init_function init_##tname([](){ mlink::register_module(&info_##tname); })
 
-#define UNIMPLEMENTED_FUNC \
-std::puts(__FUNCTION__ " is not implemented!"); \
-__debugbreak()
+#define UNIMPLEMENTED_FUNC 

@@ -12,18 +12,6 @@ namespace loaders
 	{
 		FileType IdentifyType(utl::File &file)
 		{
-			FileType type;
-
-#define CHECK_TYPE(name)                             \
-    type = ##name##_Loader::IdentifyType(file);      \
-    if (FileType::UNKNOWN != type)                   \
-        return type;
-
-				//CHECK_TYPE(SELF)
-				CHECK_TYPE(ELF)
-
-#undef CHECK_TYPE
-
 				return FileType::UNKNOWN;
 		}
 	}
