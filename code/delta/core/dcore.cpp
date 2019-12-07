@@ -1,7 +1,10 @@
 
 // Copyright (C) Force67 2019
 
+#include <cstdio>
+
 #include "dcore.h"
+
 #include <loader/Loader.h>
 #include <modules/ModuleLinker.h>
 
@@ -10,12 +13,28 @@
 deltaCore::deltaCore(int& argc, char** argv) :
 	QApplication(argc, argv)
 {
-	QApplication::setApplicationName(FXNAME);
+	setApplicationName(rsc_productname);
+	setApplicationVersion(rsc_productversion);
+}
+
+bool deltaCore::init()
+{
+	LOG_INFO("Initializing deltaCore " rsc_copyright);
+
+	if (!headless)
+		window = std::make_unique<mainWindow>(nullptr);
+
+	if (window)
+		window->init();
+
+	return true;
 }
 
 void deltaCore::boot(const std::string& fromdir)
 {
-	LOG_INFO("Booting {}", "TEST");
+	return;
+	//auto t = std::time(nullptr);
+	//LOG_INFO("Starting " FXNAME " on {:%Y-%m-%d}", *std::localtime(&t));
 
 	// create the process
 	proc = std::make_unique<krnl::Process>();
@@ -23,36 +42,4 @@ void deltaCore::boot(const std::string& fromdir)
 	{
 		LOG_INFO("Delta: Module %s loaded at 0x%llx\n", mod->name.c_str(), reinterpret_cast<uintptr_t>(mod->base));
 	});
-
-#if 0
-	// initialize with correct loader type
-	auto loader = loaders::CreateLoader(fromdir);
-	if (loader) {
-
-		// init superhle module linker
-		mlink::init_modules();
-
-		auto ec = loader->Load(*proc);
-		if (ec != loaders::LoadErrorCode::SUCCESS) {
-
-			// todo: cry and abort
-			LOG_ERROR("Error code %d\n", (int)ec);
-
-			__debugbreak();
-			return;
-		}
-
-		LOG_INFO("Delta: starting Process!");
-
-		std::vector<std::string> args;
-		args.push_back("");
-		args.push_back("");
-		args.push_back("");
-		args.push_back("");
-		proc->Start(args);
-	}
-	else {
-		LOG_ERROR("[!] Unknown file type");
-	}
-#endif
 }

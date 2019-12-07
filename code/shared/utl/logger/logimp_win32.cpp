@@ -19,8 +19,13 @@ namespace utl
 			_wfopen_s(&handle, filename.c_str(), L"w");
 		}
 
+		void close() {
+			if (handle)
+				fclose(handle);
+		}
+
 		const char* getName() override {
-			return "fileOut Sink";
+			return "fileOut";
 		}
 
 		void write(const logEntry& entry) override
@@ -51,7 +56,7 @@ namespace utl
 
 	public:
 		const char* getName() override {
-			return "ConOut sink";
+			return "ConOut";
 		}
 
 		void write(const logEntry& entry) override
@@ -98,7 +103,7 @@ namespace utl
 	{
 	public:
 		const char* getName() override {
-			return "dbgOut sink";
+			return "dbgOut";
 		}
 
 		void write(const logEntry& entry) override
@@ -113,7 +118,7 @@ namespace utl
 		// and create a log console
 		::AllocConsole();
 		::AttachConsole(GetCurrentProcessId());
-		::SetConsoleTitleW(L"conOut");
+		::SetConsoleTitleW(FXNAME_WIDE L" - conOut");
 
 		FILE* file = nullptr;
 		freopen_s(&file, "CON", "w", stdout);
@@ -125,5 +130,12 @@ namespace utl
 
 		if (IsDebuggerPresent())
 			addLogSink(std::make_unique<dbgOut_Win32>());
+
+		// attempt to properly close log file in case of a crash
+		std::atexit([]() {
+			auto* sink = static_cast<fileOut*>(getLogSink("fileOut"));
+			if (sink)
+				sink->close();
+		});
 	}
 }

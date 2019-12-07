@@ -7,14 +7,15 @@ project "host"
 
 	linkoptions "/ENTRY:mainCRTStartup"
 
-	defines { "rsc_company=\"AlpinDEV\"",
-			  "rsc_copyright=\"© Force67. All rights reserved\"",
+	-- win/project resource description
+	defines { "rsc_company=\"Dev-Force/Alpin-Dev\"",
+			  "rsc_copyright=\"© Force67 2019. All rights reserved\"",
 			  "rsc_fileversion=\"1.0.0.0\"", 
 			  "rsc_productversion=\"1.0.0.0\"",
 			  "rsc_internalname=\"%{prj.name}\"",
 			  "rsc_productname=\"PS4Delta\"",
-			  "rsc_originalname=\"%{prj.name}\"",
-		      "rsc_description=\"Delta Host\"" }
+			  "rsc_originalname=\"%{prj.name}%{prj.targetextension}\"",
+		      "rsc_description=\"Delta HLE PS4 emulator\"" }
 
     vpaths
     {

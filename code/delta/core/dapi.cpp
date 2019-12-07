@@ -14,13 +14,20 @@ EXP int dcoreMain(int argc, char** argv)
 {
 	utl::createLogger();
 
-	if (argc < 2) {
+	/*if (argc < 2) {
 		LOG_ERROR("Please supply ELF path");
 		return -2;
-	}
+	}*/
 
 	auto app = std::make_unique<deltaCore>(argc, argv);
-	app->boot(argv[1]);
+	if (app) {
+		if (app->init()) {
+			//app->boot(argv[1]);
+
+			// enter event loop
+			return app->exec();
+		}
+	}
 
 	return 0;
 }

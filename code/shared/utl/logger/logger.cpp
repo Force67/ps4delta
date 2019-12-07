@@ -185,4 +185,10 @@ namespace utl
 		auto& reg = LogRegistry::Instance();
 		reg.AddEntry(lvl, filename, line, func, fmt::vformat(fmt, args));
 	}
+
+	logBase* getLogSink(std::string_view name)
+	{
+		auto& reg = LogRegistry::Instance();
+		return reg.GetSink(name);
+	}
 }

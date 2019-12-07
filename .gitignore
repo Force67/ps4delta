@@ -8,10 +8,8 @@ build/
 code/vendor/cef
 .vscode
 
-# Projects
-code/projects/*
-!code/projects/template/
-!code/projects/premake5_project.lua
+# QT generated code
+code/delta/core/qtgen/*
 
 # User-specific files
 *.suo

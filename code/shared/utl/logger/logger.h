@@ -50,6 +50,7 @@ namespace utl
 
 	std::string formatLogEntry(const logEntry& entry);
 	void addLogSink(std::unique_ptr<logBase> sink);
+	logBase* getLogSink(std::string_view name);
 	void formatLogMsg(logLevel lvl, const char* filename, uint32_t line, const char* func, const char* fmt, const fmt::format_args& args);
 
 	void createLogger();

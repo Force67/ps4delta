@@ -4,14 +4,14 @@ project "dcore"
     kind "SharedLib"
 	
 	-- win/project resource description
-	defines { "rsc_company=\"AlpinDEV\"",
-			  "rsc_copyright=\"© Force67. All rights reserved\"",
+	defines { "rsc_company=\"Dev-Force/Alpin-Dev\"",
+			  "rsc_copyright=\"© Force67 2019. All rights reserved\"",
 			  "rsc_fileversion=\"1.0.0.0\"", 
 			  "rsc_productversion=\"1.0.0.0\"",
 			  "rsc_internalname=\"%{prj.name}\"",
 			  "rsc_productname=\"PS4Delta\"",
-			  "rsc_originalname=\"%{prj.name}\"",
-		      "rsc_description=\"Delta Core\"" }
+			  "rsc_originalname=\"%{prj.name}%{prj.targetextension}\"",
+		      "rsc_description=\"Delta HLE emulation core\"" }
 
     vpaths
     {
@@ -40,6 +40,7 @@ project "dcore"
     files {
         "premake5.lua",
 		"_res/core.rc",
+		"**.ui",
         "**.h",
         "**.hpp",
         "**.cpp",
@@ -56,12 +57,22 @@ project "dcore"
 		"widgets",
 		"opengl"
 	}
+
+	filter "system:windows"
+		qtmodules {
+			"winextras",
+			"qml"
+		}
+	filter {}
 	
 	qtprefix "Qt5"
+
+	-- TODO: use QT_ENV var
 	qtpath "C:/Qt/Qt5.12.0/5.12.0/msvc2017_64"
+	qtgenerateddir "qtgen"
 	
 	-- use debug versions of qt
-	-- for debug builds
+	-- libs in debug builds
 	configuration { "Debug" }
 			qtsuffix "d"
-	configuration { }
+	configuration {}
