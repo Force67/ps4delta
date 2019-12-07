@@ -12,7 +12,7 @@
 // temp exposed
 EXP int dcoreMain(int argc, char** argv)
 {
-	utl::createLogger();
+	utl::createLogger(true);
 
 	/*if (argc < 2) {
 		LOG_ERROR("Please supply ELF path");

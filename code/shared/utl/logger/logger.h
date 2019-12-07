@@ -49,11 +49,11 @@ namespace utl
 	};
 
 	std::string formatLogEntry(const logEntry& entry);
-	void addLogSink(std::unique_ptr<logBase> sink);
+	logBase* addLogSink(std::unique_ptr<logBase> sink);
 	logBase* getLogSink(std::string_view name);
 	void formatLogMsg(logLevel lvl, const char* filename, uint32_t line, const char* func, const char* fmt, const fmt::format_args& args);
 
-	void createLogger();
+	void createLogger(bool withConsole = false);
 
 	template <typename... Args>
 	inline void fmtLogMsg(logLevel lvl, const char* filename, uint32_t line,
@@ -94,3 +94,7 @@ namespace utl
 #define LOG_CRITICAL(...)                                                          \
 	::utl::fmtLogMsg(::utl::logLevel::Critical, __FILE__, __LINE__, \
 						 __func__, __VA_ARGS__)
+
+#define LOG_UNIMPLEMENTED \
+	::utl::fmtLogMsg(::utl::logLevel::Error, __FILE__, __LINE__, \
+		__func__, "Unimplemented function")

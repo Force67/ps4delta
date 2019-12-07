@@ -121,10 +121,13 @@ namespace utl
 			pending.Push(entry);
 		}
 
-		void AddSink(std::unique_ptr<logBase> sink)
+		logBase *AddSink(std::unique_ptr<logBase> sink)
 		{
 			std::lock_guard lock{ writing_lock };
+			auto* poop = sink.get();
+
 			sinks.push_back(std::move(sink));
+			return poop;
 		}
 
 		void RemoveSink(std::string_view name)
@@ -176,8 +179,8 @@ namespace utl
 			entry.message);
 	}
 
-	void addLogSink(std::unique_ptr<logBase> sink) {
-		LogRegistry::Instance().AddSink(std::move(sink));
+	logBase *addLogSink(std::unique_ptr<logBase> sink) {
+		return LogRegistry::Instance().AddSink(std::move(sink));
 	}
 
 	void formatLogMsg(logLevel lvl, const char* filename, uint32_t line, const char* func, const char* fmt, const fmt::format_args& args)

@@ -8,7 +8,7 @@
 
 namespace utl
 {
-	class fileOut : public logBase
+	class fileOut final : public logBase
 	{
 		FILE* handle{ nullptr };
 		size_t bytes_written{ 0 };
@@ -51,12 +51,12 @@ namespace utl
 		puts(str.c_str());
 	}
 
-	class conOut_Win : public logBase
+	class conOut_Win final : public logBase
 	{
 
 	public:
 		const char* getName() override {
-			return "ConOut";
+			return "conOut";
 		}
 
 		void write(const logEntry& entry) override
@@ -99,7 +99,7 @@ namespace utl
 		}
 	};
 
-	class dbgOut_Win32 : public logBase
+	class dbgOut_Win32 final : public logBase
 	{
 	public:
 		const char* getName() override {
@@ -108,25 +108,27 @@ namespace utl
 
 		void write(const logEntry& entry) override
 		{
-			auto str = formatLogEntry(entry);
+			auto str = formatLogEntry(entry).append(1, '\n');
 			OutputDebugStringA(str.c_str());
 		}
 	};
 
-	void createLogger()
+	void createLogger(bool createConsole)
 	{
-		// and create a log console
-		::AllocConsole();
-		::AttachConsole(GetCurrentProcessId());
-		::SetConsoleTitleW(FXNAME_WIDE L" - conOut");
+		if (createConsole) {
+			::AllocConsole();
+			::AttachConsole(GetCurrentProcessId());
+			::SetConsoleTitleW(FXNAME_WIDE L" - conOut");
 
-		FILE* file = nullptr;
-		freopen_s(&file, "CON", "w", stdout);
-		freopen_s(&file, "CONIN$", "r", stdin);
+			FILE* file = nullptr;
+			freopen_s(&file, "CON", "w", stdout);
+			freopen_s(&file, "CONIN$", "r", stdin);
+
+			addLogSink(std::make_unique<conOut_Win>());
+		}
 
 		// attach the sinks to the log system
 		addLogSink(std::make_unique<fileOut>(FXNAME_WIDE L".log"));
-		addLogSink(std::make_unique<conOut_Win>());
 
 		if (IsDebuggerPresent())
 			addLogSink(std::make_unique<dbgOut_Win32>());
