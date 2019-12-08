@@ -11,13 +11,14 @@ namespace Ui {
 }
 
 class renderWindow;
+class deltaCore;
 
 class mainWindow : public QMainWindow
 {
 	Q_OBJECT
 
 public:
-	mainWindow(QWidget*);
+	mainWindow(deltaCore&);
 	~mainWindow();
 
 	void init();
@@ -35,6 +36,7 @@ private:
 	void keyPressEvent(QKeyEvent*) override;
 	void keyReleaseEvent(QKeyEvent*) override;
 
+	deltaCore& core;
 	Ui::main_window* ui;
 	renderWindow* rendView;
 };

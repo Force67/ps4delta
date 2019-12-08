@@ -22,7 +22,7 @@ bool deltaCore::init()
 	LOG_INFO("Initializing deltaCore " rsc_copyright);
 
 	if (!headless)
-		window = std::make_unique<mainWindow>(nullptr);
+		window = std::make_unique<mainWindow>(*this);
 
 	if (window)
 		window->init();

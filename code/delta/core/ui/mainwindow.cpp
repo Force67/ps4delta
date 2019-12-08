@@ -19,8 +19,9 @@
 
 #include "logger/logger.h"
 
-mainWindow::mainWindow(QWidget* parent) :
-	QMainWindow(parent),
+mainWindow::mainWindow(deltaCore &core) :
+	QMainWindow(nullptr),
+	core(core),
 	ui(new Ui::main_window())
 {
 	setWindowTitle(rsc_productname);
