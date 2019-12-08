@@ -10,7 +10,8 @@
 namespace krnl
 {
 	elfModule::elfModule(krnl::proc *owner) :
-		owner(owner)
+		owner(owner),
+		mainModule(nullptr)
 	{
 		/*-1 = no tls used*/
 		tlsSlot = -1;
@@ -41,14 +42,34 @@ namespace krnl
 			}
 
 			doDynamics();
-			logDbgInfo();
 
+			std::printf("type = %llx\n", elf->type);
+
+			// this is the main module
+			if (!isSprx()) {
+				logDbgInfo();
+				name = "#main";
+				LOG_INFO("Loading proc main module");
+			}
+			else {
+				// attempt to gather module name from file path
+				auto pos = path.find_last_of('\\');
+				if (pos != std::string::npos) {
+					name = path.substr(pos + 1, path.length() - pos);
+					LOG_INFO("Loading {}", name);
+				}
+				else {
+					name = "#unk";
+					LOG_WARNING("Unknown module name?");
+				}
+			}
+		
 			if (!mapImage() ||
 				!setupTLS()) {
 				LOG_ERROR("elfModule: Failed to map image");
 				return false;
 			}
-
+			
 			if (!applyRelocations()) {
 				LOG_ERROR("elfModule: Failed to relocate image");
 				return false;
@@ -61,20 +82,18 @@ namespace krnl
 
 			installEHFrame();
 
-			// attempt to gather module name from file path
-			auto pos = path.find_last_of('\\');
-			if (pos != std::string::npos) {
-				name = path.substr(pos + 1, path.length() - pos);
-				LOG_INFO("Loading {}", name);
-			}
-			else
-				name = "#unk";
-
-			if (elf->entry == 0)
+			if (elf->entry == 0) {
+				LOG_WARNING("{} has no entry?", name);
 				entry = nullptr;
-			else
-				entry = base + elf->entry;
+			}
+			else {
+				entry = getAddress<uint8_t>(elf->entry);
 
+				if (!isSprx())
+					std::printf("MAIN PROC %p\n", entry);
+			}
+
+				
 			return true;
 		}
 
@@ -183,7 +202,7 @@ namespace krnl
 			case DT_SCE_SYMTAB:
 			{
 				if (d->un.ptr > dynld.size) {
-					std::printf("[!] bad SYMTAB offset: %llx", d->un.ptr);
+					LOG_WARNING("doDynamics: bad SYMTAB offset {}", d->un.ptr);
 					continue;
 				}
 
@@ -223,7 +242,7 @@ namespace krnl
 					e.name = (const char*)(strtab.ptr + (d->un.value & 0xFFFFFFFF));
 					e.modid = d->un.value >> 48;
 
-				//	std::printf("%s\n", e.name);
+					//std::printf("NEEDED MODULE %s\n", e.name);
 					break;
 				}
 			}
@@ -264,22 +283,19 @@ namespace krnl
 				uint32_t perm = s->flags & (PF_R | PF_W | PF_X);
 				switch (perm) {
 
-				// todo: module segment collection :D
-				case (PF_R | PF_X):
+				// todo: apply real page protections?
+				case (PF_R | PF_X): /*code*/
 				{
-					// its a codepage
 					std::memcpy(getAddress<void>(s->vaddr), getOffset<void>(s->offset), s->filesz);
 					break;
 				}
-				case (PF_R):
+				case (PF_R): /*rdata*/
 				{
-					//Reserve a rdata segment
 					std::memcpy(getAddress<void>(s->vaddr), getOffset<void>(s->offset), s->filesz);
 					break;
 				}
-				case (PF_R | PF_W):
+				case (PF_R | PF_W): /*data*/
 				{
-					// reserve a read write data seg
 					std::memcpy(getAddress<void>(s->vaddr), getOffset<void>(s->offset), s->filesz);
 					break;
 				}
@@ -313,7 +329,7 @@ namespace krnl
 	bool elfModule::resolveImports()
 	{
 		for (uint32_t i = 0; i < numJmpSlots; i++) {
-			auto* r = &jmpslots[i];
+			const auto* r = &jmpslots[i];
 
 			int32_t type = ELF64_R_TYPE(r->info);
 			int32_t isym = ELF64_R_SYM(r->info);
@@ -360,7 +376,16 @@ namespace krnl
 				for (auto& imp : implibs) {
 					if (imp.modid == static_cast<int32_t>(modid)) {
 
-					LOG_WARNING("MODULE {}", imp.name);
+					if (strstr(imp.name, "libc")) {
+						/*more temp hax*/
+						auto* lib = static_cast<elfModule*>(owner->loadModule(std::string(imp.name)));
+						auto* ptr = lib->getExport(hid);
+						std::printf("LIBC PTR %p\n", ptr);
+						*getAddress<uintptr_t>(r->offset) = reinterpret_cast<uintptr_t>(ptr);
+						break;
+					}
+
+					//LOG_WARNING("MODULE {}", imp.name);
 
 					// ... and set the import address
 					*getAddress<uintptr_t>(r->offset) = modules::getImport(imp.name, hid);
@@ -371,6 +396,44 @@ namespace krnl
 		}
 
 		return true;
+	}
+
+	uint8_t* elfModule::getExport(uint64_t nid)
+	{
+		// are there any overrides for me?
+		auto imp = modules::getImport(name.c_str(), nid);
+		if (imp != 0)
+			return (uint8_t*)imp;
+
+		for (uint32_t i = 0; i < numSymbols; i++) {
+			const auto* s = &symbols[i];
+
+			if (!s->st_value)
+				continue;
+
+			// if the symbol is exported
+			int32_t binding = ELF64_ST_BIND(s->st_info);
+			if (binding == STB_GLOBAL) {
+				const char* name = &strtab.ptr[s->st_name];
+
+				uint64_t hid = 0;
+				if (!modules::decodeNid(name, 11, hid)) {
+					LOG_ERROR("resolveExport: cant handle NID");
+					return nullptr;
+				}
+
+				if (nid == hid) {
+					return getAddress<uint8_t>(s->st_value);
+				}
+			}
+		}
+
+		return nullptr;
+	}
+
+	const std::string& elfModule::getName()
+	{
+		return std::string();
 	}
 
 	bool elfModule::applyRelocations()

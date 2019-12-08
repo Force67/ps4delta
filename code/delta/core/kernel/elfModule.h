@@ -18,9 +18,9 @@ namespace krnl
 	public:
 		explicit elfModule(proc*);
 		bool fromFile(const std::string&);
+		uint8_t* getExport(uint64_t);
 
 	private:
-		//bool loadInternal();
 		bool initSegments();
 		void doDynamics();
 		void logDbgInfo();
@@ -50,8 +50,16 @@ namespace krnl
 
 			return nullptr;
 		}
+
+		inline bool isSprx() {
+			return elf->type == ET_SCE_DYNAMIC;
+		}
+
+		const std::string& getName();
+
 	private:
 		proc* owner;
+		elfModule* mainModule;
 		std::unique_ptr<uint8_t[]> data;
 
 		struct table

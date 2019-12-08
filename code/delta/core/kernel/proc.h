@@ -32,6 +32,8 @@ namespace krnl
 			return *modules[0];
 		}
 
+		kObj* loadModule(std::string_view);
+
 	private:
 		// memory owned by proc
 		VMAccessMgr vmem;
@@ -41,6 +43,8 @@ namespace krnl
 		uint32_t nextFreeTLS() {
 			return -1;
 		}
+
+		bool trustZoneEnabled{ true };
 
 		std::vector<std::unique_ptr<kObj>> modules;
 	};

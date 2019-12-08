@@ -136,7 +136,7 @@ namespace modules
 			}
 		}
 
-		//return wrap(&debugstub, )
-		return  reinterpret_cast<uintptr_t>(&debugstub);
+		return 0;
+		//return  reinterpret_cast<uintptr_t>(&debugstub);
 	}
 }

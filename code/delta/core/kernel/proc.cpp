@@ -3,6 +3,7 @@
 
 #include <xbyak/xbyak.h>
 #include <utl/File.h>
+#include <utl/path.h>
 
 #include "proc.h"
 #include "elfModule.h"
@@ -21,15 +22,20 @@ namespace krnl
 		// register HLE sprx modules
 		initVMods();
 
+		/*reserve slot 0 for the main process we do this, 
+		because dependencies loaded by the main module 
+		also allocate their own slots*/
+		modules.emplace_back();
+
 		// create our executable module
 		auto mainObj = std::make_unique<elfModule>(this);
 		if (!mainObj->fromFile(path)) {
-			LOG_ERROR("unable to load main process file");
+			LOG_ERROR("unable to load main process module");
 			return false;
 		}
 
 		// exec module is always #1
-		addObj(std::move(mainObj));
+		modules[0] = std::move(mainObj);
 		return true;
 	}
 
@@ -39,10 +45,40 @@ namespace krnl
 
 	kObj* proc::getModule(std::string_view name) {
 		for (auto& mod : modules) {
+			if (!mod)
+				continue;
+
 			if (mod->name == name)
 				return mod.get();
 		}
 		return nullptr;
+	}
+
+	kObj* proc::loadModule(std::string_view name)
+	{
+		// very hacky hack
+		std::string sprxname(name);
+		sprxname += ".sprx";
+
+		auto* mod = getModule(sprxname);
+		if (!mod) {
+			auto lib = std::make_unique<elfModule>(this);
+
+			// todo: gather path from user firmware installation
+			if (!lib->fromFile(utl::make_abs_path("modules\\" + sprxname))) {
+				LOG_ERROR("unable to load module {}", name);
+				return nullptr;
+			}
+
+			auto* shit = lib.get();
+
+			// initialize cxx
+			// lib->start
+			addObj(std::move(lib));
+
+			return shit;
+		}
+		return mod;
 	}
 
 	void proc::start()
@@ -84,6 +120,7 @@ namespace krnl
 		};
 
 		auto& main = getMainModule();
+		std::printf("main name %s\n", main.name.c_str());
 
 		// generate a entry point push context
 		entryGen callingContext(main.entry);

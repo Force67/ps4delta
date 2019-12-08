@@ -2,6 +2,7 @@
 // Copyright (C) Force67 2019
 
 #include <cstdio>
+#include <thread>
 
 #include "dcore.h"
 #include <logger/logger.h>
@@ -26,8 +27,6 @@ bool deltaCore::init()
 
 	return true;
 }
-
-#include <thread>
 
 void deltaCore::boot(std::string& dir)
 {
