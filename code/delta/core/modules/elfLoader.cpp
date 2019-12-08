@@ -118,7 +118,7 @@ namespace modules
 		}
 #endif
 
-		proc.RegisterModule(std::move(entry));
+		//proc.RegisterModule(std::move(entry));
 	}
 
 	void elfLoader::doDynamics()

@@ -7,7 +7,7 @@ package.path = package.path .. ";../tools/premake/premake-qt/?.lua"
 
 -- use clang instead of msvc on windows
 premake.override(premake.vstudio.vc2010, 'platformToolset', function(base, cfg)
-	premake.vstudio.vc2010.element("PlatformToolset", nil, "LLVM_v142")
+	premake.vstudio.vc2010.element("PlatformToolset", nil, "ClangCL")
 end)
 
 
@@ -25,11 +25,10 @@ workspace "PS4Delta"
     targetprefix ""
     buildoptions "/std:c++17"
     characterset "Unicode"
-	
+
 	-- multi threaded compilation
 	flags "MultiProcessorCompile"
-	toolset "msc-llvm-vs2014" -- workaround
-	
+
     pic "On"
 	symbols "On"
     startproject "host"

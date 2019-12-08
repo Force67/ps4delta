@@ -30,22 +30,28 @@ bool deltaCore::init()
 	return true;
 }
 
+#include <thread>
+
 void deltaCore::boot(const std::string& fromdir)
 {
-	//auto t = std::time(nullptr);
-	//LOG_INFO("Starting " FXNAME " on {:%Y-%m-%d}", *std::localtime(&t));
-	utl::File inFile(fromdir);
+	std::thread ctx([&]() {
+		//auto t = std::time(nullptr);
+//LOG_INFO("Starting " FXNAME " on {:%Y-%m-%d}", *std::localtime(&t));
+		utl::File inFile(R"(C:\Users\vince\Desktop\ISHALLRISE\eboot.bin-decrypted)");
 
-	auto data = std::make_unique<uint8_t[]>(inFile.GetSize());
-	inFile.Read(data.get(), inFile.GetSize());
+		auto data = std::make_unique<uint8_t[]>(inFile.GetSize());
+		inFile.Read(data.get(), inFile.GetSize());
 
-	// create the process
-	proc = std::make_unique<krnl::Process>();
-	proc->RegisterModuleNotifaction([](krnl::ModuleHandle& mod)
-	{
-		LOG_INFO("Delta: Module %s loaded at 0x%llx\n", mod->name.c_str(), reinterpret_cast<uintptr_t>(mod->base));
+		// create the process
+		proc = std::make_unique<krnl::Process>();
+		proc->RegisterModuleNotifaction([](krnl::ModuleHandle& mod)
+			{
+				LOG_INFO("Delta: Module {} loaded at {}\n", mod->name, reinterpret_cast<uintptr_t>(mod->base));
+			});
+
+		modules::elfLoader ldr(std::move(data));
+		ldr.loadinProc(*proc);
 	});
 
-	modules::elfLoader ldr(std::move(data));
-	ldr.loadinProc(*proc);
+	ctx.detach();
 }
