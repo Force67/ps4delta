@@ -4,7 +4,9 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
+
+#pragma warning(push, 0)
 
 int PS4ABI scePadClose();
 int PS4ABI scePadConnectPort();
@@ -94,3 +96,5 @@ int PS4ABI scePadResetLightBarAllByPortType();
 int PS4ABI scePadEnableExtensionPort();
 int PS4ABI scePadResetLightBarAll();
 int PS4ABI scePadSetVrTrackingMode();
+
+#pragma warning(pop)

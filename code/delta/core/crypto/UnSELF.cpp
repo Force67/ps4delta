@@ -6,6 +6,7 @@
 
 namespace crypto
 {
+#if 0
 	using namespace loaders;
 
 	class ElfBuilder
@@ -154,4 +155,5 @@ namespace crypto
 
 		return false;
 	}
+#endif
 }

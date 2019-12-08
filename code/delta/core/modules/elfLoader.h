@@ -6,37 +6,55 @@
 #include <SCETypes.h>
 
 #include "kernel/Process.h"
-#include "loader/Loader.h"
 
-namespace loaders
+namespace utl {
+	class File;
+}
+
+namespace modules
 {
-	// a loader for loading decrypted ps4
-	// elf images
-	class ELF_Loader final : public AppLoader
+	class elfLoader
 	{
-		struct Table
+	public:
+		explicit elfLoader(std::unique_ptr<uint8_t[]>);
+		bool loadinProc(krnl::Process&);
+
+		static bool canLoad(utl::File&);
+
+	private:
+		std::unique_ptr<uint8_t[]> data;
+
+		void doDynamics();
+		void logDbgInfo();
+		void installEHFrame();
+		bool SetupTLS(krnl::Process&);
+		bool MapImage(krnl::Process&);
+		bool ResolveImports();
+		bool ProcessRelocations();
+
+		struct table
 		{
 			char* ptr;
 			size_t size;
 		};
 
-		struct ImportLib
+		struct impLib
 		{
 			const char* name;
 			int32_t modid;
 		};
-		std::vector<ImportLib> implibs;
+		std::vector<impLib> implibs;
 
 		// headers
-		ELFHeader *elf;
+		ELFHeader* elf;
 		ELFPgHeader* segments;
 		ElfRel* jmpslots;
 		ElfRel* rela;
 		ElfSym* symbols;
 
-		Table strtab;
-		Table symtab;
-		Table dynld;
+		table strtab;
+		table symtab;
+		table dynld;
 
 		uint32_t numJmpSlots;
 		uint32_t numSymbols;
@@ -66,25 +84,5 @@ namespace loaders
 
 			return nullptr;
 		}
-
-		void DoDynamics();
-		void LogDebugInfo();
-		void InstallExceptionHandlers();
-		bool SetupTLS(krnl::Process&);
-		bool MapImage(krnl::Process&);
-		bool ResolveImports();
-		bool ProcessRelocations();
-
-	public:
-
-		explicit ELF_Loader(std::unique_ptr<uint8_t[]>);
-
-		static FileType IdentifyType(utl::File&);
-
-		FileType GetFileType() override {
-			return FileType::ELF;
-		}
-
-		LoadErrorCode Load(krnl::Process&) override;
 	};
 }

@@ -3,15 +3,15 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
 
-int sceKernelGetCpumode()
+int lk_sceKernelGetCpumode1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelSetFsstParam()
+int lk_sceKernelSetFsstParam1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;

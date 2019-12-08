@@ -3,219 +3,219 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
 
-int access()
+int lk_access1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int chdir()
+int lk_chdir1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int dup()
+int lk_dup1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int dup2()
+int lk_dup22()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int ioctl()
+int lk_ioctl2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int lstat()
+int lk_lstat1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pipe()
+int lk_pipe1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int poll()
+int lk_poll2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_get_user_context_np()
+int lk_pthread_get_user_context_np1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_kill()
+int lk_pthread_kill2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_mutex_setname_np()
+int lk_pthread_mutex_setname_np1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_suspend_user_context_np()
+int lk_pthread_suspend_user_context_np1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelDebugRaiseException()
+int lk_sceKernelDebugRaiseException1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelGetFsSandboxRandomWord()
+int lk_sceKernelGetFsSandboxRandomWord1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelGetModuleInfoFromAddr()
+int lk_sceKernelGetModuleInfoFromAddr1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelJitCreateAliasOfSharedMemory()
+int lk_sceKernelJitCreateAliasOfSharedMemory3()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelJitCreateSharedMemory()
+int lk_sceKernelJitCreateSharedMemory3()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelJitMapSharedMemory()
+int lk_sceKernelJitMapSharedMemory3()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelOpenSema()
+int lk_sceKernelOpenSema1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sigaction()
+int lk_sigaction2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sigaddset()
+int lk_sigaddset2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sigaltstack()
+int lk_sigaltstack1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sigdelset()
+int lk_sigdelset2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sigemptyset()
+int lk_sigemptyset2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sigfillset()
+int lk_sigfillset2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sigismember()
+int lk_sigismember2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int signal()
+int lk_signal1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sigprocmask()
+int lk_sigprocmask2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sigsuspend()
+int lk_sigsuspend2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int socketpair()
+int lk_socketpair3()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sysconf()
+int lk_sysconf2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelDebugRaiseExceptionWithContext()
+int lk_sceKernelDebugRaiseExceptionWithContext1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_cond_setname_np()
+int lk_pthread_cond_setname_np1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_resume_user_context_np()
+int lk_pthread_resume_user_context_np1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelSetProcessProperty()
+int lk_sceKernelSetProcessProperty1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sem_setname()
+int lk_sem_setname1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;

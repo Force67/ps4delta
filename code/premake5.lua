@@ -17,20 +17,21 @@ qt = premake.extensions.qt
 
 workspace "PS4Delta"
     configurations { "Debug", "Release" }
+	platforms { "x64" }
 
 	location "../build"
 	os.mkdir"../build/symbols"
 	
-	platforms { "x64" }
     targetprefix ""
     buildoptions "/std:c++17"
-    symbols "On"
     characterset "Unicode"
 	
 	-- multi threaded compilation
 	flags "MultiProcessorCompile"
+	toolset "msc-llvm-vs2014" -- workaround
 	
     pic "On"
+	symbols "On"
     startproject "host"
 	targetdir '../bin/%{cfg.buildcfg}/'
 	

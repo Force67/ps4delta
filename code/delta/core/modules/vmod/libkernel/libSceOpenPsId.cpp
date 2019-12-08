@@ -3,9 +3,9 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
 
-int sceKernelGetOpenPsId()
+int lk_sceKernelGetOpenPsId()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;

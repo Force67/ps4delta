@@ -3,21 +3,21 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
 
-int sceSystemServiceAddLocalProcessForPsmKit()
+int sceSystemServiceAddLocalProcessForPsmKit1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceSystemServiceKillLocalProcessForPsmKit()
+int sceSystemServiceKillLocalProcessForPsmKit1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceSystemServiceGetParentSocketForPsmKit()
+int sceSystemServiceGetParentSocketForPsmKit1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;

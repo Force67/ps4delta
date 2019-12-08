@@ -17,17 +17,17 @@ namespace utl
 
 		public:
 
-			PhysFile::PhysFile(const std::wstring& name, fileMode mode) :
+			PhysFile::PhysFile(const std::string& name, fileMode mode) :
 				fptr(nullptr)
 			{
 				// convert access mode
-				const wchar_t* modeStr = L"a+";
+				const char* modeStr = "a+";
 				if (mode == fileMode::read)
-					modeStr = L"rb";
+					modeStr = "rb";
 				else if (mode == fileMode::write)
-					modeStr = L"wb";
+					modeStr = "wb";
 
-				_wfopen_s(&fptr, name.c_str(), modeStr);
+				fopen_s(&fptr, name.c_str(), modeStr);
 
 				// we can cache the size now
 				if (fptr && mode == fileMode::read) {
@@ -170,7 +170,7 @@ namespace utl
 		};
 	}
 
-	File::File(const std::wstring& dir, fileMode mode /* = fileMode::read */) :
+	File::File(const std::string& dir, fileMode mode /* = fileMode::read */) :
 		file(std::make_unique<PhysFile>(dir, mode))
 	{}
 

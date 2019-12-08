@@ -3,15 +3,15 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
 
-int _longjmp()
+int libc__longjmp()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int _setjmp()
+int libc__setjmp()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;

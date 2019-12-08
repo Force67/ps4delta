@@ -72,29 +72,36 @@ namespace utl
 }
 
 #ifdef _DEBUG
-#define LOG_TRACE(...)                                                          \
+#define LOG_TRACE(...)                                           \
 	::utl::fmtLogMsg(::utl::logLevel::Trace, __FILE__, __LINE__, \
 						 __func__, __VA_ARGS__)
 #else
 #define LOG_TRACE(fmt, ...) (void(0))
 #endif
 
-#define LOG_DEBUG(...)                                                          \
+#define LOG_DEBUG(...)                                           \
 	::utl::fmtLogMsg(::utl::logLevel::Debug, __FILE__, __LINE__, \
 						 __func__, __VA_ARGS__)
-#define LOG_INFO(...)                                                          \
+#define LOG_INFO(...)                                           \
 	::utl::fmtLogMsg(::utl::logLevel::Info, __FILE__, __LINE__, \
 						 __func__, __VA_ARGS__)
-#define LOG_WARNING(...)                                                          \
+#define LOG_WARNING(...)                                           \
 	::utl::fmtLogMsg(::utl::logLevel::Warning, __FILE__, __LINE__, \
 						 __func__, __VA_ARGS__)
-#define LOG_ERROR(...)                                                          \
+#define LOG_ERROR(...)                                           \
 	::utl::fmtLogMsg(::utl::logLevel::Error, __FILE__, __LINE__, \
 						 __func__, __VA_ARGS__)
-#define LOG_CRITICAL(...)                                                          \
+#define LOG_CRITICAL(...)                                           \
 	::utl::fmtLogMsg(::utl::logLevel::Critical, __FILE__, __LINE__, \
 						 __func__, __VA_ARGS__)
+#define LOG_ASSERT(expression) do {                              \
+	if (!!(expression))	{										 \
+	::utl::fmtLogMsg(::utl::logLevel::Error, __FILE__, __LINE__, \
+						 __func__, "assertion failed at " #expression); \
+		__debugbreak();													\
+	}																	\
+} while (0)
 
-#define LOG_UNIMPLEMENTED \
+#define LOG_UNIMPLEMENTED										 \
 	::utl::fmtLogMsg(::utl::logLevel::Error, __FILE__, __LINE__, \
 		__func__, "Unimplemented function")

@@ -3,51 +3,51 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
 
-int ioctl()
+int lk_ioctl3()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelIccGetErrLog()
+int lk_sceKernelIccGetErrLog1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelGetSocPowerConsumption()
+int lk_sceKernelGetSocPowerConsumption1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelIccGetHwInfo()
+int lk_sceKernelIccGetHwInfo1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelIccGetSysEventLog()
+int lk_sceKernelIccGetSysEventLog1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelIccGetCountTime()
+int lk_sceKernelIccGetCountTime1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int unk_gpgi_GwE2Is()
+int lk_unk_gpgi_GwE2Is1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int unk_uV_YilcHqAs()
+int lk_unk_uV_YilcHqAs1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;

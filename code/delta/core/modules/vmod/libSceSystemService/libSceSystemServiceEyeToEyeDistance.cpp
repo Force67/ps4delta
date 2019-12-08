@@ -3,15 +3,15 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
 
-int sceSystemServiceDisablePersonalEyeToEyeDistanceSetting()
+int sceSystemServiceDisablePersonalEyeToEyeDistanceSetting1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceSystemServiceEnablePersonalEyeToEyeDistanceSetting()
+int sceSystemServiceEnablePersonalEyeToEyeDistanceSetting1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;

@@ -3,15 +3,15 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
 
-int sceCoredumpDebugTriggerCoredump()
+int lk_sceCoredumpDebugTriggerCoredump()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceCoredumpDebugForceCoredumpOnAppClose()
+int lk_sceCoredumpDebugForceCoredumpOnAppClose()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;

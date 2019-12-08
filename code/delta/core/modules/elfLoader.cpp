@@ -1,68 +1,68 @@
 
 // Copyright (C) Force67 2019
 
-#include "loader/ELFLoader.h"
+#include "elfLoader.h"
+#include "vmodLinker.h"
 #include "kernel/Process.h"
 
-#include "modules/ModuleLinker.h"
+#include <utl/File.h>
 
-namespace loaders
+namespace modules
 {
-	// based on: https://github.com/idc/uplift/blob/master/uplift/src/program_info.cpp
-
-	ELF_Loader::ELF_Loader(std::unique_ptr<uint8_t[]> d) :
-		AppLoader(std::move(d)),
+	elfLoader::elfLoader(std::unique_ptr<uint8_t[]> d) :
+		data(std::move(d)),
 		tlsslot(-1)
 	{}
 
-	FileType ELF_Loader::IdentifyType(utl::File& file)
+	bool elfLoader::canLoad(utl::File& file)
 	{
 		ELFHeader elf{};
 		file.Read(elf);
 
 		if (elf.magic == ELF_MAGIC && elf.machine == ELF_MACHINE_X86_64) {
-			std::puts("[+] Identified file as plain ELF");
-			return FileType::ELF;
+			LOG_TRACE("Identified file as plain ELF");
+			return true;
 		}
 
-		return FileType::UNKNOWN;
+		return false;
 	}
 
-	LoadErrorCode ELF_Loader::Load(krnl::Process& proc)
+	bool elfLoader::loadinProc(krnl::Process& proc)
 	{
 		elf = GetOffset<ELFHeader>(0);
 		segments = GetOffset<ELFPgHeader>(elf->phoff);
-		// verify the most important segments
+
 		for (uint16_t i = 0; i < elf->phnum; i++) {
+
 			auto s = &segments[i];
-			std::printf("SEGMENT %d, %llx, %llx -> TYPE %s, size %lld\n", i, s->offset, s->vaddr, SegTypeToString(s->type), s->filesz);
+			LOG_TRACE("SEGMENT {}, {},{} -> TYPE {}, size {}", i, s->offset, s->vaddr, SegTypeToString(s->type), s->filesz);
+
 			switch (s->type) {
 			case PT_LOAD:
 			{
 				// test alignment
-				if (s->align & 0x3FFFull || s->vaddr & 0x3FFFull || s->offset & 0x3FFFull)
-					return LoadErrorCode::BADALIGN;
+				if (s->align & 0x3FFFull || s->vaddr & 0x3FFFull || s->offset & 0x3FFFull) {
+					LOG_ERROR("elfLoader: Bad section alignment");
+					return false;
+				}
 
-				if (s->filesz > s->memsz)
-					return LoadErrorCode::BADSEG;
+				LOG_ASSERT(s->filesz > s->memsz);
 				break;
 			}
 			case PT_TLS:
 			{
-				if (s->filesz > s->memsz)
-					return LoadErrorCode::BADSEG;
-
-				if (s->align > 32)
-					return LoadErrorCode::BADALIGN;
+				LOG_ASSERT(s->filesz > s->memsz);
+		
+				if (s->align > 32) {
+					LOG_ERROR("elfLoader: Bad TLS seg alignment");
+					return false;
+				}
 
 				break;
 			}
 			case PT_SCE_DYNLIBDATA:
 			{
-				if (s->filesz == 0) {
-					//__debugbreak();
-					return LoadErrorCode::BADSEG;
-				}
+				LOG_ASSERT(s->filesz == 0);
 
 				dynld.ptr = GetOffset<char>(s->offset);
 				dynld.size = s->filesz;
@@ -70,29 +70,32 @@ namespace loaders
 			}
 			case PT_DYNAMIC:
 			{
-				if (s->filesz > s->memsz)
-					return LoadErrorCode::BADSEG;
+				LOG_ASSERT(s->filesz > s->memsz);
 				break;
 			}
 			}
 		}
 
-		DoDynamics();
-		LogDebugInfo();
+		doDynamics();
+		logDbgInfo();
 
 		if (!MapImage(proc) ||
-			!SetupTLS(proc))
-			return LoadErrorCode::BADMAP;
+			!SetupTLS(proc)) {
+			LOG_TRACE("elfLoader: Failed to map image");
+			return false;
+		}
 
 		if (!ProcessRelocations()) {
-			return LoadErrorCode::BADREL;
+			LOG_TRACE("elfLoader: Failed to relocate image");
+			return false;
 		}
 
 		if (!ResolveImports()) {
-			return LoadErrorCode::BADIMP;
+			LOG_TRACE("elfLoader: Failed to resolve imports");
+			return false;
 		}
 
-		InstallExceptionHandlers();
+		installEHFrame();
 
 		// and register the entry...
 		auto entry = std::make_shared<krnl::Module>();
@@ -106,20 +109,19 @@ namespace loaders
 		else
 			entry->entry = targetbase + elf->entry;
 
+#ifdef _DEBUG
 		{
-			utl::File proc(L"proc.bin", utl::fileMode::write);
+			utl::File proc("lastElf.bin", utl::fileMode::write);
 			if (proc.IsOpen()) {
 				proc.Write(entry->base, entry->sizeCode);
 			}
 		}
-
+#endif
 
 		proc.RegisterModule(std::move(entry));
-
-		return LoadErrorCode::SUCCESS;
 	}
 
-	void ELF_Loader::DoDynamics()
+	void elfLoader::doDynamics()
 	{
 		auto* s = GetSegment(ElfSegType::PT_DYNAMIC);
 		ELFDyn* dynamics = GetOffset<ELFDyn>(s->offset);
@@ -130,7 +132,7 @@ namespace loaders
 			case DT_INIT:
 			case DT_INIT_ARRAY:
 			{
-				std::printf("DT_INIT %llx\n", d->un.value);
+				LOG_TRACE("DT_INIT {}", d->un.value);
 				break;
 			}
 			case DT_SCE_JMPREL:
@@ -221,7 +223,7 @@ namespace loaders
 		}
 	}
 
-	bool ELF_Loader::MapImage(krnl::Process &proc)
+	bool elfLoader::MapImage(krnl::Process &proc)
 	{
 	/*	auto* it = GetSegment(PT_SCE_RELRO);
 		if (it) {
@@ -289,7 +291,7 @@ namespace loaders
 		return true;
 	}
 
-	bool ELF_Loader::SetupTLS(krnl::Process& proc)
+	bool elfLoader::SetupTLS(krnl::Process& proc)
 	{
 		auto* p = GetSegment(PT_TLS);
 		if (p) {
@@ -301,7 +303,7 @@ namespace loaders
 	}
 
 	// pltrela_table_offset 
-	bool ELF_Loader::ResolveImports()
+	bool elfLoader::ResolveImports()
 	{
 		for (uint32_t i = 0; i < numJmpSlots; i++) {
 			auto* r = &jmpslots[i];
@@ -340,14 +342,14 @@ namespace loaders
 				auto *ptr = &name[14];
 
 				uint64_t modid = 0;
-				mlink::decode_nid(ptr, 1, modid);
+				modules::decodeNid(ptr, 1, modid);
 
 				//char encoded[12]{};
 				//strncpy(encoded, name, 11);
 		
 				// use ps4libdoc to find real name
 				uint64_t hid = 0;
-				if (!mlink::decode_nid(name, 11, hid))
+				if (!modules::decodeNid(name, 11, hid))
 					return false;
 	
 				// fetch the import module name
@@ -355,7 +357,7 @@ namespace loaders
 					if (imp.modid == static_cast<int32_t>(modid)) {
 
 					// ... and set the import address
-					*GetAddress<uintptr_t>(r->offset) = mlink::get_import(imp.name, hid);
+					*GetAddress<uintptr_t>(r->offset) = modules::getImport(imp.name, hid);
 					break;
 				}
 				}
@@ -365,7 +367,7 @@ namespace loaders
 		return true;
 	}
 
-	bool ELF_Loader::ProcessRelocations()
+	bool elfLoader::ProcessRelocations()
 	{
 		for (size_t i = 0; i < numRela; i++) {
 			auto* r = &rela[i];
@@ -425,7 +427,7 @@ namespace loaders
 	}
 
 	// taken from idc's "uplift" project
-	void ELF_Loader::InstallExceptionHandlers()
+	void elfLoader::installEHFrame()
 	{
 		const auto* p = GetSegment(PT_GNU_EH_FRAME);
 		if (p->filesz > p->memsz)
@@ -508,7 +510,7 @@ namespace loaders
 		}
 	}
 
-	void ELF_Loader::LogDebugInfo()
+	void elfLoader::logDbgInfo()
 	{
 		for (uint16_t i = 0; i < elf->phnum; i++) {
 			auto s = &segments[i];

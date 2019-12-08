@@ -3,21 +3,21 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
 
-int sceKernelBatchMap()
+int lk_sceKernelBatchMap1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelMapDirectMemory()
+int lk_sceKernelMapDirectMemory1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelMapNamedDirectMemory()
+int lk_sceKernelMapNamedDirectMemory1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;

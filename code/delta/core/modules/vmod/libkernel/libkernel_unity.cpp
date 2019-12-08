@@ -3,21 +3,21 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
 
-int sceKernelRemoveExceptionHandler()
+int lk_sceKernelRemoveExceptionHandler2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelInstallExceptionHandler()
+int lk_sceKernelInstallExceptionHandler2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelRaiseException()
+int lk_sceKernelRaiseException1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;

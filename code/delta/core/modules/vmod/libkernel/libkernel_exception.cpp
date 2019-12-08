@@ -3,33 +3,33 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
 
-int sceKernelBacktraceSelf()
+int lk_sceKernelBacktraceSelf1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelRemoveExceptionHandler()
+int lk_sceKernelRemoveExceptionHandler1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelInstallExceptionHandler()
+int lk_sceKernelInstallExceptionHandler1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelAddGpuExceptionEvent()
+int lk_sceKernelAddGpuExceptionEvent1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelDeleteGpuExceptionEvent()
+int lk_sceKernelDeleteGpuExceptionEvent1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;

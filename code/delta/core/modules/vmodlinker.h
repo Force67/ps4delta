@@ -4,31 +4,30 @@
 
 #include <string>
 #include <utl/InitFunction.h>
+#include <logger/logger.h>
 
-namespace mlink
+#define PS4ABI __attribute__((sysv_abi))
+
+namespace modules
 {
-	struct FunctionInfo
-	{
-		uint64_t hid;
+	struct funcInfo {
+		uint64_t hashId;
 		const void* address;
 	};
 
-	struct ModuleInfo
-	{
-		FunctionInfo *functions;
-		size_t fcount;
-		const char* name;
+	struct modInfo {
+		funcInfo* funcNodes;
+		size_t funcCount;
+		const char* namePtr;
 	};
 
-	void init_modules();
-	void register_module(const ModuleInfo*);
+	void initVMods();
+	void registerModule(const modInfo*);
 
-	bool decode_nid(const char* subset, size_t len, uint64_t&);
-	uintptr_t get_import(const char *lib, uint64_t hid);
+	bool decodeNid(const char* subset, size_t len, uint64_t&);
+	uintptr_t getImport(const char* lib, uint64_t hid);
 }
 
 #define MODULE_INIT(tname) \
-static const mlink::ModuleInfo info_##tname{(mlink::FunctionInfo*)&functions, (sizeof(functions) / sizeof(mlink::FunctionInfo)), #tname}; \
-static utl::init_function init_##tname([](){ mlink::register_module(&info_##tname); })
-
-#define UNIMPLEMENTED_FUNC 
+static const modules::modInfo info_##tname{(modules::funcInfo*)&functions, (sizeof(functions) / sizeof(modules::funcInfo)), #tname}; \
+static utl::init_function init_##tname([](){ modules::registerModule(&info_##tname); })

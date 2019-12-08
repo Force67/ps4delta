@@ -3,9 +3,9 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
 
-int sceKernelAvailableFlexibleMemorySize()
+int lk_sceKernelAvailableFlexibleMemorySize1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;

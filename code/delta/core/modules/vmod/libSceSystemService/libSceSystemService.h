@@ -4,7 +4,9 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
+
+#pragma warning(push, 0)
 
 int PS4ABI sceAppMessagingClearEventFlag();
 int PS4ABI sceAppMessagingReceiveMsg();
@@ -411,8 +413,8 @@ int PS4ABI sceSystemServiceInvokeAppLaunchLink();
 int PS4ABI sceSystemServiceShowClosedCaptionAdvancedSettings();
 int PS4ABI sceSystemServiceShowClosedCaptionSettings();
 int PS4ABI sceSystemServiceGetDbgExecutablePath();
-int PS4ABI sceSystemServiceDisablePersonalEyeToEyeDistanceSetting();
-int PS4ABI sceSystemServiceEnablePersonalEyeToEyeDistanceSetting();
+int PS4ABI sceSystemServiceDisablePersonalEyeToEyeDistanceSetting1();
+int PS4ABI sceSystemServiceEnablePersonalEyeToEyeDistanceSetting1();
 int PS4ABI sceSystemServiceInitializeForShellCore();
 int PS4ABI unk_fBGD_HNimSk();
 int PS4ABI sceSystemServiceReenablePartyVoice();
@@ -427,9 +429,9 @@ int PS4ABI sceSystemServiceAddLocalProcessForPs2Emu();
 int PS4ABI sceSystemServiceKillLocalProcessForPs2Emu();
 int PS4ABI sceSystemServiceShowImposeMenuForPs2Emu();
 int PS4ABI sceSystemServiceGetParentSocketForPs2Emu();
-int PS4ABI sceSystemServiceAddLocalProcessForPsmKit();
-int PS4ABI sceSystemServiceKillLocalProcessForPsmKit();
-int PS4ABI sceSystemServiceGetParentSocketForPsmKit();
+int PS4ABI sceSystemServiceAddLocalProcessForPsmKit1();
+int PS4ABI sceSystemServiceKillLocalProcessForPsmKit1();
+int PS4ABI sceSystemServiceGetParentSocketForPsmKit1();
 int PS4ABI sceSystemServiceLaunchStore();
 int PS4ABI sceSystemServiceDeclareReadyForSuspend();
 int PS4ABI sceSystemServiceDisableSuspendNotification();
@@ -443,7 +445,7 @@ int PS4ABI sceSystemServiceReenableVoiceRecognition();
 int PS4ABI sceSystemServiceDisableVoiceRecognition();
 int PS4ABI sceSystemServiceLaunchWebApp();
 int PS4ABI unk_uElcdmhh_c8();
-int PS4ABI sceSystemServiceLaunchWebBrowser();
+int PS4ABI sceSystemServiceLaunchWebBrowser1();
 int PS4ABI unk_axzblV8OvWU();
 int PS4ABI unk_y16IXiJfafA();
 int PS4ABI sceSystemStateMgrCancelShutdownTimer();
@@ -473,3 +475,5 @@ int PS4ABI unk_ifJiF5witJ4();
 int PS4ABI unk_rIqPq0oWlrg();
 int PS4ABI sceSystemStateMgrIsGpuPerformanceNormal();
 int PS4ABI sceSystemStateMgrTickMusicPlayback();
+
+#pragma warning(pop)

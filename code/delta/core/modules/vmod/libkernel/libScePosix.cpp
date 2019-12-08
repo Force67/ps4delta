@@ -3,1167 +3,1167 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
 
-int accept()
+int lk_accept1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int bind()
+int lk_bind1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int chflags()
+int lk_chflags1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int chmod()
+int lk_chmod1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int clock_getres()
+int lk_clock_getres1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int clock_gettime()
+int lk_clock_gettime1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int close()
+int lk_close1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int connect()
+int lk_connect1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int creat()
+int lk_creat1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int fchflags()
+int lk_fchflags1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int fchmod()
+int lk_fchmod1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int fcntl()
+int lk_fcntl1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int flock()
+int lk_flock1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int fstat()
+int lk_fstat1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int fsync()
+int lk_fsync1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int ftruncate()
+int lk_ftruncate1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int futimes()
+int lk_futimes1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int getcontext()
+int lk_getcontext1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int getdents()
+int lk_getdents1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int getdirentries()
+int lk_getdirentries1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int getdtablesize()
+int lk_getdtablesize1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int getpagesize()
+int lk_getpagesize1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int getpeername()
+int lk_getpeername1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int getpid()
+int lk_getpid1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int getsockname()
+int lk_getsockname1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int getsockopt()
+int lk_getsockopt1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int gettimeofday()
+int lk_gettimeofday1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int htonl()
+int lk_htonl1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int htons()
+int lk_htons1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int inet_ntop()
+int lk_inet_ntop1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int inet_pton()
+int lk_inet_pton1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int kevent()
+int lk_kevent1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int kqueue()
+int lk_kqueue1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int listen()
+int lk_listen1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int lseek()
+int lk_lseek1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int madvise()
+int lk_madvise1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int mkdir()
+int lk_mkdir1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int mlock()
+int lk_mlock1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int mlockall()
+int lk_mlockall1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int mmap()
+int lk_mmap1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int mprotect()
+int lk_mprotect1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int msync()
+int lk_msync1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int munlock()
+int lk_munlock1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int munlockall()
+int lk_munlockall1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int munmap()
+int lk_munmap1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int nanosleep()
+int lk_nanosleep1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int ntohl()
+int lk_ntohl1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int ntohs()
+int lk_ntohs1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int open()
+int lk_open1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pread()
+int lk_pread1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int preadv()
+int lk_preadv1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_destroy()
+int lk_pthread_attr_destroy1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_get_np()
+int lk_pthread_attr_get_np1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_getdetachstate()
+int lk_pthread_attr_getdetachstate1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_getguardsize()
+int lk_pthread_attr_getguardsize1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_getinheritsched()
+int lk_pthread_attr_getinheritsched1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_getschedparam()
+int lk_pthread_attr_getschedparam1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_getschedpolicy()
+int lk_pthread_attr_getschedpolicy1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_getscope()
+int lk_pthread_attr_getscope1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_getstack()
+int lk_pthread_attr_getstack1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_getstackaddr()
+int lk_pthread_attr_getstackaddr1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_getstacksize()
+int lk_pthread_attr_getstacksize1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_init()
+int lk_pthread_attr_init1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_setdetachstate()
+int lk_pthread_attr_setdetachstate1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_setguardsize()
+int lk_pthread_attr_setguardsize1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_setinheritsched()
+int lk_pthread_attr_setinheritsched1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_setschedparam()
+int lk_pthread_attr_setschedparam1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_setschedpolicy()
+int lk_pthread_attr_setschedpolicy1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_setscope()
+int lk_pthread_attr_setscope1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_setstack()
+int lk_pthread_attr_setstack1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_setstackaddr()
+int lk_pthread_attr_setstackaddr1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_attr_setstacksize()
+int lk_pthread_attr_setstacksize1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_barrier_destroy()
+int lk_pthread_barrier_destroy1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_barrier_init()
+int lk_pthread_barrier_init1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_barrier_wait()
+int lk_pthread_barrier_wait1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_barrierattr_destroy()
+int lk_pthread_barrierattr_destroy1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_barrierattr_getpshared()
+int lk_pthread_barrierattr_getpshared1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_barrierattr_init()
+int lk_pthread_barrierattr_init1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_barrierattr_setpshared()
+int lk_pthread_barrierattr_setpshared1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_cancel()
+int lk_pthread_cancel1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_cleanup_pop()
+int lk_pthread_cleanup_pop1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_cleanup_push()
+int lk_pthread_cleanup_push1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_cond_broadcast()
+int lk_pthread_cond_broadcast1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_cond_destroy()
+int lk_pthread_cond_destroy1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_cond_init()
+int lk_pthread_cond_init1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_cond_signal()
+int lk_pthread_cond_signal1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_cond_signalto_np()
+int lk_pthread_cond_signalto_np1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_cond_timedwait()
+int lk_pthread_cond_timedwait1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_cond_wait()
+int lk_pthread_cond_wait1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_condattr_destroy()
+int lk_pthread_condattr_destroy1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_condattr_getclock()
+int lk_pthread_condattr_getclock1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_condattr_getpshared()
+int lk_pthread_condattr_getpshared1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_condattr_init()
+int lk_pthread_condattr_init1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_condattr_setclock()
+int lk_pthread_condattr_setclock1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_condattr_setpshared()
+int lk_pthread_condattr_setpshared1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_create()
+int lk_pthread_create1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_create_name_np()
+int lk_pthread_create_name_np1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_detach()
+int lk_pthread_detach1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_equal()
+int lk_pthread_equal1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_exit()
+int lk_pthread_exit1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_getconcurrency()
+int lk_pthread_getconcurrency1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_getcpuclockid()
+int lk_pthread_getcpuclockid1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_getname_np()
+int lk_pthread_getname_np1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_getprio()
+int lk_pthread_getprio1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_getschedparam()
+int lk_pthread_getschedparam1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_getspecific()
+int lk_pthread_getspecific1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_join()
+int lk_pthread_join1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_key_create()
+int lk_pthread_key_create1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_key_delete()
+int lk_pthread_key_delete1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_mutex_destroy()
+int lk_pthread_mutex_destroy1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_mutex_getprioceiling()
+int lk_pthread_mutex_getprioceiling1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_mutex_init()
+int lk_pthread_mutex_init1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_mutex_lock()
+int lk_pthread_mutex_lock1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_mutex_setprioceiling()
+int lk_pthread_mutex_setprioceiling1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_mutex_timedlock()
+int lk_pthread_mutex_timedlock1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_mutex_trylock()
+int lk_pthread_mutex_trylock1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_mutex_unlock()
+int lk_pthread_mutex_unlock1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_mutexattr_destroy()
+int lk_pthread_mutexattr_destroy1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_mutexattr_getprioceiling()
+int lk_pthread_mutexattr_getprioceiling1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_mutexattr_getprotocol()
+int lk_pthread_mutexattr_getprotocol1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_mutexattr_getpshared()
+int lk_pthread_mutexattr_getpshared1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_mutexattr_gettype()
+int lk_pthread_mutexattr_gettype1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_mutexattr_init()
+int lk_pthread_mutexattr_init1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_mutexattr_setprioceiling()
+int lk_pthread_mutexattr_setprioceiling1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_mutexattr_setprotocol()
+int lk_pthread_mutexattr_setprotocol1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_mutexattr_setpshared()
+int lk_pthread_mutexattr_setpshared1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_mutexattr_settype()
+int lk_pthread_mutexattr_settype1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_once()
+int lk_pthread_once1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_rename_np()
+int lk_pthread_rename_np1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_rwlock_destroy()
+int lk_pthread_rwlock_destroy1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_rwlock_init()
+int lk_pthread_rwlock_init1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_rwlock_rdlock()
+int lk_pthread_rwlock_rdlock1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_rwlock_timedrdlock()
+int lk_pthread_rwlock_timedrdlock1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_rwlock_timedwrlock()
+int lk_pthread_rwlock_timedwrlock1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_rwlock_tryrdlock()
+int lk_pthread_rwlock_tryrdlock1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_rwlock_trywrlock()
+int lk_pthread_rwlock_trywrlock1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_rwlock_unlock()
+int lk_pthread_rwlock_unlock1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_rwlock_wrlock()
+int lk_pthread_rwlock_wrlock1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_rwlockattr_destroy()
+int lk_pthread_rwlockattr_destroy1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_rwlockattr_getpshared()
+int lk_pthread_rwlockattr_getpshared1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_rwlockattr_gettype_np()
+int lk_pthread_rwlockattr_gettype_np1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_rwlockattr_init()
+int lk_pthread_rwlockattr_init1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_rwlockattr_setpshared()
+int lk_pthread_rwlockattr_setpshared1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_rwlockattr_settype_np()
+int lk_pthread_rwlockattr_settype_np1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_self()
+int lk_pthread_self1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_setcancelstate()
+int lk_pthread_setcancelstate1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_setcanceltype()
+int lk_pthread_setcanceltype1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_setconcurrency()
+int lk_pthread_setconcurrency1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_setprio()
+int lk_pthread_setprio1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_setschedparam()
+int lk_pthread_setschedparam1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_setspecific()
+int lk_pthread_setspecific1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_sigmask()
+int lk_pthread_sigmask1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_testcancel()
+int lk_pthread_testcancel1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_yield()
+int lk_pthread_yield1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pwrite()
+int lk_pwrite1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pwritev()
+int lk_pwritev1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int read()
+int lk_read1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int readv()
+int lk_readv1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int recv()
+int lk_recv1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int recvfrom()
+int lk_recvfrom1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int recvmsg()
+int lk_recvmsg1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int rename()
+int lk_rename1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int rmdir()
+int lk_rmdir1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sched_get_priority_max()
+int lk_sched_get_priority_max1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sched_get_priority_min()
+int lk_sched_get_priority_min1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sched_getparam()
+int lk_sched_getparam1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sched_setparam()
+int lk_sched_setparam1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sched_yield()
+int lk_sched_yield1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int select()
+int lk_select1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sem_destroy()
+int lk_sem_destroy1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sem_getvalue()
+int lk_sem_getvalue1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sem_init()
+int lk_sem_init1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sem_post()
+int lk_sem_post1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sem_timedwait()
+int lk_sem_timedwait1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sem_trywait()
+int lk_sem_trywait1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sem_unlink()
+int lk_sem_unlink1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sem_wait()
+int lk_sem_wait1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int send()
+int lk_send1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sendmsg()
+int lk_sendmsg1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sendto()
+int lk_sendto1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int setcontext()
+int lk_setcontext1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int setsockopt()
+int lk_setsockopt1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int shutdown()
+int lk_shutdown1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sleep()
+int lk_sleep1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int socket()
+int lk_socket1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int stat()
+int lk_stat1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int swapcontext()
+int lk_swapcontext1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sync()
+int lk_sync1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int truncate()
+int lk_truncate1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int unlink()
+int lk_unlink1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int usleep()
+int lk_usleep1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int utimes()
+int lk_utimes1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int write()
+int lk_write1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int writev()
+int lk_writev1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;

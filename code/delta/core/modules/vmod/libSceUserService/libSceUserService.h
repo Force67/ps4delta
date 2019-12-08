@@ -4,7 +4,9 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
+
+#pragma warning(push, 0)
 
 int PS4ABI sceUserServiceDestroyUser();
 int PS4ABI sceUserServiceGetAccessibilityKeyremapData();
@@ -350,7 +352,9 @@ int PS4ABI sceUserServiceSetParentalBrowser();
 int PS4ABI sceUserServiceSetHoldAudioOutDevice();
 int PS4ABI sceUserServiceGetSaveDataTutorialFlag();
 int PS4ABI sceUserServiceGetNpEnv();
-int PS4ABI sceUserServiceRegisterEventCallback();
-int PS4ABI sceUserServiceUnregisterEventCallback();
+int PS4ABI sceUserServiceRegisterEventCallback1();
+int PS4ABI sceUserServiceUnregisterEventCallback1();
 int PS4ABI sceUserServiceTerminateForShellCore();
 int PS4ABI sceUserServiceInitializeForShellCore();
+
+#pragma warning(pop)

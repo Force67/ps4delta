@@ -3,9 +3,9 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
 
-int unk_ClMdHuu_R1A()
+int lk_unk_ClMdHuu_R1A()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;

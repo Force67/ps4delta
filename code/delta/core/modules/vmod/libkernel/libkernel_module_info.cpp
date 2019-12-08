@@ -3,15 +3,15 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
 
-int sceKernelGetModuleInfo2()
+int lk_sceKernelGetModuleInfo2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelGetModuleList2()
+int lk_sceKernelGetModuleList2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;

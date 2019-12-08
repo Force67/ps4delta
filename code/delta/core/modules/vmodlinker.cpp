@@ -1,16 +1,13 @@
 
 // Copyright (C) Force67 2019
 
-#include "ModuleLinker.h"
+#include "vmodLinker.h"
 #include <intrin.h>
 #include <xbyak/xbyak.h>
 
 #include <Windows.h>
 
-extern void init_libc();
-extern void init_libkernel();
-
-namespace mlink
+namespace modules
 {
 #if 0
 	class SymStub : public Xbyak::CodeGenerator
@@ -60,13 +57,13 @@ namespace mlink
 	};
 #endif
 
-	static std::vector<const ModuleInfo*> g_tables;
+	static std::vector<const modInfo*> g_tables;
 
-	void register_module(const ModuleInfo* info) {
+	void registerModule(const modInfo* info) {
 		g_tables.push_back(info);
 	}
 
-	void init_modules()
+	void initVMods()
 	{
 		// register modules
 		utl::init_function::init();
@@ -80,7 +77,7 @@ namespace mlink
 	}
 
 	// base64 fast lookup
-	bool decode_nid(const char* subset, size_t len, uint64_t &out)
+	bool decodeNid(const char* subset, size_t len, uint64_t &out)
 	{
 		const char lookup[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
 
@@ -108,13 +105,13 @@ namespace mlink
 		return true;
 	}
 
-	uintptr_t get_import(const char* lib, uint64_t hid) {
+	uintptr_t getImport(const char* lib, uint64_t hid) {
 
-		const ModuleInfo* table = nullptr;
+		const modInfo* table = nullptr;
 
 		// find the right table
 		for (const auto &t : g_tables) {
-			if (std::strcmp(lib, t->name) == 0) {
+			if (std::strcmp(lib, t->namePtr) == 0) {
 				table = t;
 				break;
 			}
@@ -134,9 +131,9 @@ namespace mlink
 
 		if (table) {
 			// search the table
-			for (int i = 0; i < table->fcount; i++) {
-				auto* f = &table->functions[i];
-				if (f->hid == hid) {
+			for (int i = 0; i < table->funcCount; i++) {
+				auto* f = &table->funcNodes[i];
+				if (f->hashId == hid) {
 					return reinterpret_cast<uintptr_t>(f->address);
 				}
 			}

@@ -3,81 +3,81 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
 
-int sceCoredumpAttachMemoryRegion()
+int lk_sceCoredumpAttachMemoryRegion()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceCoredumpAttachMemoryRegionAsUserFile()
+int lk_sceCoredumpAttachMemoryRegionAsUserFile()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceCoredumpAttachUserFile()
+int lk_sceCoredumpAttachUserFile()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceCoredumpConfigDumpMode()
+int lk_sceCoredumpConfigDumpMode()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceCoredumpDebugTextOut()
+int lk_sceCoredumpDebugTextOut()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceCoredumpGetStopInfoCpu()
+int lk_sceCoredumpGetStopInfoCpu()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceCoredumpGetStopInfoGpu()
+int lk_sceCoredumpGetStopInfoGpu()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceCoredumpGetThreadContextInfo()
+int lk_sceCoredumpGetThreadContextInfo()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceCoredumpRegisterCoredumpHandler()
+int lk_sceCoredumpRegisterCoredumpHandler()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceCoredumpSetUserDataType()
+int lk_sceCoredumpSetUserDataType()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceCoredumpUnregisterCoredumpHandler()
+int lk_sceCoredumpUnregisterCoredumpHandler()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceCoredumpWriteUserData()
+int lk_sceCoredumpWriteUserData()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceCoredumpInternalGetThreadContextInfo()
+int lk_sceCoredumpInternalGetThreadContextInfo()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;

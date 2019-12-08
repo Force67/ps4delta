@@ -4,7 +4,9 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
+
+#pragma warning(push, 0)
 
 int PS4ABI sceDbgVideoOutAddOutputModeVr60Privilege();
 int PS4ABI sceDbgVideoOutAddProcessAttribute();
@@ -149,8 +151,10 @@ int PS4ABI sceVideoOutGetStatusForWebcore();
 int PS4ABI sceVideoOutConfigureOutputModeExSubmitDoneUnsafe_();
 int PS4ABI unk__5AIEU9_11g();
 int PS4ABI sceVideoOutAddBufferAnisoPrivilege();
-int PS4ABI sceVideoOutAddBuffer4k2kPrivilege();
+int PS4ABI sceVideoOutAddBuffer4k2kPrivilege1();
 int PS4ABI sceVideoOutAdjustColor2_();
 int PS4ABI sceVideoOutAddBufferHdrPrivilege();
 int PS4ABI sceVideoOutGetHdmiRawEdid_();
 int PS4ABI unk_3xrSV8U0Hsg();
+
+#pragma warning(pop)

@@ -3,141 +3,141 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
 
-int dup2()
+int lk_dup21()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int getrlimit()
+int lk_getrlimit1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int ioctl()
+int lk_ioctl1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int kill()
+int lk_kill1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int poll()
+int lk_poll1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int pthread_kill()
+int lk_pthread_kill1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelJitCreateAliasOfSharedMemory()
+int lk_sceKernelJitCreateAliasOfSharedMemory1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelJitCreateSharedMemory()
+int lk_sceKernelJitCreateSharedMemory1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelJitGetSharedMemoryInfo()
+int lk_sceKernelJitGetSharedMemoryInfo1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelJitMapSharedMemory()
+int lk_sceKernelJitMapSharedMemory1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int setrlimit()
+int lk_setrlimit1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sigaction()
+int lk_sigaction1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sigaddset()
+int lk_sigaddset1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sigdelset()
+int lk_sigdelset1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sigemptyset()
+int lk_sigemptyset1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sigfillset()
+int lk_sigfillset1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sigismember()
+int lk_sigismember1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sigprocmask()
+int lk_sigprocmask1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sigsuspend()
+int lk_sigsuspend1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int socketpair()
+int lk_socketpair1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sysconf()
+int lk_sysconf1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sysctl()
+int lk_sysctl1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelGetExecutableModuleHandle()
+int lk_sceKernelGetExecutableModuleHandle1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;

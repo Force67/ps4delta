@@ -3,33 +3,33 @@
 
 // This file was generated on 08/12/2019
 
-#include "../../vmodlinker.h"
+#include "../../vmodLinker.h"
 
-int sceKernelJitCreateAliasOfSharedMemory()
+int lk_sceKernelJitCreateAliasOfSharedMemory2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelJitCreateSharedMemory()
+int lk_sceKernelJitCreateSharedMemory2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelJitGetSharedMemoryInfo()
+int lk_sceKernelJitGetSharedMemoryInfo2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int sceKernelJitMapSharedMemory()
+int lk_sceKernelJitMapSharedMemory2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int socketpair()
+int lk_socketpair2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;

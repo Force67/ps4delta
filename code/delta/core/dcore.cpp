@@ -5,10 +5,10 @@
 
 #include "dcore.h"
 
-#include <loader/Loader.h>
-#include <modules/ModuleLinker.h>
+#include "modules/elfLoader.h"
 
 #include <logger/logger.h>
+#include <utl/File.h>
 
 deltaCore::deltaCore(int& argc, char** argv) :
 	QApplication(argc, argv)
@@ -32,9 +32,12 @@ bool deltaCore::init()
 
 void deltaCore::boot(const std::string& fromdir)
 {
-	return;
 	//auto t = std::time(nullptr);
 	//LOG_INFO("Starting " FXNAME " on {:%Y-%m-%d}", *std::localtime(&t));
+	utl::File inFile(fromdir);
+
+	auto data = std::make_unique<uint8_t[]>(inFile.GetSize());
+	inFile.Read(data.get(), inFile.GetSize());
 
 	// create the process
 	proc = std::make_unique<krnl::Process>();
@@ -42,4 +45,7 @@ void deltaCore::boot(const std::string& fromdir)
 	{
 		LOG_INFO("Delta: Module %s loaded at 0x%llx\n", mod->name.c_str(), reinterpret_cast<uintptr_t>(mod->base));
 	});
+
+	modules::elfLoader ldr(std::move(data));
+	ldr.loadinProc(*proc);
 }

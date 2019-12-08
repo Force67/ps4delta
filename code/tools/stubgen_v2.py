@@ -39,7 +39,12 @@ $content = $_ | Get-Content
 
 Set-Content -PassThru $_.Fullname $content -Encoding ascii -Force}  
 '''
+
+#global Symbol name table to avoid name clashes
+symStore = []
+
 def libdParse(file, prettyname):
+
     #print(file)
     with open(file, 'r') as f:
         info = json.load(f)
@@ -51,12 +56,12 @@ def libdParse(file, prettyname):
         with open('out\\' + prettyname + '\\' + prettyname + ".h" , 'w') as hpp:
             hpp.write('#pragma once\n')
             emitHeader(hpp)
-            hpp.write('#include "../../vmodlinker.h"\n\n')
+            hpp.write('#include "../../vmodLinker.h"\n\n#pragma warning(push, 0)\n\n')
 
             with open('out\\' + prettyname + '\\' + prettyname + "_api.cpp" , 'w') as api:
                 emitHeader(api)
                 api.write('#include "' + prettyname + '.h"\n\n')
-                api.write('static const vmod::funcInfo functions[] = {\n')
+                api.write('static const modules::funcInfo functions[] = {\n')
 
                 mods = info['modules']
                 for mod in mods:
@@ -65,9 +70,7 @@ def libdParse(file, prettyname):
 
                             with open('out\\' + prettyname + '\\' + lib['name'] + ".cpp" , 'w') as cppx:
                                 emitHeader(cppx)
-                                cppx.write('#include "../../vmodlinker.h"\n\n')
-
-                                symStore = []
+                                cppx.write('#include "../../vmodLinker.h"\n\n')
 
                                 for sym in lib['symbols']:
                                     symname = 'NONAME'
@@ -75,7 +78,6 @@ def libdParse(file, prettyname):
                                         symname = sym['name']
                                         if symname is None:
                                             symname = areoFind(sym['encoded_id'])
-                                            print(symname)
 
                                             #still nothing?
                                             if symname == None:
@@ -92,23 +94,34 @@ def libdParse(file, prettyname):
                                     #sanitize the name
                                     symname = symname.replace('-', '_')
                                     symname = symname.replace('+', '_')
+                                    #symname = symname.replace('__', 'f__', 1)
+
+                                    if prettyname == 'libc':
+                                        symname = 'libc_' + symname
+
+                                    if prettyname == 'libkernel':
+                                        symname = 'lk_' + symname
 
                                     hit = False
+                                    counter = 0
                                     for x, y in symStore:
                                         if x == symname:
-                                            symname = symname + y
-                                            y += 1
+                                            #add 1 to make it "human readable"
+                                            symname = symname + str(y + 1)
+                                            symStore[counter][1] = y + 1
                                             hit = True
                                             break
+                                        counter += 1
 
                                     if hit == False:
-                                        symStore.append((symname, 0))
+                                        symStore.append([symname, 0])
 
                                     hpp.write('int PS4ABI ' + symname + '();\n')
                                     cppx.write('int ' + symname + '()\n{\n	LOG_UNIMPLEMENTED;\n	return 0;\n}\n\n')
-                                    api.write('	{0x' + sym['hex_id'] + ', &' + symname + '},\n')
+                                    api.write('	{0x' + sym['hex_id'] + ', (void*)&' + symname + '},\n')
 
                 api.write('};\n\nMODULE_INIT(' + prettyname + ');\n')
+                hpp.write('\n#pragma warning(pop)')
 
 
 try:
