@@ -1,48 +1,97 @@
 
 // Copyright (C) Force67 2019
 
-#include "elfLoader.h"
-#include "vmodLinker.h"
-#include "kernel/Process.h"
-
 #include <utl/File.h>
+#include "modules/vmodLinker.h"
 
-namespace modules
+#include "elfModule.h"
+#include "proc.h"
+
+namespace krnl
 {
-	elfLoader::elfLoader(std::unique_ptr<uint8_t[]> d) :
-		data(std::move(d)),
-		tlsslot(-1)
-	{}
-
-	bool elfLoader::canLoad(utl::File& file)
+	elfModule::elfModule(krnl::proc *owner) :
+		owner(owner)
 	{
-		ELFHeader elf{};
-		file.Read(elf);
+		/*-1 = no tls used*/
+		tlsSlot = -1;
+	}
 
-		if (elf.magic == ELF_MAGIC && elf.machine == ELF_MACHINE_X86_64) {
+	bool elfModule::fromFile(const std::string& path)
+	{
+		utl::File file(path);
+		if (!file.IsOpen())
+			return false;
+
+		ELFHeader diskHeader{};
+		file.Read(diskHeader);
+
+		if (diskHeader.magic == ELF_MAGIC && diskHeader.machine == ELF_MACHINE_X86_64) {
+			file.Seek(0, utl::seekMode::seek_set);
 			LOG_TRACE("Identified file as plain ELF");
+			
+			data = std::make_unique<uint8_t[]>(file.GetSize());
+			file.Read(data.get(), file.GetSize());
+
+			elf = getOffset<ELFHeader>(0);
+			segments = getOffset<ELFPgHeader>(elf->phoff);
+
+			if (!initSegments()) {
+				LOG_ERROR("initFile: unable to init segments");
+				return false;
+			}
+
+			doDynamics();
+			logDbgInfo();
+
+			if (!mapImage() ||
+				!setupTLS()) {
+				LOG_ERROR("elfModule: Failed to map image");
+				return false;
+			}
+
+			if (!applyRelocations()) {
+				LOG_ERROR("elfModule: Failed to relocate image");
+				return false;
+			}
+
+			if (!resolveImports()) {
+				LOG_ERROR("elfModule: Failed to resolve imports");
+				return false;
+			}
+
+			installEHFrame();
+
+			// attempt to gather module name from file path
+			auto pos = path.find_last_of('\\');
+			if (pos != std::string::npos) {
+				name = path.substr(pos + 1, path.length() - pos);
+				LOG_INFO("Loading {}", name);
+			}
+			else
+				name = "#unk";
+
+			if (elf->entry == 0)
+				entry = nullptr;
+			else
+				entry = base + elf->entry;
+
 			return true;
 		}
 
 		return false;
 	}
 
-	bool elfLoader::loadinProc(krnl::Process& proc)
+	bool elfModule::initSegments()
 	{
-		elf = GetOffset<ELFHeader>(0);
-		segments = GetOffset<ELFPgHeader>(elf->phoff);
-
 		for (uint16_t i = 0; i < elf->phnum; i++) {
-
 			auto s = &segments[i];
-			LOG_TRACE("SEGMENT {}, {},{} -> TYPE {}, size {}", i, s->offset, s->vaddr, SegTypeToString(s->type), s->filesz);
+			//LOG_TRACE("SEGMENT {}, {},{} -> TYPE {}, size {}", i, s->offset, s->vaddr, SegTypeToString(s->type), s->filesz);
 
 			switch (s->type) {
 			case PT_LOAD:
 			{
-				// test alignment
 				if (s->align & 0x3FFFull || s->vaddr & 0x3FFFull || s->offset & 0x3FFFull) {
-					LOG_ERROR("elfLoader: Bad section alignment");
+					LOG_ERROR("elfModule: Bad section alignment");
 					return false;
 				}
 
@@ -52,9 +101,9 @@ namespace modules
 			case PT_TLS:
 			{
 				LOG_ASSERT(s->filesz > s->memsz);
-		
+
 				if (s->align > 32) {
-					LOG_ERROR("elfLoader: Bad TLS seg alignment");
+					LOG_ERROR("elfModule: Bad TLS seg alignment");
 					return false;
 				}
 
@@ -64,7 +113,7 @@ namespace modules
 			{
 				LOG_ASSERT(s->filesz == 0);
 
-				dynld.ptr = GetOffset<char>(s->offset);
+				dynld.ptr = getOffset<char>(s->offset);
 				dynld.size = s->filesz;
 				break;
 			}
@@ -76,56 +125,13 @@ namespace modules
 			}
 		}
 
-		doDynamics();
-		logDbgInfo();
-
-		if (!MapImage(proc) ||
-			!SetupTLS(proc)) {
-			LOG_ERROR("elfLoader: Failed to map image");
-			return false;
-		}
-
-		if (!ProcessRelocations()) {
-			LOG_ERROR("elfLoader: Failed to relocate image");
-			return false;
-		}
-
-		if (!ResolveImports()) {
-			LOG_ERROR("elfLoader: Failed to resolve imports");
-			return false;
-		}
-
-		installEHFrame();
-
-		// and register the entry...
-		auto entry = std::make_shared<krnl::Module>();
-		entry->name = "#MODULE#";
-		entry->base = targetbase;
-		entry->sizeCode = totalimage;
-		entry->tlsSlot = tlsslot;
-
-		if (elf->entry == 0)
-			entry->entry = nullptr;
-		else
-			entry->entry = targetbase + elf->entry;
-
-#if 0
-		{
-			utl::File proc("lastElf.bin", utl::fileMode::write);
-			if (proc.IsOpen()) {
-				proc.Write(entry->base, entry->sizeCode);
-			}
-		}
-#endif
-
-		proc.RegisterModule(std::move(entry));
 		return true;
 	}
 
-	void elfLoader::doDynamics()
+	void elfModule::doDynamics()
 	{
-		auto* s = GetSegment(ElfSegType::PT_DYNAMIC);
-		ELFDyn* dynamics = GetOffset<ELFDyn>(s->offset);
+		auto* s = getSegment(ElfSegType::PT_DYNAMIC);
+		ELFDyn* dynamics = getOffset<ELFDyn>(s->offset);
 		for (int32_t i = 0; i < (s->filesz / sizeof(ELFDyn)); i++) {
 			auto* d = &dynamics[i];
 
@@ -224,31 +230,31 @@ namespace modules
 		}
 	}
 
-	bool elfLoader::MapImage(krnl::Process &proc)
+	bool elfModule::mapImage()
 	{
-	/*	auto* it = GetSegment(PT_SCE_RELRO);
+	/*	auto* it = getSegment(PT_SCE_RELRO);
 		if (it) {
 			for (int i = 0; i < it->filesz; i += 8) {
-				std::printf("RELRO entry %llx\n", *GetOffset<uintptr_t>(it->offset + i));
+				std::printf("RELRO entry %llx\n", *getOffset<uintptr_t>(it->offset + i));
 			}
 		}*/
 
 		// the stuff we actually care about
-		totalimage = 0;
+		codeSize = 0;
 		for (uint16_t i = 0; i < elf->phnum; ++i) {
 			const auto* p = &segments[i];
 			if (p->type == PT_LOAD) {
-				totalimage += (p->memsz + 0xFFF) & ~0xFFF;
+				codeSize += (p->memsz + 0xFFF) & ~0xFFF;
 			}
 		}
 
 		// could also check if INTERP exists
-		if (totalimage == 0)
+		if (codeSize == 0)
 			return false;
 
 		// reserve segment
-		targetbase = (uint8_t*)proc.GetVirtualMemory().AllocateSeg(totalimage);
-		if (!targetbase)
+		base = (uint8_t*)owner->vmem.AllocateSeg(codeSize);
+		if (!base)
 			return false;
 
 		// and move it!
@@ -262,19 +268,19 @@ namespace modules
 				case (PF_R | PF_X):
 				{
 					// its a codepage
-					std::memcpy(GetAddress<void>(s->vaddr), GetOffset<void>(s->offset), s->filesz);
+					std::memcpy(getAddress<void>(s->vaddr), getOffset<void>(s->offset), s->filesz);
 					break;
 				}
 				case (PF_R):
 				{
 					//Reserve a rdata segment
-					std::memcpy(GetAddress<void>(s->vaddr), GetOffset<void>(s->offset), s->filesz);
+					std::memcpy(getAddress<void>(s->vaddr), getOffset<void>(s->offset), s->filesz);
 					break;
 				}
 				case (PF_R | PF_W):
 				{
 					// reserve a read write data seg
-					std::memcpy(GetAddress<void>(s->vaddr), GetOffset<void>(s->offset), s->filesz);
+					std::memcpy(getAddress<void>(s->vaddr), getOffset<void>(s->offset), s->filesz);
 					break;
 				}
 				default:
@@ -285,26 +291,26 @@ namespace modules
 				}
 			}
 			else if (s->type == PT_SCE_RELRO) {
-				std::memcpy(GetAddress<void>(s->vaddr), GetOffset<void>(s->offset), s->filesz);
+				std::memcpy(getAddress<void>(s->vaddr), getOffset<void>(s->offset), s->filesz);
 			}
 		}
 
 		return true;
 	}
 
-	bool elfLoader::SetupTLS(krnl::Process& proc)
+	bool elfModule::setupTLS()
 	{
-		auto* p = GetSegment(PT_TLS);
+		auto* p = getSegment(PT_TLS);
 		if (p) {
 
-			tlsslot = proc.GetNextFreeTls();
+			tlsSlot = owner->nextFreeTLS();
 		}
 
 		return true;
 	}
 
 	// pltrela_table_offset 
-	bool elfLoader::ResolveImports()
+	bool elfModule::resolveImports()
 	{
 		for (uint32_t i = 0; i < numJmpSlots; i++) {
 			auto* r = &jmpslots[i];
@@ -334,7 +340,7 @@ namespace modules
 
 			int32_t binding = ELF64_ST_BIND(sym->st_info);
 			if (binding == STB_LOCAL) {
-				*GetAddress<uintptr_t>(r->offset) = (uintptr_t)GetAddress<uintptr_t>(sym->st_value);
+				*getAddress<uintptr_t>(r->offset) = (uintptr_t)getAddress<uintptr_t>(sym->st_value);
 				break;
 			}
 
@@ -345,20 +351,19 @@ namespace modules
 				uint64_t modid = 0;
 				modules::decodeNid(ptr, 1, modid);
 
-				//char encoded[12]{};
-				//strncpy(encoded, name, 11);
-		
-				// use ps4libdoc to find real name
 				uint64_t hid = 0;
-				if (!modules::decodeNid(name, 11, hid))
+				if (!modules::decodeNid(name, 11, hid)) {
+					LOG_ERROR("resolveImports: cant handle NID");
 					return false;
+				}
 	
-				// fetch the import module name
 				for (auto& imp : implibs) {
 					if (imp.modid == static_cast<int32_t>(modid)) {
 
+					LOG_WARNING("MODULE {}", imp.name);
+
 					// ... and set the import address
-					*GetAddress<uintptr_t>(r->offset) = modules::getImport(imp.name, hid);
+					*getAddress<uintptr_t>(r->offset) = modules::getImport(imp.name, hid);
 					break;
 				}
 				}
@@ -368,7 +373,7 @@ namespace modules
 		return true;
 	}
 
-	bool elfLoader::ProcessRelocations()
+	bool elfModule::applyRelocations()
 	{
 		for (size_t i = 0; i < numRela; i++) {
 			auto* r = &rela[i];
@@ -389,28 +394,28 @@ namespace modules
 			{
 				// class type info and such..
 				//std::printf("RELOCATION SHIT %s\n", (char*)& strtab.ptr[sym->st_name]);
-				*GetAddress<uint64_t>(r->offset) = sym->st_value + r->addend;
+				*getAddress<uint64_t>(r->offset) = sym->st_value + r->addend;
 				break;
 			}
 			case R_X86_64_RELATIVE: /* base + ofs*/
 			{
-				*GetAddress<int64_t>(r->offset) = (int64_t)GetAddress<int64_t>(r->addend);
+				*getAddress<int64_t>(r->offset) = (int64_t)getAddress<int64_t>(r->addend);
 				break;
 			}
 			case R_X86_64_GLOB_DAT:
 			{
-				*GetAddress<uint64_t>(r->offset) = sym->st_value;
+				*getAddress<uint64_t>(r->offset) = sym->st_value;
 				break;
 			}
 			case R_X86_64_PC32:
 			{
-				*GetAddress<uint32_t>(r->offset) = (uint32_t)(sym->st_value + r->addend - (uint64_t)GetAddress<uint64_t>(r->offset));
+				*getAddress<uint32_t>(r->offset) = (uint32_t)(sym->st_value + r->addend - (uint64_t)getAddress<uint64_t>(r->offset));
 				break;
 			}
 			case R_X86_64_DTPMOD64:
 			{
 				// set tls index for image
-				*GetAddress<uint16_t>(r->offset) = tlsslot;
+				*getAddress<uint16_t>(r->offset) = tlsSlot;
 				break;
 			}
 			case R_X86_64_TPOFF64:
@@ -420,7 +425,6 @@ namespace modules
 				std::printf("unknown relocation type %d\n", type);
 				return false;
 			}
-
 			}
 		}
 
@@ -428,9 +432,9 @@ namespace modules
 	}
 
 	// taken from idc's "uplift" project
-	void elfLoader::installEHFrame()
+	void elfModule::installEHFrame()
 	{
-		const auto* p = GetSegment(PT_GNU_EH_FRAME);
+		const auto* p = getSegment(PT_GNU_EH_FRAME);
 		if (p->filesz > p->memsz)
 			return;
 
@@ -444,7 +448,7 @@ namespace modules
 			uint8_t first;
 		};
 
-		auto* info = GetOffset<GnuExceptionInfo>(p->offset);
+		auto* info = getOffset<GnuExceptionInfo>(p->offset);
 
 		if (info->version != 1)
 			return;
@@ -456,7 +460,7 @@ namespace modules
 		{
 			auto offset = *reinterpret_cast<uint32_t*>(current);
 			current += 4;
-			data_buffer = (uint8_t*)&targetbase[offset];
+			data_buffer = (uint8_t*)&base[offset];
 		}
 		else if (info->encoding == 0x1B) // relative to eh_frame
 		{
@@ -511,7 +515,7 @@ namespace modules
 		}
 	}
 
-	void elfLoader::logDbgInfo()
+	void elfModule::logDbgInfo()
 	{
 		for (uint16_t i = 0; i < elf->phnum; i++) {
 			auto s = &segments[i];
@@ -527,28 +531,27 @@ namespace modules
 					uint32_t ofs;
 				};
 
-				SCEPROC* pr = GetOffset<SCEPROC>(s->offset);
+				SCEPROC* pr = getOffset<SCEPROC>(s->offset);
 
 
-				//std::printf("FOUND PROCPARAM %llx (%llx byts big) proc ofs %llx, %llx\n", s->offset, s->filesz, pr->ofs, GetOffset<uintptr_t>(pr->ofs));
+				//std::printf("FOUND PROCPARAM %llx (%llx byts big) proc ofs %llx, %llx\n", s->offset, s->filesz, pr->ofs, getOffset<uintptr_t>(pr->ofs));
 
 			} break;
-
-			// like the PDB path on windows
 			case PT_SCE_COMMENT:
 			{
-				auto* comment = GetOffset<SCEComment>(s->offset);
+				// this is similar to the windows pdb path
+				auto* comment = getOffset<SCEComment>(s->offset);
 
 				std::string name;
 				name.resize(comment->pathLength);
-				memcpy(name.data(), GetOffset<void>(s->offset + sizeof(SCEComment)), comment->pathLength);
+				memcpy(name.data(), getOffset<void>(s->offset + sizeof(SCEComment)), comment->pathLength);
 
-				std::printf("Comment %s, %d\n", name.c_str(), comment->unk);
+				LOG_INFO("Starting: {}", name);
 				break;
 			}
 			case PT_SCE_LIBVERSION:
 			{
-				uint8_t* sec = GetOffset<uint8_t>(s->offset);
+				uint8_t* sec = getOffset<uint8_t>(s->offset);
 
 				// count entries
 				int32_t index = 0;

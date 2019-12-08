@@ -4,13 +4,8 @@
 #include <cstdio>
 
 #include "dcore.h"
-
-#include "modules/elfLoader.h"
-
 #include <logger/logger.h>
 #include <utl/File.h>
-
-#include <modules/vmodLinker.h>
 
 deltaCore::deltaCore(int& argc, char** argv) :
 	QApplication(argc, argv)
@@ -34,27 +29,17 @@ bool deltaCore::init()
 
 #include <thread>
 
-void deltaCore::boot(const std::string& fromdir)
+void deltaCore::boot(std::string& dir)
 {
+	// sanitize path
+	std::replace(dir.begin(), dir.end(), '/', '\\');
+
 	std::thread ctx([&]() {
-		//auto t = std::time(nullptr);
-//LOG_INFO("Starting " FXNAME " on {:%Y-%m-%d}", *std::localtime(&t));
-		utl::File inFile(R"(C:\Users\vince\Desktop\LIMBO\CUSA01369\eboot.bin-decrypted)");
+		auto proc = std::make_unique<krnl::proc>();
+		if (!proc->create(dir))
+			return;
 
-		auto data = std::make_unique<uint8_t[]>(inFile.GetSize());
-		inFile.Read(data.get(), inFile.GetSize());
-		modules::initVMods();
-		// create the process
-		proc = std::make_unique<krnl::Process>();
-		proc->RegisterModuleNotifaction([](krnl::ModuleHandle& mod)
-			{
-				LOG_INFO("Delta: Module {} loaded at {}\n", mod->name, reinterpret_cast<uintptr_t>(mod->base));
-			});
-
-		modules::elfLoader ldr(std::move(data));
-		ldr.loadinProc(*proc);
-
-		proc->Start({});
+		proc->start();
 	});
 
 	ctx.detach();

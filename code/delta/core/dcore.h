@@ -4,7 +4,7 @@
 
 #include <string>
 #include <memory>
-#include <kernel/Process.h>
+#include <kernel/proc.h>
 
 #include <QApplication>
 #include <QFontDatabase>
@@ -19,9 +19,9 @@ public:
 	deltaCore(int&, char**);
 
 	bool init();
-	void boot(const std::string& fromdir);
+	void boot(std::string& fromdir);
 private:
 	bool headless{ false };
 	std::unique_ptr<mainWindow> window;
-	std::unique_ptr<krnl::Process> proc;
+	std::unique_ptr<krnl::proc> proc;
 };

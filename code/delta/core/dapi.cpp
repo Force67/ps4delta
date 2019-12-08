@@ -22,7 +22,8 @@ EXP int dcoreMain(int argc, char** argv)
 	auto app = std::make_unique<deltaCore>(argc, argv);
 	if (app) {
 		if (app->init()) {
-			app->boot(R"(C:\Users\vince\Desktop\ISHALLRISE\eboot.bin-decrypted)");
+			std::string temp(R"(C:\Users\vince\Desktop\LIMBO\CUSA01369\eboot.bin-decrypted)");
+			app->boot(temp);
 
 			// enter event loop
 			return app->exec();
