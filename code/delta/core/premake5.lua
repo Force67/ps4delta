@@ -28,11 +28,10 @@ project "dcore"
     }
 
 	defines {
-		'COMPILING_CORE'
+		'COMPILING_CORE',
+		'FMT_HEADER_ONLY'
 	}
 
-	defines "FMT_HEADER_ONLY"
-	
 	links {
         "shared",
     }

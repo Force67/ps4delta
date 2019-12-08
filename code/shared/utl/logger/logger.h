@@ -95,7 +95,7 @@ namespace utl
 	::utl::fmtLogMsg(::utl::logLevel::Critical, __FILE__, __LINE__, \
 						 __func__, __VA_ARGS__)
 #define LOG_ASSERT(expression) do {                              \
-	if (!!(expression))	{										 \
+	if (expression)	{										 \
 	::utl::fmtLogMsg(::utl::logLevel::Error, __FILE__, __LINE__, \
 						 __func__, "assertion failed at " #expression); \
 		__debugbreak();													\

@@ -9,7 +9,7 @@
 
 namespace modules
 {
-#if 0
+#if 1
 	class SymStub : public Xbyak::CodeGenerator
 	{
 		const char* name;
@@ -106,7 +106,6 @@ namespace modules
 	}
 
 	uintptr_t getImport(const char* lib, uint64_t hid) {
-
 		const modInfo* table = nullptr;
 
 		// find the right table
@@ -117,17 +116,15 @@ namespace modules
 			}
 		}
 
-#if 0
 		auto wrap = [&](const void *addr, const char *name)
 		{
-#ifdef 0
-			auto* stub = new SymStub(addr, table ? table->name : "unresolved", name);
+#ifdef _DEBUG
+			auto* stub = new SymStub(addr, table ? table->namePtr : "unresolved", name);
 			return reinterpret_cast<uintptr_t>(stub->getCode<void*>());
 #else
 			return reinterpret_cast<uintptr_t>(addr);
 #endif
 		};
-#endif
 
 		if (table) {
 			// search the table
@@ -139,6 +136,7 @@ namespace modules
 			}
 		}
 
-		return reinterpret_cast<uintptr_t>(&debugstub);
+		//return wrap(&debugstub, )
+		return  reinterpret_cast<uintptr_t>(&debugstub);
 	}
 }

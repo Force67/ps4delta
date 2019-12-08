@@ -6,7 +6,7 @@
 
 namespace krnl
 {
-#if 0
+#if 1
 	class EntryGen : public Xbyak::CodeGenerator
 	{
 	public:
@@ -55,13 +55,7 @@ namespace krnl
 		}
 
 		auto& main = GetMainModule();
-
-		//memset(&main->base[0x11164DE], 0x90, 7);
-
-		// giant hack
-		//memset(&main->base[0x20], 0xC3, 1);
-
-#if 0
+#if 1
 		// generate a entry point push context
 		EntryGen trampoline(main->entry);
 		auto func = trampoline.getCode<void* (*)(void*)>();

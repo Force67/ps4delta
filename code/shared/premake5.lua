@@ -8,7 +8,8 @@ project "shared"
         ["*"] = "premake5.lua"
     }
 	
-	defines "FMT_HEADER_ONLY"
+	defines { "FMT_HEADER_ONLY",
+              "XBYAK_NO_OP_NAMES" }
 
     includedirs
     {

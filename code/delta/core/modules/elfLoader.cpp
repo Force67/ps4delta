@@ -81,17 +81,17 @@ namespace modules
 
 		if (!MapImage(proc) ||
 			!SetupTLS(proc)) {
-			LOG_TRACE("elfLoader: Failed to map image");
+			LOG_ERROR("elfLoader: Failed to map image");
 			return false;
 		}
 
 		if (!ProcessRelocations()) {
-			LOG_TRACE("elfLoader: Failed to relocate image");
+			LOG_ERROR("elfLoader: Failed to relocate image");
 			return false;
 		}
 
 		if (!ResolveImports()) {
-			LOG_TRACE("elfLoader: Failed to resolve imports");
+			LOG_ERROR("elfLoader: Failed to resolve imports");
 			return false;
 		}
 
@@ -109,7 +109,7 @@ namespace modules
 		else
 			entry->entry = targetbase + elf->entry;
 
-#ifdef _DEBUG
+#if 0
 		{
 			utl::File proc("lastElf.bin", utl::fileMode::write);
 			if (proc.IsOpen()) {
@@ -118,7 +118,8 @@ namespace modules
 		}
 #endif
 
-		//proc.RegisterModule(std::move(entry));
+		proc.RegisterModule(std::move(entry));
+		return true;
 	}
 
 	void elfLoader::doDynamics()
@@ -314,13 +315,13 @@ namespace modules
 			ElfSym* sym = &symbols[isym];
 
 			if (type != R_X86_64_JUMP_SLOT) {
-				std::printf("Bad jmpslot %d\n", i);
+				LOG_WARNING("resolveImports: bad jump slot {}", i);
 				continue;;
 			}
 
 			if ((uint32_t)isym >= numSymbols ||
 				sym->st_name >= strtab.size) {
-				std::printf("Bad symbol idx %d for relocation %d\n", isym, i);
+				LOG_WARNING("resolveImports: bad symbol index {} for relocation {}", isym, i);
 				continue;
 			}
 

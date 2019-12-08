@@ -1,14 +1,9 @@
 
-#ifndef XBYAK_NO_OP_NAMES
-#define XBYAK_NO_OP_NAMES
-#endif
-
-#include "xbyak.h"
-
-#if 0
+#if 1
 //using namespace Xbyak;
 
 const char *getVersionString() const { return "5.80"; }
+
 void adc(const Operand& op, uint32 imm) { opRM_I(op, imm, 0x10, 2); }
 void adc(const Operand& op1, const Operand& op2) { opRM_RM(op1, op2, 0x10); }
 void adcx(const Reg32e& reg, const Operand& op) { opGen(reg, op, 0xF6, 0x66, isREG32_REG32orMEM, NONE, 0x38); }
@@ -1598,6 +1593,7 @@ void pushfd() { db(0x9C); }
 void popa() { db(0x61); }
 #endif
 #ifndef XBYAK_NO_OP_NAMES
+#if 0
 void and(const Operand& op1, const Operand& op2) { and_(op1, op2); }
 void and(const Operand& op, uint32 imm) { and_(op, imm); }
 void or(const Operand& op1, const Operand& op2) { or_(op1, op2); }
@@ -1605,6 +1601,7 @@ void or(const Operand& op, uint32 imm) { or_(op, imm); }
 void xor(const Operand& op1, const Operand& op2) { xor_(op1, op2); }
 void xor(const Operand& op, uint32 imm) { xor_(op, imm); }
 void not(const Operand& op) { not_(op); }
+#endif
 #endif
 #ifndef XBYAK_DISABLE_AVX512
 void kaddb(const Opmask& r1, const Opmask& r2, const Opmask& r3) { opVex(r1, &r2, r3, T_L1 | T_0F | T_66 | T_W0, 0x4A); }
