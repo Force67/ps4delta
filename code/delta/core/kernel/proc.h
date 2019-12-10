@@ -19,6 +19,12 @@ namespace krnl
 		uint32_t codeSize;
 	};
 
+	struct procEnv
+	{
+		bool ripZoneEnabled{ true };
+		uint32_t ripZoneSize = 1024;
+	};
+
 	class proc
 	{
 		friend class elfModule;
@@ -35,16 +41,14 @@ namespace krnl
 		kObj* loadModule(std::string_view);
 
 	private:
-		// memory owned by proc
 		VMAccessMgr vmem;
+		procEnv env;
 
 		kObj* getModule(std::string_view);
 
 		uint32_t nextFreeTLS() {
 			return -1;
 		}
-
-		bool trustZoneEnabled{ true };
 
 		std::vector<std::unique_ptr<kObj>> modules;
 	};

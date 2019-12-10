@@ -6,12 +6,15 @@
 #include <utl/path.h>
 
 #include "proc.h"
-#include "elfModule.h"
-#include "modules/vmodLinker.h"
+#include "module.h"
+#include "runtime/vprx/vprx.h"
+
+static void PS4ABI kek(void *idk)
+{}
 
 namespace krnl
 {
-	using namespace modules;
+	using namespace runtime;
 
 	proc::proc()
 	{
@@ -19,8 +22,79 @@ namespace krnl
 
 	bool proc::create(const std::string& path)
 	{
-		// register HLE sprx modules
-		initVMods();
+		// register HLE prx modules
+		runtime::vprx_init();
+
+		auto xxx = std::make_unique<elfModule>(this);
+		if (!xxx->fromFile(R"(H:\.projects\ps4delta\bin\Debug\modules\libkernel.sprx)")) {
+			LOG_ERROR("unable to load main process module");
+			return false;
+		}
+
+		class entryGen : public Xbyak::CodeGenerator
+		{
+		public:
+			entryGen(void* target)
+			{
+				push(rbp);
+				mov(rbp, rsp);
+				push(r12);
+				push(r13);
+				push(r14);
+				push(r15);
+				push(rdi);
+				push(rsi);
+				push(rbx);
+
+				sub(rsp, 8);
+
+				mov(rdi, rcx);
+				mov(rax, (size_t)target);
+
+				call(rax);
+
+				add(rsp, 8);
+
+				pop(rbx);
+				pop(rsi);
+				pop(rdi);
+				pop(r15);
+				pop(r14);
+				pop(r13);
+				pop(r12);
+				pop(rbp);
+				ret();
+			}
+		};
+
+		// generate a entry point push context
+		entryGen callingContext(xxx->entry);
+		auto func = callingContext.getCode<void* (*)(void*)>();
+
+		union stack_entry
+		{
+			const void* ptr;
+			uint64_t val;
+		}
+		stack[128];
+
+		stack[0].val = 1 + 0; // argc
+		auto s = reinterpret_cast<stack_entry*>(&stack[1]);
+		(*s++).ptr = xxx->name.c_str();
+		/*for (auto it = args.begin(); it != args.end(); ++it)
+		{
+			(*s++).ptr = (*it).c_str();
+		}*/
+		(*s++).ptr = nullptr; // arg null terminator
+		(*s++).ptr = nullptr; // env null terminator
+		(*s++).val = 9ull; // entrypoint type
+		(*s++).ptr = xxx->entry;
+		(*s++).ptr = nullptr; // aux null type
+		(*s++).ptr = nullptr;
+
+		func(stack);
+
+		return 0;
 
 		/*reserve slot 0 for the main process we do this, 
 		because dependencies loaded by the main module 
@@ -119,11 +193,11 @@ namespace krnl
 			}
 		};
 
-		auto& main = getMainModule();
-		std::printf("main name %s\n", main.name.c_str());
+		auto& mainx = getMainModule();
+		std::printf("main name %s\n", mainx.name.c_str());
 
 		// generate a entry point push context
-		entryGen callingContext(main.entry);
+		entryGen callingContext(mainx.entry);
 		auto func = callingContext.getCode<void* (*)(void*)>();
 
 		union stack_entry
@@ -135,7 +209,7 @@ namespace krnl
 
 		stack[0].val = 1 + 0; // argc
 		auto s = reinterpret_cast<stack_entry*>(&stack[1]);
-		(*s++).ptr = main.name.c_str();
+		(*s++).ptr = mainx.name.c_str();
 		/*for (auto it = args.begin(); it != args.end(); ++it)
 		{
 			(*s++).ptr = (*it).c_str();
@@ -143,7 +217,7 @@ namespace krnl
 		(*s++).ptr = nullptr; // arg null terminator
 		(*s++).ptr = nullptr; // env null terminator
 		(*s++).val = 9ull; // entrypoint type
-		(*s++).ptr = main.entry;
+		(*s++).ptr = mainx.entry;
 		(*s++).ptr = nullptr; // aux null type
 		(*s++).ptr = nullptr;
 

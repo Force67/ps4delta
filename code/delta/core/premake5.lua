@@ -24,7 +24,8 @@ project "dcore"
         ".",
 		"../../shared",
 		"../../shared/fmtlib", --temp
-		"../../shared/utl"
+		"../../shared/utl",
+		"../../shared/capstone"
     }
 
 	defines {
@@ -32,8 +33,13 @@ project "dcore"
 		'FMT_HEADER_ONLY'
 	}
 
+	libdirs {
+		"../../shared/capstone"
+	}
+
 	links {
         "shared",
+		"capstone"
     }
 
     files {

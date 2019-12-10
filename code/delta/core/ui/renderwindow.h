@@ -5,7 +5,7 @@
 #include <QWidget>
 #include <QWindow>
 
-#include "gfx/gfxBase.h"
+#include "gfx/gfx_base.h"
 
 // for now we implement it as subview of the main window
 class renderWindow : public QWindow, public gfx::frameBase
