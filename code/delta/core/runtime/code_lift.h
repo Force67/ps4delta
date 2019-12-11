@@ -22,7 +22,6 @@ namespace runtime
 	private:
 		void emit_syscall(uint8_t *base, uint32_t idx);
 
-		size_t diCount = 0;
 		csh handle = 0;
 		cs_insn* insn = nullptr;
 	};

@@ -29,7 +29,6 @@ namespace krnl
 		bool mapImage();
 		bool resolveImports();
 		bool applyRelocations();
-		void applyRTFixups();
 
 		template<typename Type, typename TAdd>
 		Type* getOffset(const TAdd dist) {

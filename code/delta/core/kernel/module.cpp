@@ -80,7 +80,6 @@ namespace krnl
 			}
 
 			installEHFrame();
-			applyRTFixups();
 
 			if (elf->entry == 0) {
 				LOG_WARNING("{} has no entry?", name);
@@ -104,25 +103,6 @@ namespace krnl
 		}
 
 		return false;
-	}
-
-	void elfModule::applyRTFixups()
-	{
-		// apply code transform passes to make it
-		// compatible with host system
-		for (uint16_t i = 0; i < elf->phnum; i++) {
-			auto s = &segments[i];
-			if (s->type == PT_LOAD) {
-
-				// HACK HACK HACK: libkernel: enable debug messages
-				//*(DWORD*)&base[0x68264] = -1;
-
-				runtime::codeLift lift;
-				LOG_ASSERT(lift.init());
-				lift.transform(getAddress<uint8_t>(s->vaddr), s->filesz);
-				break;
-			}
-		}
 	}
 
 	bool elfModule::initSegments()

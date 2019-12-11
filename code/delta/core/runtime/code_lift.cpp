@@ -20,7 +20,7 @@ namespace runtime
 	codeLift::~codeLift()
 	{
 		if (handle) {
-			cs_free(insn, diCount);
+			cs_free(insn, 1);
 			cs_close(&handle);
 
 			// just to be sure...
