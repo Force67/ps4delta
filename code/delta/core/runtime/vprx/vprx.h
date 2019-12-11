@@ -6,7 +6,7 @@
 #include <utl/InitFunction.h>
 #include <logger/logger.h>
 
-#define PS4ABI __attribute__((sysv_abi))
+#define PS4ABI __attribute__((sysv_abi)) 
 
 namespace runtime
 {

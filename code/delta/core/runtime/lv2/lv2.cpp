@@ -8,8 +8,9 @@
 
 namespace runtime
 {
-	int PS4ABI sys_dynlib_process_needed_and_relocate();
-	int PS4ABI sys_getpid();
+	bool sys_write(uint32_t fd, const void* buf, size_t nbytes);
+	int sys_dynlib_process_needed_and_relocate();
+	int sys_getpid();
 
 	struct syscall_Reg {
 		uint32_t id;
@@ -17,6 +18,7 @@ namespace runtime
 	};
 
 	static const syscall_Reg syscall_dpt[] = {
+		{4, (void*)&sys_write},
 		{20, (void*)&sys_getpid},
 		{99, nullptr}, //sys_netcontrol
 		{101, nullptr}, //sys_netabort

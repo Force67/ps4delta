@@ -2,13 +2,12 @@
 // Copyright (C) Force67 2019
 
 #include <logger/logger.h>
+#include "../vprx/vprx.h"
 
 namespace runtime 
 {
-	int sys_dynlib_process_needed_and_relocate()
+	int PS4ABI sys_dynlib_process_needed_and_relocate()
 	{
-		std::puts("rel proc?");
-
 		// we always return success here as we
 		// automatically relocate everything on load
 		return 0;

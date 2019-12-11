@@ -30,7 +30,6 @@ namespace krnl
 
 		if (diskHeader.magic == ELF_MAGIC && diskHeader.machine == ELF_MACHINE_X86_64) {
 			file.Seek(0, utl::seekMode::seek_set);
-			LOG_TRACE("Identified file as plain ELF");
 			
 			data = std::make_unique<uint8_t[]>(file.GetSize());
 			file.Read(data.get(), file.GetSize());
@@ -94,6 +93,12 @@ namespace krnl
 					std::printf("MAIN PROC %p\n", entry);
 			}
 
+#ifdef _DEBUG
+			utl::File out(name + "_lastloaded", utl::fileMode::write);
+			if (out.IsOpen()) {
+				out.Write(getAddress<void>(0), codeSize);
+			}
+#endif
 				
 			return true;
 		}
@@ -113,7 +118,7 @@ namespace krnl
 				//*(DWORD*)&base[0x68264] = -1;
 
 				runtime::codeLift lift;
-				LOG_ASSERT(!lift.init());
+				LOG_ASSERT(lift.init());
 				lift.transform(getAddress<uint8_t>(s->vaddr), s->filesz);
 				break;
 			}
@@ -133,14 +138,10 @@ namespace krnl
 					LOG_ERROR("elfModule: Bad section alignment");
 					return false;
 				}
-
-				LOG_ASSERT(s->filesz > s->memsz);
 				break;
 			}
 			case PT_TLS:
 			{
-				LOG_ASSERT(s->filesz > s->memsz);
-
 				if (s->align > 32) {
 					LOG_ERROR("elfModule: Bad TLS seg alignment");
 					return false;
@@ -150,15 +151,10 @@ namespace krnl
 			}
 			case PT_SCE_DYNLIBDATA:
 			{
-				LOG_ASSERT(s->filesz == 0);
+				LOG_ASSERT(s->filesz != 0);
 
 				dynld.ptr = getOffset<char>(s->offset);
 				dynld.size = s->filesz;
-				break;
-			}
-			case PT_DYNAMIC:
-			{
-				LOG_ASSERT(s->filesz > s->memsz);
 				break;
 			}
 			}
@@ -271,18 +267,11 @@ namespace krnl
 
 	bool elfModule::mapImage()
 	{
-	/*	auto* it = getSegment(PT_SCE_RELRO);
-		if (it) {
-			for (int i = 0; i < it->filesz; i += 8) {
-				std::printf("RELRO entry %llx\n", *getOffset<uintptr_t>(it->offset + i));
-			}
-		}*/
-
-		// total code size
+		// calculate total aligned code size
 		codeSize = 0;
 		for (uint16_t i = 0; i < elf->phnum; ++i) {
 			const auto* p = &segments[i];
-			if (p->type == PT_LOAD) {
+			if (p->type == PT_LOAD || p->type == PT_SCE_RELRO) {
 				codeSize += (p->memsz + 0xFFF) & ~0xFFF;
 			}
 		}
@@ -312,47 +301,56 @@ namespace krnl
 		if (pcfg.ripZoneEnabled)
 			std::memset(base + realCodeSize, 0xCC, pcfg.ripZoneSize);
 
+		// step 0: map data
 		for (uint16_t i = 0; i < elf->phnum; i++) {
 			auto s = &segments[i];
-			if (s->type == PT_LOAD) {
-				uint32_t perm = s->flags & (PF_R | PF_W | PF_X);
-				switch (perm) {
+			if (s->type == PT_LOAD || s->type == PT_SCE_RELRO) {
+				void* target = elf->type == ET_SCE_EXEC ? 
+					getAddress<void>(s->vaddr) :
+					getAddress<void>(s->paddr);
 
-				// todo: apply real page protections?
-				case (PF_R | PF_X): /*code*/
-				{
-					std::memcpy(getAddress<void>(s->vaddr), getOffset<void>(s->offset), s->filesz);
-					break;
-				}
-				case (PF_R): /*rdata*/
-				{
-					std::memcpy(getAddress<void>(s->vaddr), getOffset<void>(s->offset), s->filesz);
-					break;
-				}
-				case (PF_R | PF_W): /*data*/
-				{
-					std::memcpy(getAddress<void>(s->vaddr), getOffset<void>(s->offset), s->filesz);
-					break;
-				}
-				default:
-				{
-					std::puts("UNKNOWN param!");
-
-				}
-				}
+				std::memcpy(target, getOffset<void>(s->offset), s->filesz);
 			}
-			else if (s->type == PT_SCE_RELRO) {
-				std::memcpy(getAddress<void>(s->vaddr), getOffset<void>(s->offset), s->filesz);
+		}
+
+		// step 1: lift code
+		for (uint16_t i = 0; i < elf->phnum; i++) {
+			auto s = &segments[i];
+			uint32_t perm = s->flags & (PF_R | PF_W | PF_X);
+			if (s->type == PT_LOAD && perm == (PF_R | PF_X)) {
+				runtime::codeLift lift;
+				LOG_ASSERT(lift.init());
+				lift.transform(getAddress<uint8_t>(s->vaddr), s->filesz);
 			}
 		}
 
 #ifdef _DEBUG
-		// temp hack: raise 505 kernel debug msg level
+		// temp hack: raise 5.05 kernel debug msg level
 		if (name == "libkernel.sprx") {
 			*getAddress<uint32_t>(0x68264) = UINT32_MAX;
-			LOG_WARNING("Enabling libkernel debug messages");
+				LOG_WARNING("Enabling libkernel debug messages");
 		}
 #endif
+
+		//step 2: apply page protections
+		for (uint16_t i = 0; i < elf->phnum; i++) {
+			auto s = &segments[i];
+			if (s->type == PT_LOAD) {
+				uint32_t perm = s->flags & (PF_R | PF_W | PF_X);
+				auto trans_perm = [](uint32_t op)
+				{
+					switch (op) {
+					case (PF_R | PF_X): return PAGE_EXECUTE_READ;
+					case (PF_R): return PAGE_READONLY;
+					case (PF_R | PF_W): return PAGE_READWRITE;
+					}
+				};
+
+				// todo: use platform lib
+				DWORD old;
+				VirtualProtect(getAddress<void>(s->vaddr), s->filesz, trans_perm(perm), &old);
+			}
+		}
 
 		return true;
 	}
@@ -418,6 +416,15 @@ namespace krnl
 	
 				for (auto& imp : implibs) {
 					if (imp.modid == static_cast<int32_t>(modid)) {
+						//std::printf("import %s\n", imp.name);
+
+						if (std::strcmp(imp.name, "libSceLibcInternal") == 0) {
+							auto* lib = static_cast<elfModule*>(owner->loadModule(std::string(imp.name)));
+							auto* ptr = lib->getExport(hid);
+							//std::printf("LIBC_INTERNL PTR %p\n", ptr);
+							*getAddress<uintptr_t>(r->offset) = reinterpret_cast<uintptr_t>(ptr);
+							break;
+						}
 
 					if (strstr(imp.name, "libc")) {
 						/*more temp hax*/
@@ -427,6 +434,8 @@ namespace krnl
 						*getAddress<uintptr_t>(r->offset) = reinterpret_cast<uintptr_t>(ptr);
 						break;
 					}
+
+					
 
 					//LOG_WARNING("MODULE {}", imp.name);
 

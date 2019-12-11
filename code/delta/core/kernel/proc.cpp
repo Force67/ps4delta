@@ -81,14 +81,10 @@ namespace krnl
 		stack[0].val = 1 + 0; // argc
 		auto s = reinterpret_cast<stack_entry*>(&stack[1]);
 		(*s++).ptr = xxx->name.c_str();
-		/*for (auto it = args.begin(); it != args.end(); ++it)
-		{
-			(*s++).ptr = (*it).c_str();
-		}*/
 		(*s++).ptr = nullptr; // arg null terminator
 		(*s++).ptr = nullptr; // env null terminator
 		(*s++).val = 9ull; // entrypoint type
-		(*s++).ptr = xxx->entry;
+		(*s++).ptr = (const void*)(xxx->entry - xxx->base);
 		(*s++).ptr = nullptr; // aux null type
 		(*s++).ptr = nullptr;
 

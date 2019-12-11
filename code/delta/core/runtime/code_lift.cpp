@@ -74,17 +74,11 @@ namespace runtime
 	{
 		auto address = lv2_get(idx);
 		if (address) {
-
-			// TODO: crashes fixed now?
-#if 1
-			/*insert far jmp trampoline to avoid RIP alloc*/
-			// TODO: is this cheaper than RIP alloc? ... probably?
+			// we jump *far away*
 			*(uint16_t*)base = 0xB848;
 			*(uint64_t*)(base + 2) = address;
 			*(uint16_t*)(base + 10) = 0xE0FF;
 			*(uint32_t*)(base + 12) = 0xCCCCCCCC;
-			std::printf(">>>>>>> WROTE SYSCALL %d\n", idx);
-#endif
 		}
 	}
 }
