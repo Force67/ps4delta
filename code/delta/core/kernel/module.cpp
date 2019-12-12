@@ -108,7 +108,7 @@ namespace krnl
 	bool elfModule::initSegments()
 	{
 		for (uint16_t i = 0; i < elf->phnum; i++) {
-			auto s = &segments[i];
+			const auto *s = &segments[i];
 			//LOG_TRACE("SEGMENT {}, {},{} -> TYPE {}, size {}", i, s->offset, s->vaddr, SegTypeToString(s->type), s->filesz);
 
 			switch (s->type) {
@@ -252,7 +252,7 @@ namespace krnl
 		for (uint16_t i = 0; i < elf->phnum; ++i) {
 			const auto* p = &segments[i];
 			if (p->type == PT_LOAD || p->type == PT_SCE_RELRO) {
-				codeSize += (p->memsz + 0xFFF) & ~0xFFF;
+				codeSize += elf_align_up(p->memsz, p->align);
 			}
 		}
 
@@ -283,10 +283,10 @@ namespace krnl
 
 		// step 0: map data
 		for (uint16_t i = 0; i < elf->phnum; i++) {
-			auto s = &segments[i];
+			const auto *s = &segments[i];
 			if (s->type == PT_LOAD || s->type == PT_SCE_RELRO) {
 				void* target = elf->type == ET_SCE_EXEC ? 
-					getAddress<void>(s->vaddr) :
+					reinterpret_cast<void*>(s->vaddr) :
 					getAddress<void>(s->paddr);
 
 				std::memcpy(target, getOffset<void>(s->offset), s->filesz);
@@ -295,7 +295,7 @@ namespace krnl
 
 		// step 1: lift code
 		for (uint16_t i = 0; i < elf->phnum; i++) {
-			auto s = &segments[i];
+			const auto *s = &segments[i];
 			uint32_t perm = s->flags & (PF_R | PF_W | PF_X);
 			if (s->type == PT_LOAD && perm == (PF_R | PF_X)) {
 				runtime::codeLift lift;
@@ -314,7 +314,7 @@ namespace krnl
 
 		//step 2: apply page protections
 		for (uint16_t i = 0; i < elf->phnum; i++) {
-			auto s = &segments[i];
+			const auto *s = &segments[i];
 			if (s->type == PT_LOAD) {
 				uint32_t perm = s->flags & (PF_R | PF_W | PF_X);
 				auto trans_perm = [](uint32_t op)
@@ -398,6 +398,12 @@ namespace krnl
 					if (imp.modid == static_cast<int32_t>(modid)) {
 						//std::printf("import %s\n", imp.name);
 
+						auto* lib = static_cast<elfModule*>(owner->loadModule(std::string(imp.name)));
+						auto* ptr = lib->getExport(hid);
+						//std::printf("LIBC_INTERNL PTR %p\n", ptr);
+						*getAddress<uintptr_t>(r->offset) = reinterpret_cast<uintptr_t>(ptr);
+
+#if 0
 						if (std::strcmp(imp.name, "libSceLibcInternal") == 0) {
 							auto* lib = static_cast<elfModule*>(owner->loadModule(std::string(imp.name)));
 							auto* ptr = lib->getExport(hid);
@@ -414,13 +420,13 @@ namespace krnl
 						*getAddress<uintptr_t>(r->offset) = reinterpret_cast<uintptr_t>(ptr);
 						break;
 					}
-
+#endif
 					
 
 					//LOG_WARNING("MODULE {}", imp.name);
 
 					// ... and set the import address
-					*getAddress<uintptr_t>(r->offset) = runtime::vprx_get(imp.name, hid);
+					//*getAddress<uintptr_t>(r->offset) = runtime::vprx_get(imp.name, hid);
 					break;
 				}
 				}
