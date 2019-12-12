@@ -9,15 +9,55 @@
 #include "module.h"
 #include "runtime/vprx/vprx.h"
 
-static void PS4ABI kek(void *idk)
-{}
-
 namespace krnl
 {
 	using namespace runtime;
 
+	class entryGen : public Xbyak::CodeGenerator
+	{
+	public:
+		entryGen(void* target)
+		{
+			push(rbp);
+			mov(rbp, rsp);
+			push(r12);
+			push(r13);
+			push(r14);
+			push(r15);
+			push(rdi);
+			push(rsi);
+			push(rbx);
+
+			sub(rsp, 8);
+
+			mov(rdi, rcx);
+			mov(rax, (size_t)target);
+
+			call(rax);
+
+			add(rsp, 8);
+
+			pop(rbx);
+			pop(rsi);
+			pop(rdi);
+			pop(r15);
+			pop(r14);
+			pop(r13);
+			pop(r12);
+			pop(rbp);
+			ret();
+		}
+	};
+
+	static proc* g_activeProc{ nullptr };
+
 	proc::proc()
 	{
+		g_activeProc = this;
+	}
+
+	proc* proc::getActive() {
+		return g_activeProc;
 	}
 
 	bool proc::create(const std::string& path)
@@ -25,51 +65,20 @@ namespace krnl
 		// register HLE prx modules
 		runtime::vprx_init();
 
-		auto xxx = std::make_unique<elfModule>(this);
-		if (!xxx->fromFile(R"(H:\.projects\ps4delta\bin\Debug\modules\libkernel.sprx)")) {
+		/*reserve slot 0 for the main process. we do this,
+		because dependencies loaded by the main module
+		also allocate their own slots*/
+		modules.emplace_back();
+
+		auto krnl = std::make_unique<elfModule>(this);
+		if (!krnl->fromFile(utl::make_abs_path("modules\\libkernel.sprx"))) {
 			LOG_ERROR("unable to load main process module");
 			return false;
 		}
 
-		class entryGen : public Xbyak::CodeGenerator
-		{
-		public:
-			entryGen(void* target)
-			{
-				push(rbp);
-				mov(rbp, rsp);
-				push(r12);
-				push(r13);
-				push(r14);
-				push(r15);
-				push(rdi);
-				push(rsi);
-				push(rbx);
-
-				sub(rsp, 8);
-
-				mov(rdi, rcx);
-				mov(rax, (size_t)target);
-
-				call(rax);
-
-				add(rsp, 8);
-
-				pop(rbx);
-				pop(rsi);
-				pop(rdi);
-				pop(r15);
-				pop(r14);
-				pop(r13);
-				pop(r12);
-				pop(rbp);
-				ret();
-			}
-		};
-
-		// generate a entry point push context
-		entryGen callingContext(xxx->entry);
-		auto func = callingContext.getCode<void* (*)(void*)>();
+		// todo: get rid of this mess
+		entryGen callingCtx(krnl->entry);
+		auto func = callingCtx.getCode<void* (*)(void*)>();
 
 		union stack_entry
 		{
@@ -80,36 +89,24 @@ namespace krnl
 
 		stack[0].val = 1 + 0; // argc
 		auto s = reinterpret_cast<stack_entry*>(&stack[1]);
-		(*s++).ptr = xxx->name.c_str();
+		(*s++).ptr = "libkernel.sprx";
 		(*s++).ptr = nullptr; // arg null terminator
 		(*s++).ptr = nullptr; // env null terminator
 		(*s++).val = 9ull; // entrypoint type
-		(*s++).ptr = (const void*)(xxx->entry - xxx->base);
+		(*s++).ptr = (const void*)(krnl->entry - krnl->base);
 		(*s++).ptr = nullptr; // aux null type
 		(*s++).ptr = nullptr;
 
+		modules[0] = std::move(krnl);
+		modules[0]->handle = 0;
 		func(stack);
 
-		return 0;
-
-		/*reserve slot 0 for the main process we do this, 
-		because dependencies loaded by the main module 
-		also allocate their own slots*/
-		modules.emplace_back();
-
-		// create our executable module
-		auto mainObj = std::make_unique<elfModule>(this);
-		if (!mainObj->fromFile(path)) {
-			LOG_ERROR("unable to load main process module");
-			return false;
-		}
-
-		// exec module is always #1
-		modules[0] = std::move(mainObj);
 		return true;
 	}
 
 	void proc::addObj(std::unique_ptr<kObj> obj) {
+		obj->handle = handleCounter;
+		handleCounter++;
 		modules.push_back(std::move(obj));
 	}
 
@@ -119,6 +116,17 @@ namespace krnl
 				continue;
 
 			if (mod->name == name)
+				return mod.get();
+		}
+		return nullptr;
+	}
+
+	kObj* proc::getModule(uint32_t handle) {
+		for (auto& mod : modules) {
+			if (!mod)
+				continue;
+
+			if (mod->handle == handle)
 				return mod.get();
 		}
 		return nullptr;

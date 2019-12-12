@@ -9,7 +9,12 @@
 namespace runtime
 {
 	bool sys_write(uint32_t fd, const void* buf, size_t nbytes);
+
 	int sys_dynlib_process_needed_and_relocate();
+	int sys_dynlib_get_proc_param(void**, size_t*);
+	int sys_dynlib_get_list(uint32_t*, size_t, size_t*);
+	int sys_dynlib_get_info_ex(uint32_t id, struct dynlib_info*);
+
 	int sys_getpid();
 
 	struct syscall_Reg {
@@ -88,13 +93,13 @@ namespace runtime
 		{589, nullptr}, //sys_dynlib_dlopen
 		{590, nullptr}, //sys_dynlib_dlclose
 		{591, nullptr}, //sys_dynlib_dlsym
-		{592, nullptr}, //sys_dynlib_get_list
+		{592, (void*)&sys_dynlib_get_list},
 		{593, nullptr}, //sys_dynlib_get_info
 		{594, nullptr}, //sys_dynlib_load_prx
 		{595, nullptr}, //sys_dynlib_unload_prx
 		{596, nullptr}, //sys_dynlib_do_copy_relocations
 		{597, nullptr}, //sys_dynlib_prepare_dlclose
-		{598, nullptr}, //sys_dynlib_get_proc_param
+		{598, (void*)&sys_dynlib_get_proc_param},
 		{599, (void*)&sys_dynlib_process_needed_and_relocate},
 		{600, nullptr}, //sys_sandbox_path
 		{601, nullptr}, //sys_mdbg_service
@@ -104,7 +109,7 @@ namespace runtime
 		{605, nullptr}, //sys_workaround8849
 		{606, nullptr}, //sys_is_development_mode
 		{607, nullptr}, //sys_get_self_auth_info
-		{608, nullptr}, //sys_dynlib_get_info_ex
+		{608, (void*)&sys_dynlib_get_info_ex},
 		{609, nullptr}, //sys_budget_getid
 		{610, nullptr}, //sys_budget_get_ptype
 		{611, nullptr}, //sys_get_paging_stats_of_all_threads

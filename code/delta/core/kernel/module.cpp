@@ -92,7 +92,7 @@ namespace krnl
 					std::printf("MAIN PROC %p\n", entry);
 			}
 
-#ifdef _DEBUG
+#if 0
 			utl::File out(name + "_lastloaded", utl::fileMode::write);
 			if (out.IsOpen()) {
 				out.Write(getAddress<void>(0), codeSize);
@@ -629,7 +629,7 @@ namespace krnl
 				SCEPROC* pr = getOffset<SCEPROC>(s->offset);
 
 
-				//std::printf("FOUND PROCPARAM %llx (%llx byts big) proc ofs %llx, %llx\n", s->offset, s->filesz, pr->ofs, getOffset<uintptr_t>(pr->ofs));
+				std::printf("FOUND PROCPARAM %llx (%llx byts big) proc ofs %llx, %llx\n", s->offset, s->filesz, pr->ofs, getOffset<uintptr_t>(pr->ofs));
 
 			} break;
 			case PT_SCE_COMMENT:
