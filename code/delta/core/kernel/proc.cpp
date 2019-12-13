@@ -149,11 +149,7 @@ namespace krnl
 			}
 
 			auto* shit = lib.get();
-
-			// initialize cxx
-			// lib->start
 			addObj(std::move(lib));
-
 			return shit;
 		}
 		return mod;

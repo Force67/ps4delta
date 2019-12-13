@@ -12,8 +12,7 @@
 namespace krnl
 {
 	elfModule::elfModule(krnl::proc *owner) :
-		owner(owner),
-		mainModule(nullptr)
+		owner(owner)
 	{
 		/*-1 = no tls used*/
 		tlsSlot = -1;
@@ -34,19 +33,8 @@ namespace krnl
 			data = std::make_unique<uint8_t[]>(file.GetSize());
 			file.Read(data.get(), file.GetSize());
 
-			elf = getOffset<ELFHeader>(0);
-			segments = getOffset<ELFPgHeader>(elf->phoff);
-
-			if (!initSegments()) {
-				LOG_ERROR("initFile: unable to init segments");
-				return false;
-			}
-
-			doDynamics();
-
 			// this is the main module
-			if (!isSprx()) {
-				logDbgInfo();
+			if (diskHeader.type != ET_SCE_DYNAMIC) {
 				name = "#main";
 				LOG_INFO("Loading proc main module");
 			}
@@ -62,185 +50,161 @@ namespace krnl
 					LOG_WARNING("Unknown module name?");
 				}
 			}
-		
-			if (!mapImage() ||
-				!setupTLS()) {
-				LOG_ERROR("elfModule: Failed to map image");
-				return false;
-			}
-			
-			if (!applyRelocations()) {
-				LOG_ERROR("elfModule: Failed to relocate image");
-				return false;
-			}
 
-			if (!resolveImports()) {
-				LOG_ERROR("elfModule: Failed to resolve imports");
-				return false;
-			}
-
-			installEHFrame();
-
-			if (elf->entry == 0) {
-				LOG_WARNING("{} has no entry?", name);
-				entry = nullptr;
-			}
-			else {
-				entry = getAddress<uint8_t>(elf->entry);
-
-				if (!isSprx())
-					std::printf("MAIN PROC %p\n", entry);
-			}
-
-#if 0
-			utl::File out(name + "_lastloaded", utl::fileMode::write);
-			if (out.IsOpen()) {
-				out.Write(getAddress<void>(0), codeSize);
-			}
-#endif
-				
-			return true;
+			return fromMem(std::move(data));
 		}
 
 		return false;
 	}
 
-	bool elfModule::initSegments()
+	bool elfModule::fromMem(std::unique_ptr<uint8_t[]> data)
 	{
-		for (uint16_t i = 0; i < elf->phnum; i++) {
-			const auto *s = &segments[i];
-			//LOG_TRACE("SEGMENT {}, {},{} -> TYPE {}, size {}", i, s->offset, s->vaddr, SegTypeToString(s->type), s->filesz);
+		/*TODO: figure out a way of getting rid of the back buffer*/
+		this->data = std::move(data);
 
-			switch (s->type) {
-			case PT_LOAD:
-			{
-				if (s->align & 0x3FFFull || s->vaddr & 0x3FFFull || s->offset & 0x3FFFull) {
-					LOG_ERROR("elfModule: Bad section alignment");
-					return false;
-				}
-				break;
-			}
-			case PT_TLS:
-			{
-				if (s->align > 32) {
-					LOG_ERROR("elfModule: Bad TLS seg alignment");
-					return false;
-				}
+		elf = getOffset<ELFHeader>(0);
+		segments = getOffset<ELFPgHeader>(elf->phoff);
 
-				break;
-			}
-			case PT_SCE_DYNLIBDATA:
-			{
-				LOG_ASSERT(s->filesz != 0);
-
-				dynld.ptr = getOffset<char>(s->offset);
-				dynld.size = s->filesz;
-				break;
-			}
-			}
+		if (!mapImage()) {
+			LOG_ERROR("elfModule: Failed to map image");
+			return false;
 		}
 
+		doDynamics();
+		setupTLS();
+
+		if (!applyRelocations()) {
+			LOG_ERROR("elfModule: Failed to relocate image");
+			return false;
+		}
+
+		if (!resolveImports()) {
+			LOG_ERROR("elfModule: Failed to resolve imports");
+			return false;
+		}
+
+		installEHFrame();
+
+		if (elf->entry == 0) {
+			LOG_WARNING("{} has no entry?", name);
+			entry = nullptr;
+		}
+		else {
+			entry = getAddress<uint8_t>(elf->entry);
+
+			if (!isSprx())
+				std::printf("MAIN PROC %p\n", entry);
+		}
+
+		//callConstructors();
 		return true;
+	}
+
+	bool elfModule::unload()
+	{
+		callDestructors();
+		data.reset();
+
+		//todo: unload memory from VMA
+		return true;
+	}
+
+	void elfModule::callConstructors()
+	{
+		for (uint32_t i = 0; i < numPreInitArray; i++) {
+			preinit_array[i]();
+		}
+
+		if (init_func)
+			init_func();
+
+		for (uint32_t i = 0; i < numInitArray; i++) {
+			init_array[i]();
+		}
+	}
+
+	void elfModule::callDestructors()
+	{
+		/*must be done in reverse*/
+		for (uint32_t i = numFiniArray; i > 0; i--) {
+			fini_array[i]();
+		}
+
+		if (fini_func)
+			fini_func();
 	}
 
 	void elfModule::doDynamics()
 	{
-		auto* s = getSegment(ElfSegType::PT_DYNAMIC);
-		ELFDyn* dynamics = getOffset<ELFDyn>(s->offset);
-		for (int32_t i = 0; i < (s->filesz / sizeof(ELFDyn)); i++) {
+		const auto* dynS = getSegment(ElfSegType::PT_DYNAMIC);
+		const auto* dyldS = getSegment(ElfSegType::PT_SCE_DYNLIBDATA);
+
+		uint8_t *dynldPtr = getOffset<uint8_t>(dyldS->offset);
+		uint8_t* dynldAddr = getAddress<uint8_t>(dyldS->vaddr);
+		//std::printf("addr = %p\n", dynldAddr);
+		ELFDyn* dynamics = getOffset<ELFDyn>(dynS->offset);
+		for (int32_t i = 0; i < (dynS->filesz / sizeof(ELFDyn)); i++) {
 			auto* d = &dynamics[i];
 
 			switch (d->tag) {
+			case DT_PREINIT_ARRAY:
+				preinit_array = reinterpret_cast<linker_function*>(dynldAddr + d->un.ptr);
+				break;
+			case DT_PREINIT_ARRAYSZ:
+				numPreInitArray = static_cast<uint32_t>(d->un.value / sizeof(uintptr_t));
+				break;
 			case DT_INIT:
+				init_func = reinterpret_cast<linker_function>(dynldAddr + d->un.ptr);
+				break;
 			case DT_INIT_ARRAY:
-			{
-				LOG_TRACE("DT_INIT {}", d->un.value);
+				init_array = reinterpret_cast<linker_function*>(dynldAddr + d->un.ptr);
 				break;
-			}
+			case DT_INIT_ARRAYSZ:
+				numInitArray = static_cast<uint32_t>(d->un.value / sizeof(uintptr_t));
+				break;
+			case DT_FINI_ARRAY:
+				fini_array = reinterpret_cast<linker_function*>(dynldAddr + d->un.ptr);
+				break;
+			case DT_FINI_ARRAYSZ:
+				numFiniArray = static_cast<uint32_t>(d->un.value / sizeof(uintptr_t));
+				break;
 			case DT_SCE_JMPREL:
-			{
-				if (d->un.ptr > dynld.size) {
-					std::printf("[!] bad JMPREL offset: %llx\n", d->un.ptr);
-					continue;
-				}
-
-				jmpslots = (ElfRel*)(dynld.ptr + d->un.ptr);
+				jmpslots = (ElfRel*)(dynldPtr + d->un.ptr);
 				break;
-			}
 			case DT_PLTRELSZ:
 			case DT_SCE_PLTRELSZ:
-			{
 				numJmpSlots = static_cast<uint32_t>(d->un.value / sizeof(ElfRel));
 				break;
-			}
 			case DT_SCE_STRTAB:
-			{
-				if (d->un.ptr > dynld.size) {
-					std::printf("[!] bad STRTAB offset: %llx", d->un.ptr);
-					continue;
-				}
-
-				strtab.ptr = (char*)(dynld.ptr + d->un.ptr);
+				strtab.ptr = (char*)(dynldPtr + d->un.ptr);
 				break;
-			}
 			case DT_STRSZ:
 			case DT_SCE_STRSIZE:
-			{
 				strtab.size = d->un.value;
 				break;
-			}
 			case DT_SCE_EXPLIB:
 			case DT_SCE_IMPLIB:
-			{
-
 				break;
-			}
 			case DT_SCE_SYMTAB:
-			{
-				if (d->un.ptr > dynld.size) {
-					LOG_WARNING("doDynamics: bad SYMTAB offset {}", d->un.ptr);
-					continue;
-				}
-
-				symbols = (ElfSym*)(dynld.ptr + d->un.ptr);
+				symbols = reinterpret_cast<ElfSym*>(dynldPtr + d->un.ptr);
 				break;
-			}
 			case DT_SCE_SYMTABSZ:
-			{
 				numSymbols = static_cast<uint32_t>(d->un.value / sizeof(ElfSym));
 				break;
-			}
 			case DT_SCE_RELA:
-			{
-				rela = (ElfRel*)(dynld.ptr + d->un.ptr);
+				rela = reinterpret_cast<ElfRel*>(dynldPtr + d->un.ptr);
 				break;
-			}
 			case DT_RELASZ:
 			case DT_SCE_RELASZ:
-			{
 				numRela = static_cast<uint32_t>(d->un.value / sizeof(ElfRel));
 				break;
+			case DT_SCE_NEEDED_MODULE:
+			{
+				auto& e = implibs.emplace_back();
+				e.name = (const char*)(strtab.ptr + (d->un.value & 0xFFFFFFFF));
+				e.modid = d->un.value >> 48;
+				break;
 			}
-			}
-		}
-
-		for (int32_t i = 0; i < (s->filesz / sizeof(ELFDyn)); i++) {
-			auto* d = &dynamics[i];
-			switch (d->tag) {
-				/*case DT_NEEDED:
-				{
-					std::printf("%i: DT_NEEDED %s\n", i, (char*)(strtab.ptr + d->un.value));
-					break;
-				}*/
-				case DT_SCE_NEEDED_MODULE:
-				{
-					auto& e = implibs.emplace_back();
-					e.name = (const char*)(strtab.ptr + (d->un.value & 0xFFFFFFFF));
-					e.modid = d->un.value >> 48;
-
-					//std::printf("NEEDED MODULE %s\n", e.name);
-					break;
-				}
 			}
 		}
 	}
@@ -248,7 +212,7 @@ namespace krnl
 	bool elfModule::mapImage()
 	{
 		// calculate total aligned code size
-		codeSize = 0;
+		uint32_t codeSize = 0;
 		for (uint16_t i = 0; i < elf->phnum; ++i) {
 			const auto* p = &segments[i];
 			if (p->type == PT_LOAD || p->type == PT_SCE_RELRO) {
@@ -276,6 +240,8 @@ namespace krnl
 #ifdef _DEBUG
 		LOG_WARNING("base for {} is at {}", name, fmt::ptr(base));
 #endif
+
+		std::printf("base %p\n", base); 
 
 		// pad out space with int3d's
 		if (pcfg.ripZoneEnabled)
@@ -369,16 +335,14 @@ namespace krnl
 			}
 
 			const char* name = &strtab.ptr[sym->st_name];
-			//std::printf("SYMBOL binding %s, BINDING: %d, TYPE: %d\n", name, sym->st_info >> 4, sym->st_info & 0x0f);
-
 			// example: weDug8QD-lE#L#M
-			//					    ^ ^
+			//				^      ^
 			// see above: libid, modid
 
 			int32_t binding = ELF64_ST_BIND(sym->st_info);
 			if (binding == STB_LOCAL) {
 				*getAddress<uintptr_t>(r->offset) = (uintptr_t)getAddress<uintptr_t>(sym->st_value);
-				break;
+				continue;
 			}
 
 			if (std::strlen(name) == 15) {
@@ -396,39 +360,12 @@ namespace krnl
 	
 				for (auto& imp : implibs) {
 					if (imp.modid == static_cast<int32_t>(modid)) {
-						//std::printf("import %s\n", imp.name);
 
-						auto* lib = static_cast<elfModule*>(owner->loadModule(std::string(imp.name)));
-						auto* ptr = lib->getExport(hid);
-						//std::printf("LIBC_INTERNL PTR %p\n", ptr);
-						*getAddress<uintptr_t>(r->offset) = reinterpret_cast<uintptr_t>(ptr);
-
-#if 0
-						if (std::strcmp(imp.name, "libSceLibcInternal") == 0) {
-							auto* lib = static_cast<elfModule*>(owner->loadModule(std::string(imp.name)));
-							auto* ptr = lib->getExport(hid);
-							//std::printf("LIBC_INTERNL PTR %p\n", ptr);
-							*getAddress<uintptr_t>(r->offset) = reinterpret_cast<uintptr_t>(ptr);
-							break;
-						}
-
-					if (strstr(imp.name, "libc")) {
-						/*more temp hax*/
-						auto* lib = static_cast<elfModule*>(owner->loadModule(std::string(imp.name)));
-						auto* ptr = lib->getExport(hid);
-						std::printf("LIBC PTR %p\n", ptr);
-						*getAddress<uintptr_t>(r->offset) = reinterpret_cast<uintptr_t>(ptr);
+						auto* lib = static_cast<elfModule*>(owner->loadModule(imp.name));
+						*getAddress<uintptr_t>(r->offset) = 
+							reinterpret_cast<uintptr_t>(lib->getExport(hid));
 						break;
 					}
-#endif
-					
-
-					//LOG_WARNING("MODULE {}", imp.name);
-
-					// ... and set the import address
-					//*getAddress<uintptr_t>(r->offset) = runtime::vprx_get(imp.name, hid);
-					break;
-				}
 				}
 			} 
 		}
@@ -469,11 +406,6 @@ namespace krnl
 		return nullptr;
 	}
 
-	const std::string& elfModule::getName()
-	{
-		return std::string();
-	}
-
 	bool elfModule::applyRelocations()
 	{
 		for (size_t i = 0; i < numRela; i++) {
@@ -485,47 +417,31 @@ namespace krnl
 			ElfSym* sym = &symbols[isym];
 
 			if (isym >= numSymbols) {
-				std::printf("[!] Invalid symbol index %d\n", isym);
+				LOG_ERROR("Invalid symbol index {}", isym);
 				continue;
 			}
 
 			switch (type) {
 			case R_X86_64_NONE: break;
 			case R_X86_64_64:
-			{
-				// class type info and such..
-				//std::printf("RELOCATION SHIT %s\n", (char*)& strtab.ptr[sym->st_name]);
 				*getAddress<uint64_t>(r->offset) = sym->st_value + r->addend;
 				break;
-			}
 			case R_X86_64_RELATIVE: /* base + ofs*/
-			{
 				*getAddress<int64_t>(r->offset) = (int64_t)getAddress<int64_t>(r->addend);
 				break;
-			}
 			case R_X86_64_GLOB_DAT:
-			{
 				*getAddress<uint64_t>(r->offset) = sym->st_value;
 				break;
-			}
 			case R_X86_64_PC32:
-			{
 				*getAddress<uint32_t>(r->offset) = (uint32_t)(sym->st_value + r->addend - (uint64_t)getAddress<uint64_t>(r->offset));
 				break;
-			}
 			case R_X86_64_DTPMOD64:
-			{
-				// set tls index for image
 				*getAddress<uint16_t>(r->offset) = tlsSlot;
 				break;
-			}
 			case R_X86_64_TPOFF64:
 			case R_X86_64_TPOFF32: 
 			default:
-			{
-				std::printf("unknown relocation type %d\n", type);
-				return false;
-			}
+				continue;
 			}
 		}
 
