@@ -7,4 +7,4 @@ for /f "usebackq tokens=*" %%i in (`%cd%/tools/win/vswhere -latest -requires Mic
   set MSBUILDDIR=%%i
 )
 
-"%MSBUILDDIR%" "%cd%/build/PS4Delta.sln" /p:Configuration=Release
+"%MSBUILDDIR%" "%cd%/build/PS4Delta.sln" /p:Configuration=Release -m
