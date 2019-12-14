@@ -17,13 +17,6 @@ project "host"
 			  "rsc_originalname=\"%{prj.name}%{prj.targetextension}\"",
 		      "rsc_description=\"Delta HLE PS4 emulator\"" }
 
-    vpaths
-    {
-        ["*"] = { "**.hpp", "**.h" },
-        ["*"] = "**.cpp",
-        ["*"] = "premake5.lua"
-    }
-	
 	links
 	{
 		"shared"

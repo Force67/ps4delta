@@ -6,7 +6,7 @@
 #include "code_lift.h"
 #include <cstdio>
 
-#include <xbyak/xbyak.h>
+#include <xbyak.h>
 
 namespace runtime
 {
@@ -30,7 +30,6 @@ namespace runtime
 
 	bool codeLift::init()
 	{
-		cs_arch arch;
 		auto err = cs_open(CS_ARCH_X86, CS_MODE_64, &handle);
 		if (err == CS_ERR_MEM) {
 			LOG_ERROR("vabiPass: not enough mem for disasembler");

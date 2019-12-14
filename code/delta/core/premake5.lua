@@ -11,21 +11,18 @@ project "dcore"
 			  "rsc_internalname=\"%{prj.name}\"",
 			  "rsc_productname=\"PS4Delta\"",
 			  "rsc_originalname=\"%{prj.name}%{prj.targetextension}\"",
-		      "rsc_description=\"Delta HLE emulation core\"" }
-
-    vpaths
-    {
-        ["*"] = { "**.hpp", "**.h" },
-        ["*"] = "**.cpp",
-        ["*"] = "premake5.lua"
-    }
+		      "rsc_description=\"Delta PS4 emulation core\"" }
 
     includedirs {
         ".",
 		"../../shared",
-		"../../shared/fmtlib", --temp
 		"../../shared/utl",
-		"../../shared/capstone"
+
+		-- 3rd party
+		"../../vendor/fmtlib/include",
+		"../../vendor/capstone/include",
+		"../../vendor/zlib",
+		"../../vendor/xbyak/xbyak"
     }
 
 	defines {
@@ -33,13 +30,10 @@ project "dcore"
 		'FMT_HEADER_ONLY'
 	}
 
-	libdirs {
-		"../../shared/capstone"
-	}
-
 	links {
         "shared",
-		"capstone"
+		"capstone",
+		"zlib"
     }
 
     files {
@@ -71,9 +65,6 @@ project "dcore"
 	filter {}
 	
 	qtprefix "Qt5"
-
-	-- TODO: use QT_ENV var
-	qtpath "C:/Qt/Qt5.12.0/5.12.0/msvc2017_64"
 	qtgenerateddir "qtgen"
 	
 	-- use debug versions of qt

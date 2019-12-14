@@ -2,7 +2,8 @@
 // Copyright (C) Force67 2019
 // based off https://github.com/Zer0xFF/ps4-pup-unpacker/blob/master/PUP.cpp
 
-#include "pup_reader.h"
+#include <zlib.h>
+#include "pup_object.h"
 
 namespace vfs
 {
@@ -39,12 +40,6 @@ namespace vfs
 	{
 		return (Flags & 8) != 0;
 	}
-
-	bool IsBlocked()
-	{
-		return (Flags & 0x800) != 0;
-	}
-
 	*/
 
 	pupReader::pupReader(const std::string& name) :
@@ -100,5 +95,13 @@ namespace vfs
 	void pupReader::extractAll()
 	{
 
+	}
+
+	void pupReader::unzipEntry(const pup_entry& entry, std::vector<uint8_t>& out)
+	{
+		/*singular block*/
+		if (entry.flags & 0x800) {
+
+		}
 	}
 }

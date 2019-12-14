@@ -38,6 +38,7 @@ namespace vfs
 	static_assert(sizeof(pup_header) == 32);
 	static_assert(sizeof(pup_entry) == 32);
 
+	// a reader for decrypted update blops
 	class pupReader
 	{
 	public:
@@ -48,6 +49,8 @@ namespace vfs
 		utl::File extractFile(uint16_t id);
 
 	private:
+		void unzipEntry(const pup_entry&, std::vector<uint8_t>&);
+
 		utl::File file;
 		pup_header header{};
 		std::vector<pup_entry> entries;

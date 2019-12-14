@@ -4,7 +4,7 @@
 #include <chrono>
 
 // hard dependency
-#include <fmtlib/include/fmt/format.h>
+#include <fmt/format.h>
 
 // log impl is heavily influenced & based on the yuzu logger
 
