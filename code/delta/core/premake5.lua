@@ -66,6 +66,12 @@ project "dcore"
 	
 	qtprefix "Qt5"
 	qtgenerateddir "qtgen"
+
+	-- for ci
+	local qtd = os.getenv("Qt5_Dir")
+	if qtd then
+		qtpath(qtd)
+	end
 	
 	-- use debug versions of qt
 	-- libs in debug builds
