@@ -4,14 +4,20 @@ on: [push]
 
 jobs:
   build:
-
     runs-on: windows-latest
-    
+
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v2
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        host: windows
+        target: desktop
+        arch: win64_msvc2017_64
     - name: Invoke MSBuild
       run: cibuild.bat
-    - uses: actions/upload-artifact@master
+      shell: cmd
+    - uses: actions/upload-artifact@v1
       with:
         name: Artifacts
         path: bin/Release
