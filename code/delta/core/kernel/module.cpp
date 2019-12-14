@@ -9,6 +9,8 @@
 #include "module.h"
 #include "proc.h"
 
+#include <windows.h>
+
 namespace krnl
 {
 	elfModule::elfModule(krnl::proc *owner) :

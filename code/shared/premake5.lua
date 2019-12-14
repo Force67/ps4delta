@@ -3,9 +3,6 @@ project "shared"
     language "C++"
     kind "StaticLib"
 
-	defines { "FMT_HEADER_ONLY",
-              "XBYAK_NO_OP_NAMES" }
-
     includedirs
     {
         ".",
