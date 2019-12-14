@@ -48,7 +48,7 @@ namespace runtime
 
 	static_assert(sizeof(dynlib_info) == 424);
 
-	int PS4ABI sys_dynlib_get_info_ex(uint32_t handle, dynlib_info* info)
+	int PS4ABI sys_dynlib_get_info_ex(uint32_t handle, int32_t ukn /*always 1*/, dynlib_info* info)
 	{
 		auto* mod = proc::getActive()->getModule(handle);
 		if (!mod)

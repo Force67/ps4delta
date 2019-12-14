@@ -8,6 +8,8 @@
 #include <logger/logger.h>
 #include <utl/File.h>
 
+#include "formats/pup_object.h"
+
 deltaCore::deltaCore(int& argc, char** argv) :
 	QApplication(argc, argv)
 {
@@ -30,6 +32,13 @@ bool deltaCore::init()
 
 void deltaCore::boot(std::string& dir)
 {
+#if 0
+	vfs::pupReader read(R"(C:\Users\vince\Desktop\PUP\PS4UPDATE1.PUP.dec)");
+	read.load();
+
+	return;
+#endif
+
 	// sanitize path
 	std::replace(dir.begin(), dir.end(), '/', '\\');
 

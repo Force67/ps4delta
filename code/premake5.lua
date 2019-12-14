@@ -81,7 +81,9 @@ workspace "PS4Delta"
 	
 	group "tools"
 	include "tools/sedit"
-	include "tools/unpup"
+	
+	group "vendor"
+	include "vendor/3rdparty.lua"
 	
 -- Cleanup
 if _ACTION == "clean" then

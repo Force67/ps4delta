@@ -77,7 +77,8 @@ enum ElfSegType
 	PT_SCE_RELRO = 0x61000010,
 	PT_SCE_COMMENT = 0x6FFFFF00,
 	PT_SCE_LIBVERSION = 0x6FFFFF01,
-	PT_GNU_EH_FRAME = 0x6474E550
+	PT_GNU_EH_FRAME = 0x6474E550,
+	PT_GNU_STACK = 0x6474E551,
 };
 
 enum ElfRelType
@@ -199,6 +200,7 @@ inline const char* SegTypeToString(uint32_t type)
 		AS_STR(PT_SCE_COMMENT)
 		AS_STR(PT_SCE_LIBVERSION)
 		AS_STR(PT_GNU_EH_FRAME)
+		AS_STR(PT_GNU_STACK)
 
 #undef AS_STR
 
@@ -262,3 +264,10 @@ inline const char* SegTypeToString(uint32_t type)
 
 #define STB_LOCAL  0
 #define STB_GLOBAL 1
+
+#define POW2_MASK (align - static_cast<T>(1))
+
+template<typename T> inline T elf_align_up(const T addr, const T align)
+{
+	return (addr + POW2_MASK) & ~POW2_MASK;
+}

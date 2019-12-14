@@ -46,6 +46,18 @@ namespace utl
 				}
 			}
 
+			PhysFile::~PhysFile() {
+				Close();
+			}
+
+			void PhysFile::Close()
+			{
+				if (fptr) {
+					std::fclose(fptr);
+					sizeTracker = 0;
+				}
+			}
+
 			uint64_t Read(void* buf, size_t size) override
 			{
 				uint64_t x = std::fread(buf, size, 1, fptr);

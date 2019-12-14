@@ -7,7 +7,6 @@
 
 #include "gfx/gfx_base.h"
 
-// for now we implement it as subview of the main window
 class renderWindow : public QWindow, public gfx::frameBase
 {
 	Q_OBJECT
@@ -17,7 +16,7 @@ public:
 	~renderWindow();
 
 	void toggleFullscreen() override;
-	void takeScreenshot(std::vector<uint8_t>& data, uint32_t sizeX, uint32_t sizeY);
+	void takeScreenshot(std::vector<uint8_t>& data, uint32_t sizeX, uint32_t sizeY) override;
 
 private:
 	bool inFullscreen{ false };

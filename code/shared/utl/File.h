@@ -54,8 +54,8 @@ namespace utl
 
 	public:
 
-		File(const std::string&, fileMode mode = fileMode::read);
 		File() = default;
+		File(const std::string&, fileMode mode = fileMode::read);
 		File(const void*, size_t);
 		File(std::unique_ptr<fileBase>&&);
 		~File();

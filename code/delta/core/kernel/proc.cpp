@@ -1,7 +1,7 @@
 
 // Copyright (C) Force67 2019
 
-#include <xbyak/xbyak.h>
+#include <xbyak.h>
 #include <utl/File.h>
 #include <utl/path.h>
 
@@ -65,19 +65,21 @@ namespace krnl
 		// register HLE prx modules
 		runtime::vprx_init();
 
-		/*reserve slot 0 for the main process. we do this,
-		because dependencies loaded by the main module
-		also allocate their own slots*/
+		/*allocate kernel in place at slot 0
+		so we can ensure it's always first*/
 		modules.emplace_back();
 
-		auto krnl = std::make_unique<elfModule>(this);
-		if (!krnl->fromFile(utl::make_abs_path("modules\\libkernel.sprx"))) {
+		modules[0] = std::make_unique<elfModule>(this);
+		modules[0]->handle = 0;
+
+		if (!static_cast<elfModule*>(modules[0].get())->fromFile(
+			utl::make_abs_path("modules\\libkernel.sprx"))) {
 			LOG_ERROR("unable to load main process module");
 			return false;
 		}
 
 		// todo: get rid of this mess
-		entryGen callingCtx(krnl->entry);
+		entryGen callingCtx(modules[0]->entry);
 		auto func = callingCtx.getCode<void* (*)(void*)>();
 
 		union stack_entry
@@ -93,12 +95,10 @@ namespace krnl
 		(*s++).ptr = nullptr; // arg null terminator
 		(*s++).ptr = nullptr; // env null terminator
 		(*s++).val = 9ull; // entrypoint type
-		(*s++).ptr = (const void*)(krnl->entry - krnl->base);
+		(*s++).ptr = (const void*)(modules[0]->entry - modules[0]->base);
 		(*s++).ptr = nullptr; // aux null type
 		(*s++).ptr = nullptr;
 
-		modules[0] = std::move(krnl);
-		modules[0]->handle = 0;
 		func(stack);
 
 		return true;
@@ -149,11 +149,7 @@ namespace krnl
 			}
 
 			auto* shit = lib.get();
-
-			// initialize cxx
-			// lib->start
 			addObj(std::move(lib));
-
 			return shit;
 		}
 		return mod;
