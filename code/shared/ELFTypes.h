@@ -261,9 +261,11 @@ inline const char* SegTypeToString(uint32_t type)
 #define ELF32_ST_TYPE(x)	ELF_ST_TYPE(x)
 #define ELF64_ST_BIND(x)	ELF_ST_BIND(x)
 #define ELF64_ST_TYPE(x)	ELF_ST_TYPE(x)
+#define ELF_ST_VISIBILITY(o) ((o)&0x3)
 
 #define STB_LOCAL  0
 #define STB_GLOBAL 1
+#define STB_WEAK   2
 
 #define POW2_MASK (align - static_cast<T>(1))
 

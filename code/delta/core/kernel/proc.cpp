@@ -9,6 +9,8 @@
 #include "module.h"
 #include "runtime/vprx/vprx.h"
 
+#include <filesystem>
+
 namespace krnl
 {
 	using namespace runtime;
@@ -65,162 +67,89 @@ namespace krnl
 		// register HLE prx modules
 		runtime::vprx_init();
 
-		/*allocate kernel in place at slot 0
-		so we can ensure it's always first*/
-		modules.emplace_back();
+		auto first = modules.emplace_back(std::make_shared<elfModule>(this));
+		first->handle = 0;
 
-		modules[0] = std::make_unique<elfModule>(this);
-		modules[0]->handle = 0;
-
-		if (!static_cast<elfModule*>(modules[0].get())->fromFile(
-			utl::make_abs_path("modules\\libkernel.sprx"))) {
+		if (!first->fromFile(path)) {
 			LOG_ERROR("unable to load main process module");
 			return false;
 		}
 
-		// todo: get rid of this mess
-		entryGen callingCtx(modules[0]->entry);
-		auto func = callingCtx.getCode<void* (*)(void*)>();
-
-		union stack_entry
-		{
-			const void* ptr;
-			uint64_t val;
-		}
-		stack[128];
-
-		stack[0].val = 1 + 0; // argc
-		auto s = reinterpret_cast<stack_entry*>(&stack[1]);
-		(*s++).ptr = "libkernel.sprx";
-		(*s++).ptr = nullptr; // arg null terminator
-		(*s++).ptr = nullptr; // env null terminator
-		(*s++).val = 9ull; // entrypoint type
-		(*s++).ptr = (const void*)(modules[0]->entry - modules[0]->base);
-		(*s++).ptr = nullptr; // aux null type
-		(*s++).ptr = nullptr;
-
-		func(stack);
-
 		return true;
 	}
 
-	void proc::addObj(std::unique_ptr<kObj> obj) {
-		obj->handle = handleCounter;
-		handleCounter++;
-		modules.push_back(std::move(obj));
-	}
-
-	kObj* proc::getModule(std::string_view name) {
+	std::shared_ptr<elfModule> proc::getModule(std::string_view name) {
 		for (auto& mod : modules) {
-			if (!mod)
-				continue;
-
 			if (mod->name == name)
-				return mod.get();
+				return mod;
 		}
-		return nullptr;
+		return { nullptr };
 	}
 
-	kObj* proc::getModule(uint32_t handle) {
+	std::shared_ptr<elfModule> proc::getModule(uint32_t handle) {
 		for (auto& mod : modules) {
-			if (!mod)
-				continue;
 
 			if (mod->handle == handle)
-				return mod.get();
+				return mod;
 		}
-		return nullptr;
+		return { nullptr };
 	}
 
-	kObj* proc::loadModule(std::string_view name)
+	std::shared_ptr<elfModule> proc::loadModule(std::string_view name)
 	{
 		// very hacky hack
 		std::string sprxname(name);
 		sprxname += ".sprx";
 
-		auto* mod = getModule(sprxname);
+		auto mod = getModule(sprxname);
 		if (!mod) {
-			auto lib = std::make_unique<elfModule>(this);
+			auto lib = modules.emplace_back(std::make_shared<elfModule>(this));
+			lib->handle = handleCounter;
+			handleCounter++;
 
-			// todo: gather path from user firmware installation
 			if (!lib->fromFile(utl::make_abs_path("modules\\" + sprxname))) {
 				LOG_ERROR("unable to load module {}", name);
 				return nullptr;
 			}
-
-			auto* shit = lib.get();
-			addObj(std::move(lib));
-			return shit;
+			
+			return lib;
 		}
 		return mod;
 	}
 
 	void proc::start()
 	{
-		class entryGen : public Xbyak::CodeGenerator
+		auto invoke = [](elfModule& mod)
 		{
-		public:
-			entryGen(void* target)
+			// todo: get rid of this mess
+			entryGen callingCtx(mod.entry);
+			auto func = callingCtx.getCode<void* (*)(void*)>();
+
+			union stack_entry
 			{
-				push(rbp);
-				mov(rbp, rsp);
-				push(r12);
-				push(r13);
-				push(r14);
-				push(r15);
-				push(rdi);
-				push(rsi);
-				push(rbx);
-
-				sub(rsp, 8);
-
-				mov(rdi, rcx);
-				mov(rax, (size_t)target);
-
-				call(rax);
-
-				add(rsp, 8);
-
-				pop(rbx);
-				pop(rsi);
-				pop(rdi);
-				pop(r15);
-				pop(r14);
-				pop(r13);
-				pop(r12);
-				pop(rbp);
-				ret();
+				const void* ptr;
+				uint64_t val;
 			}
+			stack[128];
+
+			stack[0].val = 1 + 0; // argc
+			auto s = reinterpret_cast<stack_entry*>(&stack[1]);
+			(*s++).ptr = mod.name.c_str();
+			(*s++).ptr = nullptr; // arg null terminator
+			(*s++).ptr = nullptr; // env null terminator
+			(*s++).val = 9ull; // entrypoint type
+			(*s++).ptr = (const void*)(mod.entry - mod.base);
+			(*s++).ptr = nullptr; // aux null type
+			(*s++).ptr = nullptr;
+
+			func(stack);
 		};
 
-		auto& mainx = getMainModule();
-		std::printf("main name %s\n", mainx.name.c_str());
-
-		// generate a entry point push context
-		entryGen callingContext(mainx.entry);
-		auto func = callingContext.getCode<void* (*)(void*)>();
-
-		union stack_entry
-		{
-			const void* ptr;
-			uint64_t val;
+		for (int i = 1; i < modules.size(); i++) {
+			invoke(*modules[i]);
 		}
-		stack[128];
 
-		stack[0].val = 1 + 0; // argc
-		auto s = reinterpret_cast<stack_entry*>(&stack[1]);
-		(*s++).ptr = mainx.name.c_str();
-		/*for (auto it = args.begin(); it != args.end(); ++it)
-		{
-			(*s++).ptr = (*it).c_str();
-		}*/
-		(*s++).ptr = nullptr; // arg null terminator
-		(*s++).ptr = nullptr; // env null terminator
-		(*s++).val = 9ull; // entrypoint type
-		(*s++).ptr = mainx.entry;
-		(*s++).ptr = nullptr; // aux null type
-		(*s++).ptr = nullptr;
-
-		func(stack);
+		auto mod = getMainModule();
+		invoke(*mod);
 	}
 }

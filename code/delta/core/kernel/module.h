@@ -5,8 +5,7 @@
 #include <ELFTypes.h>
 #include <SCETypes.h>
 #include "proc.h"
-
-#define PS4ABI __attribute__((sysv_abi)) 
+#include <base.h>
 
 namespace utl {
 	class File;
@@ -14,16 +13,30 @@ namespace utl {
 
 namespace krnl
 {
-	class elfModule final : public kObj
+	//PS4ABI
+	using linker_function = void(*)();
+
+	class elfModule
 	{
 		friend class proc;
 	public:
 		explicit elfModule(proc*);
 		bool fromFile(const std::string&);
 		bool fromMem(std::unique_ptr<uint8_t[]>);
-		uint8_t* getExport(uint64_t);
+		uintptr_t getExport(uint64_t);
 
 		bool unload();
+
+	public:
+		std::string name;
+		uint32_t type;
+		uint32_t handle;
+		uint8_t* base;
+		uint8_t* entry;
+		uint8_t* procParam{ nullptr };
+		uint32_t procParamSize = 0;
+		uint16_t tlsSlot;
+		uint32_t codeSize;
 
 	private:
 		void doDynamics();
@@ -46,6 +59,11 @@ namespace krnl
 			return (Type*)(base + dist);
 		}
 
+		template<typename Type, typename TAdd>
+		Type getAddressNPTR(const TAdd dist) {
+			return (Type)(base + dist);
+		}
+
 		template<typename Type = ELFPgHeader>
 		Type* getSegment(ElfSegType type) {
 			for (uint16_t i = 0; i < elf->phnum; i++) {
@@ -60,13 +78,11 @@ namespace krnl
 		inline bool isSprx() {
 			return elf->type == ET_SCE_DYNAMIC;
 		}
-
 	private:
-		using linker_function = void(PS4ABI*)();
-
-		proc* owner;
 		std::unique_ptr<uint8_t[]> data;
 
+	private:
+		proc* process;
 		ELFHeader* elf;
 		ELFPgHeader* segments;
 

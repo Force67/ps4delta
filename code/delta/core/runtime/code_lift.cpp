@@ -64,6 +64,9 @@ namespace runtime
 					emit_syscall(getOps(-10), *(uint32_t*)(getOps(-7)));
 				}
 			}
+
+			// swap int44 with int3
+			//printOpInfo()
 		}
 
 		return false;

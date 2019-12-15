@@ -2,24 +2,15 @@
 
 // Copyright (C) Force67 2019
 
-#include <chrono>
 #include <memory>
-#include <string>
-#include <kernel/VMA.h>
+#include <vector>
+
+#include "module.h"
+#include "VMA.h"
+#include <utl/object_ref.h>
 
 namespace krnl
 {
-	struct kObj
-	{
-		std::string name;
-		uint32_t type;
-		uint32_t handle;
-		uint8_t* base;
-		uint8_t* entry;
-		uint16_t tlsSlot;
-		uint32_t codeSize;
-	};
-
 	struct procEnv
 	{
 		bool ripZoneEnabled{ true };
@@ -30,23 +21,24 @@ namespace krnl
 	{
 		friend class elfModule;
 	public:
-		using moduleList = std::vector<std::unique_ptr<kObj>>;
+		using moduleList = std::vector<std::shared_ptr<elfModule>>;
 
 		proc();
-		void addObj(std::unique_ptr<kObj>);
 		bool create(const std::string&);
 		void start();
 
 		static proc* getActive();
 
-		inline kObj& getMainModule() { return *modules[0]; }
+		inline std::shared_ptr<elfModule> getMainModule() { return modules[0]; }
 		inline moduleList& getModuleList() { return modules; }
 
-		kObj* loadModule(std::string_view);
-		kObj* getModule(std::string_view);
-		kObj* getModule(uint32_t);
+		std::shared_ptr<elfModule> loadModule(std::string_view);
+		std::shared_ptr<elfModule> getModule(std::string_view);
+		std::shared_ptr<elfModule> getModule(uint32_t);
 
 	private:
+		moduleList modules;
+
 		VMAccessMgr vmem;
 		procEnv env;
 		uint32_t handleCounter = 1;
@@ -54,7 +46,5 @@ namespace krnl
 		uint32_t nextFreeTLS() {
 			return -1;
 		}
-
-		moduleList modules;
 	};
 }

@@ -51,10 +51,7 @@ project "fmtlib"
     files
     {
         "fmtlib/include/fmt/*.h",
-        "fmtlib/src/*.cc",
-        "capstone/arch/X86/*.c",
-        "capstone/arch/X86/*.inc",
-        "capstone/arch/X86/*.h",
+        "fmtlib/src/*.cc"
     }
     
     

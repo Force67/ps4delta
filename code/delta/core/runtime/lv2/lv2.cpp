@@ -8,6 +8,7 @@
 
 namespace runtime
 {
+	int sys_mdbg_service();
 	bool sys_write(uint32_t fd, const void* buf, size_t nbytes);
 	int sys_sysctl(const int*, uint32_t, void*, size_t*, const void*, size_t);
 
@@ -104,7 +105,7 @@ namespace runtime
 		{598, (void*)&sys_dynlib_get_proc_param},
 		{599, (void*)&sys_dynlib_process_needed_and_relocate},
 		{600, nullptr}, //sys_sandbox_path
-		{601, nullptr}, //sys_mdbg_service
+		{601, (void*)&sys_mdbg_service},
 		{602, nullptr}, //sys_randomized_path
 		{603, nullptr}, //sys_rdup
 		{604, nullptr}, //sys_dl_get_metadata

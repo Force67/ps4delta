@@ -6,6 +6,12 @@
 
 namespace runtime
 {
+	int PS4ABI sys_mdbg_service()
+	{
+		__debugbreak();
+		return 0;
+	}
+
 	int PS4ABI sys_sysctl(const int* name, uint32_t namelen, void* oldp, size_t* oldlenp, const void* newp, size_t newlen)
 	{
 		return 0;

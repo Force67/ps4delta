@@ -2,7 +2,7 @@
 // Copyright (C) Force67 2019
 
 #include <logger/logger.h>
-#include "../vprx/vprx.h"
+#include <base.h>
 
 #include <kernel/proc.h>
 
@@ -50,7 +50,7 @@ namespace runtime
 
 	int PS4ABI sys_dynlib_get_info_ex(uint32_t handle, int32_t ukn /*always 1*/, dynlib_info* info)
 	{
-		auto* mod = proc::getActive()->getModule(handle);
+		auto mod = proc::getActive()->getModule(handle);
 		if (!mod)
 			/*TODO*/
 			return -1;
@@ -65,14 +65,17 @@ namespace runtime
 
 	int PS4ABI sys_dynlib_get_proc_param(void** data, size_t* size)
 	{
-		static proc_param g_proc;
-		g_proc.length = sizeof(proc_param);
-		g_proc.magic = 0x4942524F;
-		g_proc.unk = 1;
-		g_proc.kvers = 0x5050000; /*pretend to be a 5.05 krnl*/
+		auto mod = proc::getActive()->getMainModule();
+		if (mod) {
+			*data = reinterpret_cast<void*>(mod->procParam);
+			*size = mod->procParamSize;
+			return 0;
+		}
 
-		*data = reinterpret_cast<void*>(&g_proc);
-		*size = sizeof(proc_param);
+		//TODO: report err
+
+		*data = nullptr;
+		*size = 0;
 
 		return 0;
 	}
