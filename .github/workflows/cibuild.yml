@@ -8,6 +8,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Init submodules
+      run: "git submodule update --init --recursive"
+      shell: cmd
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
       with:
