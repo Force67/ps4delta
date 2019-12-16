@@ -450,7 +450,7 @@ namespace krnl
 				if (bind == STB_GLOBAL || STB_LOCAL) {
 					const char* name = &strtab.ptr[sym->st_name];
 					if (strstr(name, "f7uOxY9mM1U")) {
-						std::printf("name %s, bind %d, type %d\n", name, bind, type);
+						//std::printf("name %s, bind %d, type %d\n", name, bind, type);
 						*getAddress<uint64_t>(r->offset) = (uint64_t)&IDontDoNuffin;
 						hack = true;
 					}

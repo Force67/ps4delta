@@ -65,8 +65,16 @@ namespace runtime
 				}
 			}
 
-			// swap int44 with int3
-			//printOpInfo()
+			if (insn->id == X86_INS_INT) {
+				auto op = detail.operands[0];
+
+				/*abort interrupt*/
+				if (op.type == X86_OP_IMM && *(uint8_t*)(getOps(1)) == 0x44) {
+					auto* target = getOps(1);
+					*target = 3;
+				}
+			}
+
 		}
 
 		return false;

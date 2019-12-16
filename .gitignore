@@ -8,6 +8,8 @@ build/
 code/vendor/cef
 .vscode
 
+*.exe
+
 # QT generated code
 code/delta/core/qtgen/*
 

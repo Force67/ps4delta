@@ -10,12 +10,15 @@ namespace runtime
 {
 	int sys_mdbg_service();
 	bool sys_write(uint32_t fd, const void* buf, size_t nbytes);
-	int sys_sysctl(const int*, uint32_t, void*, size_t*, const void*, size_t);
+	int sys_sysctl(int*, uint32_t, void*, size_t*, const void*, size_t);
+	int sys_regmgr_call(uint32_t op, uint32_t id, void* result, void* value, uint64_t type);
 
 	int sys_dynlib_process_needed_and_relocate();
 	int sys_dynlib_get_proc_param(void**, size_t*);
 	int sys_dynlib_get_list(uint32_t*, size_t, size_t*);
 	int sys_dynlib_get_info_ex(uint32_t, int32_t, struct dynlib_info*);
+
+	int sys_budget_get_ptype();
 
 	int sys_getpid();
 
@@ -36,7 +39,7 @@ namespace runtime
 		{141, nullptr}, //sys_kqueueex
 		{202, (void*)&sys_sysctl},
 		{379, nullptr}, //sys_mtypeprotect
-		{532, nullptr}, //sys_regmgr_call
+		{532, (void*)&sys_regmgr_call},
 		{533, nullptr}, //sys_jitshm_create
 		{534, nullptr}, //sys_jitshm_alias
 		{535, nullptr}, //sys_dl_get_list
@@ -114,7 +117,7 @@ namespace runtime
 		{607, nullptr}, //sys_get_self_auth_info
 		{608, (void*)&sys_dynlib_get_info_ex},
 		{609, nullptr}, //sys_budget_getid
-		{610, nullptr}, //sys_budget_get_ptype
+		{610, (void*)&sys_budget_get_ptype},
 		{611, nullptr}, //sys_get_paging_stats_of_all_threads
 		{612, nullptr}, //sys_get_proc_type_info
 		{613, nullptr}, //sys_get_resident_count
