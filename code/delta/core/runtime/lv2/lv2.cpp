@@ -6,6 +6,8 @@
 
 #include "../vprx/vprx.h"
 
+#include "sys_mem.h"
+
 namespace runtime
 {
 	int sys_mdbg_service();
@@ -28,8 +30,6 @@ namespace runtime
 	int sys_exit();
 	int sys_rfork();
 	int sys_execve();
-
-	int sys_mmap(void* , size_t, uint32_t, uint32_t, uint32_t, size_t);
 
 	static int PS4ABI null_handler()
 	{
@@ -121,7 +121,7 @@ namespace runtime
 		{585, (void*)&null_handler}, //sys_is_in_sandbox
 		{586, (void*)&null_handler}, //sys_dmem_container
 		{587, (void*)&null_handler}, //sys_get_authinfo
-		{588, (void*)&null_handler}, //sys_mname
+		{588, (void*)&sys_mname}, 
 		{589, (void*)&null_handler}, //sys_dynlib_dlopen
 		{590, (void*)&null_handler}, //sys_dynlib_dlclose
 		{591, (void*)&null_handler}, //sys_dynlib_dlsym

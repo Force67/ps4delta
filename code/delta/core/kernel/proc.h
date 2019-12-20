@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "module.h"
-#include "VMA.h"
+#include "vm_manager.h"
 #include <utl/object_ref.h>
 
 namespace krnl
@@ -36,11 +36,12 @@ namespace krnl
 		std::shared_ptr<elfModule> getModule(std::string_view);
 		std::shared_ptr<elfModule> getModule(uint32_t);
 
-	private:
-		moduleList modules;
+		inline vmManager& getVma() { return vmem; }
 
-		VMAccessMgr vmem;
+	private:
+		vmManager vmem;
 		procEnv env;
+		moduleList modules;
 		uint32_t handleCounter = 1;
 
 		uint32_t nextFreeTLS() {

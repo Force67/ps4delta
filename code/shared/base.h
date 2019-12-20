@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #if defined(__clang__) || defined(__GNUC__)
 
 #define NAKED    __attribute__((naked))

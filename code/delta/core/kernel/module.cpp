@@ -240,12 +240,12 @@ namespace krnl
 			codeSize += pcfg.ripZoneSize;
 
 		// reserve segment
-		base = (uint8_t*)process->vmem.AllocateSeg(codeSize);
+		base = process->vmem.mapCodeMemory(nullptr, codeSize);
 		if (!base)
 			return false;
 
 #ifdef _DEBUG
-		std::printf("Mapped %s at %p\n", name.c_str(), base);
+		std::printf("Mapped %s @ %p\n", name.c_str(), base);
 #endif
 
 		// pad out space with int3d's

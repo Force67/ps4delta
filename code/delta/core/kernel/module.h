@@ -2,8 +2,8 @@
 
 // Copyright (C) Force67 2019
 
-#include <ELFTypes.h>
-#include <SCETypes.h>
+#include <elf_types.h>
+#include <sce_types.h>
 #include "proc.h"
 #include <base.h>
 

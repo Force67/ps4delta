@@ -41,7 +41,7 @@ namespace runtime
 		static int fakecounter = 0;
 		int value = fakecounter;
 		fakecounter++;
-		return fakecounter;
+		return value;
 	}
 
 	int PS4ABI sys_namedobj_delete()
