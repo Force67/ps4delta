@@ -30,6 +30,25 @@ namespace runtime
 		return 0;
 	}
 
+	int PS4ABI sys_sigprocmask(int how, const int* sigset, int* oset)
+	{
+		return 0;
+	}
+
+	/*does not belong here*/
+	int PS4ABI sys_namedobj_create(int idk)
+	{
+		static int fakecounter = 0;
+		int value = fakecounter;
+		fakecounter++;
+		return fakecounter;
+	}
+
+	int PS4ABI sys_namedobj_delete()
+	{
+		return 0;
+	}
+
 	struct nonsys_int
 	{
 		union
@@ -51,7 +70,6 @@ namespace runtime
 	/*TODO: clearly does not belong here*/
 	int PS4ABI sys_regmgr_call(uint32_t op, uint32_t id, void* result, void* value, uint64_t type)
 	{
-		__debugbreak();
 		if (op == 25) // non-system get int
 		{
 			auto int_value = static_cast<nonsys_int*>(value);
@@ -65,6 +83,8 @@ namespace runtime
 
 			return 0x800D0203;
 		}
+		else
+			__debugbreak();
 
 		return -1;
 	}

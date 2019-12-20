@@ -11,7 +11,11 @@ namespace runtime
 	int sys_mdbg_service();
 	int sys_write(uint32_t fd, const void* buf, size_t nbytes);
 	int sys_sysctl(int*, uint32_t, void*, size_t*, const void*, size_t);
+	int sys_sigprocmask(int, const int*, int*);
 	int sys_regmgr_call(uint32_t op, uint32_t id, void* result, void* value, uint64_t type);
+
+	int sys_namedobj_create(int);
+	int sys_namedobj_delete();
 
 	int sys_dynlib_process_needed_and_relocate();
 	int sys_dynlib_get_proc_param(void**, size_t*);
@@ -58,6 +62,7 @@ namespace runtime
 		{141, (void*)&null_handler}, //sys_kqueueex
 		{202, (void*)&sys_sysctl},
 		{251, (void*)&sys_rfork},
+		{340, (void*)&sys_sigprocmask},
 		{379, (void*)&null_handler}, //sys_mtypeprotect
 		{477, (void*)&sys_mmap},
 		{532, (void*)&sys_regmgr_call},
@@ -85,8 +90,8 @@ namespace runtime
 		{554, (void*)&null_handler}, //sys_osem_trywait
 		{555, (void*)&null_handler}, //sys_osem_post
 		{556, (void*)&null_handler}, //sys_osem_cancel
-		{557, (void*)&null_handler}, //sys_namedobj_create
-		{558, (void*)&null_handler}, //sys_namedobj_delete
+		{557, (void*)&sys_namedobj_create},
+		{558, (void*)&sys_namedobj_delete},
 		{559, (void*)&null_handler}, //sys_set_vm_container
 		{560, (void*)&null_handler}, //sys_debug_init
 		{561, (void*)&null_handler}, //sys_suspend_process

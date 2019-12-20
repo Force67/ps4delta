@@ -396,19 +396,18 @@ namespace krnl
 				continue;
 
 			// if the symbol is exported
-			int32_t binding = ELF64_ST_BIND(s->st_info);
-			if (binding == STB_GLOBAL) {
-				const char* name = &strtab.ptr[s->st_name];
+			//int32_t binding = ELF64_ST_BIND(s->st_info);
 
-				uint64_t hid = 0;
-				if (!runtime::decode_nid(name, 11, hid)) {
-					LOG_ERROR("resolveExport: cant handle NID");
-					return 0;
-				}
+			const char* name = &strtab.ptr[s->st_name];
 
-				if (nid == hid) {
-					return getAddressNPTR<uintptr_t>(s->st_value);
-				}
+			uint64_t hid = 0;
+			if (!runtime::decode_nid(name, 11, hid)) {
+				LOG_ERROR("resolveExport: cant handle NID");
+				return 0;
+			}
+
+			if (nid == hid) {
+				return getAddressNPTR<uintptr_t>(s->st_value);
 			}
 		}
 
