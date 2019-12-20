@@ -100,12 +100,8 @@ namespace krnl
 
 		if (elf->entry == 0) 
 			entry = nullptr;
-		else {
+		else
 			entry = getAddress<uint8_t>(elf->entry);
-
-			if (!isSprx())
-				std::printf("MAIN PROC %p\n", entry);
-		}
 
 		//callConstructors();
 		return true;
@@ -249,7 +245,7 @@ namespace krnl
 			return false;
 
 #ifdef _DEBUG
-		std::printf("base %p for %s\n", base, name.c_str());
+		std::printf("Mapped %s at %p\n", name.c_str(), base);
 #endif
 
 		// pad out space with int3d's
