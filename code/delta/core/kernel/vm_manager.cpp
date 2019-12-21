@@ -1,36 +1,28 @@
 
 // Copyright (C) Force67 2019
 
-#include <Windows.h>
-
+#include <utl/mem.h>
 #include "vm_manager.h"
 
 namespace krnl
 {
-	/*TODO: make platform independent*/
-	uint8_t* vmManager::mapCodeMemory(uint8_t* preference, size_t size)
+	uint8_t* vmManager::mapMemory(uint8_t* preference, size_t size, bool code)
 	{
-		void* ptr = VirtualAlloc(preference, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+		auto prot = code ? utl::pageProtection::rwx : utl::pageProtection::write;
+
+		void* ptr = utl::allocMem(static_cast<void*>(preference), size, prot,
+			utl::allocationType::reservecommit);
 		if (ptr) {
-			codeMemTotal += size;
-			codePages.emplace_back(static_cast<uint8_t*>(ptr), size);
+			if (code) {
+				codeMemTotal += size;
+				codePages.emplace_back(static_cast<uint8_t*>(ptr), size);
+			}
+			else {
+				rtMemTotal += size;
+				rtPages.emplace_back(static_cast<uint8_t*>(ptr), size);
+			}
 
 			return static_cast<uint8_t*>(ptr);
-		}
-
-		return nullptr;
-	}
-
-	uint8_t* vmManager::mapRtMemory(size_t size)
-	{
-		/*todo: track which module alloc'd*/
-
-		uint8_t* ptr = static_cast<uint8_t*>(malloc(size));
-		if (ptr) {
-			rtMemTotal += size;
-			rtPages.emplace_back(ptr, size);
-
-			return ptr;
 		}
 
 		return nullptr;

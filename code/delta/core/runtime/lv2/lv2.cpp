@@ -7,12 +7,12 @@
 #include "../vprx/vprx.h"
 
 #include "sys_mem.h"
+#include "sys_info.h"
 
 namespace runtime
 {
 	int sys_mdbg_service();
 	int sys_write(uint32_t fd, const void* buf, size_t nbytes);
-	int sys_sysctl(int*, uint32_t, void*, size_t*, const void*, size_t);
 	int sys_sigprocmask(int, const int*, int*);
 	int sys_regmgr_call(uint32_t op, uint32_t id, void* result, void* value, uint64_t type);
 
@@ -118,7 +118,7 @@ namespace runtime
 		{582, (void*)&null_handler}, //sys_eport_trigger
 		{583, (void*)&null_handler}, //sys_eport_open
 		{584, (void*)&null_handler}, //sys_eport_close
-		{585, (void*)&null_handler}, //sys_is_in_sandbox
+		{585, (void*)&sys_is_in_sandbox},
 		{586, (void*)&null_handler}, //sys_dmem_container
 		{587, (void*)&null_handler}, //sys_get_authinfo
 		{588, (void*)&sys_mname}, 

@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+/*fool intellisense*/
 #if defined(__clang__) || defined(__GNUC__)
 
 #define NAKED    __attribute__((naked))
@@ -30,7 +31,7 @@
 
 #else
 
-#error Your compiler is not supported!
+//#error Your compiler is not supported!
 
 #define NAKED		naked
 #define PACKED		

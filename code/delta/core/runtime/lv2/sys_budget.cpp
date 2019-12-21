@@ -13,6 +13,6 @@ namespace runtime
 	int PS4ABI sys_budget_get_ptype()
 	{
 		/*proc type, related to telemetry etc*/
-		return 1;
+		return 0;
 	}
 }

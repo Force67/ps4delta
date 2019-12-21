@@ -1,7 +1,7 @@
 
 // Copyright (C) Force67 2019
 
-#include <utl/File.h>
+#include <utl/file.h>
 
 #include "runtime/vprx/vprx.h"
 #include "runtime/code_lift.h"
@@ -240,7 +240,7 @@ namespace krnl
 			codeSize += pcfg.ripZoneSize;
 
 		// reserve segment
-		base = process->vmem.mapCodeMemory(nullptr, codeSize);
+		base = process->vmem.mapMemory(nullptr, codeSize, true);
 		if (!base)
 			return false;
 

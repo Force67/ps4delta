@@ -16,12 +16,14 @@ namespace runtime
 		if (fd != -1)
 			__debugbreak(); // TODO: object table
 
-		/*should we allocate aligned?*/
+		/*TODO: should we allocate aligned?*/
 
-		auto vma = proc::getActive()->getVma();
-		uint8_t* ptr = vma.mapRtMemory(len);
-		if (!ptr)
+		auto &vma = proc::getActive()->getVma();
+		uint8_t *ptr = vma.mapMemory(static_cast<uint8_t*>(addr), len);
+		if (!ptr) {
+			__debugbreak();
 			return reinterpret_cast<uint8_t*>(-1);
+		}
 
 		std::printf("mmap: addr=%p, len=%I64x, allocated @ %p\n", addr, len, ptr);
 	

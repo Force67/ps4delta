@@ -3,7 +3,7 @@
 // Copyright (C) Force67 2019
 
 #include <string>
-#include <utl/InitFunction.h>
+#include <utl/init_func.h>
 #include <logger/logger.h>
 
 #include <base.h>

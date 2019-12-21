@@ -20,9 +20,7 @@ namespace krnl
 	class vmManager
 	{
 	public:
-		uint8_t* mapCodeMemory(uint8_t* preference, size_t size);
-		uint8_t* mapRtMemory(size_t size);
-
+		uint8_t* mapMemory(uint8_t* preference, size_t size, bool code = false);
 		void unmapRtMemory(uint8_t*);
 
 	private:

@@ -1,3 +1,5 @@
+#pragma once
+
 /*
     Copyright 2018 Brick
 
@@ -17,8 +19,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef MEM_INIT_FUNCTION_BRICK_H
-#define MEM_INIT_FUNCTION_BRICK_H
+#include <cstdint>
 
 namespace utl
 {
@@ -92,5 +93,3 @@ namespace utl
         return total;
     }
 } // namespace mem
-
-#endif // MEM_INIT_FUNCTION_BRICK_H
