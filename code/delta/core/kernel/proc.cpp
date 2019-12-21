@@ -4,12 +4,12 @@
 #include <xbyak.h>
 #include <utl/file.h>
 #include <utl/path.h>
+#include <utl/mem.h>
 
 #include "proc.h"
 #include "module.h"
 #include "runtime/vprx/vprx.h"
 
-#include <filesystem>
 
 namespace krnl
 {
@@ -67,8 +67,14 @@ namespace krnl
 		// register HLE prx modules
 		runtime::vprx_init();
 
+		// create a user stack
+		env.userStack = static_cast<uint8_t*>(
+			utl::allocMem(nullptr, env.userStackSize,
+			utl::pageProtection::noaccess,
+			utl::allocationType::reserve));
+
 		auto first = modules.emplace_back(std::make_shared<elfModule>(this));
-		first->handle = 0;
+		first->getInfo().handle = 0;
 
 		if (!first->fromFile(path)) {
 			LOG_ERROR("unable to load main process module");
@@ -80,7 +86,7 @@ namespace krnl
 
 	std::shared_ptr<elfModule> proc::getModule(std::string_view name) {
 		for (auto& mod : modules) {
-			if (mod->name == name)
+			if (mod->getInfo().name == name)
 				return mod;
 		}
 		return { nullptr };
@@ -89,7 +95,7 @@ namespace krnl
 	std::shared_ptr<elfModule> proc::getModule(uint32_t handle) {
 		for (auto& mod : modules) {
 
-			if (mod->handle == handle)
+			if (mod->getInfo().handle == handle)
 				return mod;
 		}
 		return { nullptr };
@@ -104,7 +110,7 @@ namespace krnl
 		auto mod = getModule(sprxname);
 		if (!mod) {
 			auto lib = modules.emplace_back(std::make_shared<elfModule>(this));
-			lib->handle = handleCounter;
+			lib->getInfo().handle = handleCounter;
 			handleCounter++;
 
 			if (!lib->fromFile(utl::make_abs_path("modules\\" + sprxname))) {
@@ -121,8 +127,10 @@ namespace krnl
 	{
 		auto invoke = [](elfModule& mod)
 		{
+			auto& info = mod.getInfo();
+
 			// todo: get rid of this mess
-			entryGen callingCtx(mod.entry);
+			entryGen callingCtx(info.entry);
 			auto func = callingCtx.getCode<void* (*)(void*)>();
 
 			union stack_entry
@@ -134,11 +142,11 @@ namespace krnl
 
 			stack[0].val = 1 + 0; // argc
 			auto s = reinterpret_cast<stack_entry*>(&stack[1]);
-			(*s++).ptr = mod.name.c_str();
+			(*s++).ptr = info.name.c_str();
 			(*s++).ptr = nullptr; // arg null terminator
 			(*s++).ptr = nullptr; // env null terminator
 			(*s++).val = 9ull; // entrypoint type
-			(*s++).ptr = (const void*)(mod.entry - mod.base);
+			(*s++).ptr = (const void*)(info.entry - info.base);
 			(*s++).ptr = nullptr; // aux null type
 			(*s++).ptr = nullptr;
 

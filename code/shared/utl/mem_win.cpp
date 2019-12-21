@@ -44,4 +44,20 @@ namespace utl
 	void* allocMem(void* preferredAddr, size_t length, pageProtection prot, allocationType type) {
 		return VirtualAlloc(preferredAddr, length, allocType_ToWin32(type), protection_ToWin32(prot));
 	}
+
+	bool protectMem(void* addr, size_t len, pageProtection prot) {
+		DWORD old;
+		return VirtualProtect(addr, len, protection_ToWin32(prot), &old);
+	}
+
+	size_t getAvailableMem()
+	{
+		MEMORYSTATUSEX statex{};
+		statex.dwLength = sizeof(statex);
+
+		if (GlobalMemoryStatusEx(&statex))
+			return statex.ullTotalPhys;
+
+		return -1;
+	}
 }

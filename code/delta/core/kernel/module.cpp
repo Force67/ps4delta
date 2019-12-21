@@ -2,6 +2,7 @@
 // Copyright (C) Force67 2019
 
 #include <utl/file.h>
+#include <utl/mem.h>
 
 #include "runtime/vprx/vprx.h"
 #include "runtime/code_lift.h"
@@ -9,16 +10,14 @@
 #include "module.h"
 #include "proc.h"
 
-#include <windows.h>
-
 namespace krnl
 {
 	elfModule::elfModule(krnl::proc *process) :
 		process(process)
 	{
 		/*-1 = no tls used*/
-		handle = -1;
-		tlsSlot = -1;
+		info.handle = -1;
+		info.tlsSlot = -1;
 	}
 
 	bool elfModule::fromFile(const std::string& path)
@@ -38,18 +37,18 @@ namespace krnl
 
 			// this is the main module
 			if (diskHeader.type != ET_SCE_DYNAMIC) {
-				name = "#main";
+				info.name = "#main";
 				LOG_INFO("Loading proc main module");
 			}
 			else {
 				// attempt to gather module name from file path
 				auto pos = path.find_last_of('\\');
 				if (pos != std::string::npos) {
-					name = path.substr(pos + 1, path.length() - pos);
+					info.name = path.substr(pos + 1, path.length() - pos);
 					//LOG_INFO("Loading {}", name);
 				}
 				else {
-					name = "#unk";
+					info.name = "#unk";
 					LOG_WARNING("Unknown module name?");
 				}
 			}
@@ -79,8 +78,8 @@ namespace krnl
 		if (!isSprx()) {
 			auto* seg = getSegment(ElfSegType::PT_SCE_PROCPARAM);
 			if (seg) {
-				procParam = getAddress<uint8_t>(seg->vaddr);
-				procParamSize = seg->filesz;
+				info.procParam = getAddress<uint8_t>(seg->vaddr);
+				info.procParamSize = seg->filesz;
 			}
 
 			logDbgInfo();
@@ -99,46 +98,19 @@ namespace krnl
 		installEHFrame();
 
 		if (elf->entry == 0) 
-			entry = nullptr;
+			info.entry = nullptr;
 		else
-			entry = getAddress<uint8_t>(elf->entry);
+			info.entry = getAddress<uint8_t>(elf->entry);
 
-		//callConstructors();
 		return true;
 	}
 
 	bool elfModule::unload()
 	{
-		callDestructors();
 		data.reset();
 
 		//todo: unload memory from VMA
 		return true;
-	}
-
-	void elfModule::callConstructors()
-	{
-		for (uint32_t i = 0; i < numPreInitArray; i++) {
-			preinit_array[i]();
-		}
-
-		if (init_func)
-			init_func();
-
-		for (uint32_t i = 0; i < numInitArray; i++) {
-			init_array[i]();
-		}
-	}
-
-	void elfModule::callDestructors()
-	{
-		/*must be done in reverse*/
-		for (uint32_t i = numFiniArray; i > 0; i--) {
-			fini_array[i]();
-		}
-
-		if (fini_func)
-			fini_func();
 	}
 
 	void elfModule::doDynamics()
@@ -154,16 +126,19 @@ namespace krnl
 			auto* d = &dynamics[i];
 
 			switch (d->tag) {
-			case DT_PREINIT_ARRAY:
+			/*case DT_PREINIT_ARRAY:
 				preinit_array = reinterpret_cast<linker_function*>(dynldAddr + d->un.ptr);
 				break;
 			case DT_PREINIT_ARRAYSZ:
 				numPreInitArray = static_cast<uint32_t>(d->un.value / sizeof(uintptr_t));
-				break;
+				break;*/
 			case DT_INIT:
-				init_func = reinterpret_cast<linker_function>(dynldAddr + d->un.ptr);
+				info.initAddr = reinterpret_cast<uint8_t*>(dynldAddr + d->un.ptr);
 				break;
-			case DT_INIT_ARRAY:
+			case DT_FINI:
+				info.finiAddr = reinterpret_cast<uint8_t*>(dynldAddr + d->un.ptr);
+				break;
+			/*case DT_INIT_ARRAY:
 				init_array = reinterpret_cast<linker_function*>(dynldAddr + d->un.ptr);
 				break;
 			case DT_INIT_ARRAYSZ:
@@ -174,7 +149,7 @@ namespace krnl
 				break;
 			case DT_FINI_ARRAYSZ:
 				numFiniArray = static_cast<uint32_t>(d->un.value / sizeof(uintptr_t));
-				break;
+				break;*/
 			case DT_SCE_JMPREL:
 				jmpslots = (ElfRel*)(dynldPtr + d->un.ptr);
 				break;
@@ -240,17 +215,17 @@ namespace krnl
 			codeSize += pcfg.ripZoneSize;
 
 		// reserve segment
-		base = process->vmem.mapMemory(nullptr, codeSize, true);
-		if (!base)
+		info.base = process->vmem.mapMemory(nullptr, codeSize, true);
+		if (!info.base)
 			return false;
 
 #ifdef _DEBUG
-		std::printf("Mapped %s @ %p\n", name.c_str(), base);
+		std::printf("Mapped %s @ %p\n", info.name.c_str(), info.base);
 #endif
 
 		// pad out space with int3d's
 		if (pcfg.ripZoneEnabled)
-			std::memset(base + realCodeSize, 0xCC, pcfg.ripZoneSize);
+			std::memset(info.base + realCodeSize, 0xCC, pcfg.ripZoneSize);
 
 		// step 0: map data
 		for (uint16_t i = 0; i < elf->phnum; i++) {
@@ -259,6 +234,10 @@ namespace krnl
 				void* target = elf->type == ET_SCE_EXEC ? 
 					reinterpret_cast<void*>(s->vaddr) :
 					getAddress<void>(s->paddr);
+
+				auto* seg = s->flags & PF_X ? &info.textSeg : &info.dataSeg;
+				seg->addr = static_cast<uint8_t*>(target);
+				seg->size = s->memsz;
 
 				std::memcpy(target, getOffset<void>(s->offset), s->filesz);
 			}
@@ -277,7 +256,7 @@ namespace krnl
 
 #ifdef _DEBUG
 		// temp hack: raise 5.05 kernel debug msg level
-		if (name == "libkernel.sprx") {
+		if (info.name == "libkernel.sprx") {
 			*getAddress<uint32_t>(0x68264) = UINT32_MAX;
 				LOG_WARNING("Enabling libkernel debug messages");
 		}
@@ -291,15 +270,15 @@ namespace krnl
 				auto trans_perm = [](uint32_t op)
 				{
 					switch (op) {
-					case (PF_R | PF_X): return PAGE_EXECUTE_READ;
-					case (PF_R): return PAGE_READONLY;
-					case (PF_R | PF_W): return PAGE_READWRITE;
+					case (PF_R | PF_X): return utl::pageProtection::rwx;
+					case (PF_R | PF_W): return utl::pageProtection::write;
+					case (PF_R): return utl::pageProtection::read;
+					default: return utl::pageProtection::rwx;
+					/*todo: invalid parameter bugcheck*/
 					}
 				};
 
-				// todo: use platform lib
-				DWORD old;
-				VirtualProtect(getAddress<void>(s->vaddr), s->filesz, trans_perm(perm), &old);
+				utl::protectMem(getAddress<void>(s->vaddr), s->filesz, trans_perm(perm));
 			}
 		}
 
@@ -311,7 +290,11 @@ namespace krnl
 		auto* p = getSegment(PT_TLS);
 		if (p) {
 
-			tlsSlot = process->nextFreeTLS();
+			info.tlsAddr = getAddress<uint8_t>(p->vaddr);
+			info.tlsalign = p->align;
+			info.tlsSizeFile = p->filesz;
+			info.tlsSizeMem = p->memsz;
+			info.tlsSlot = process->nextFreeTLS();
 		}
 
 		return true;
@@ -372,7 +355,7 @@ namespace krnl
 							return false;
 						}
 
-						*getAddress<uintptr_t>(r->offset) = mod->getExport(hid);
+						*getAddress<uintptr_t>(r->offset) = mod->getSymbol(hid);
 						break;
 					}
 				}
@@ -382,10 +365,10 @@ namespace krnl
 		return true;
 	}
 
-	uintptr_t elfModule::getExport(uint64_t nid)
+	uintptr_t elfModule::getSymbol(uint64_t nid)
 	{
 		// are there any overrides for me?
-		auto imp = runtime::vprx_get(name.c_str(), nid);
+		auto imp = runtime::vprx_get(info.name.c_str(), nid);
 		if (imp != 0)
 			return imp;
 
@@ -473,7 +456,7 @@ namespace krnl
 				*getAddress<uint32_t>(r->offset) = (uint32_t)(sym->st_value + r->addend - (uint64_t)getAddress<uint64_t>(r->offset));
 				break;
 			case R_X86_64_DTPMOD64:
-				*getAddress<uint16_t>(r->offset) = tlsSlot;
+				*getAddress<uint16_t>(r->offset) = info.tlsSlot;
 				break;
 			default:
 				continue;
@@ -490,6 +473,9 @@ namespace krnl
 		if (p->filesz > p->memsz)
 			return;
 
+		info.ehFrameAddr = getAddress<uint8_t>(p->vaddr);
+		info.ehFrameSize = p->memsz;
+
 		// custom struct for eh_frame_hdr 
 		struct GnuExceptionInfo
 		{
@@ -500,21 +486,22 @@ namespace krnl
 			uint8_t first;
 		};
 
-		auto* info = getOffset<GnuExceptionInfo>(p->offset);
+		auto* exinfo = getOffset<GnuExceptionInfo>(p->offset);
 
-		if (info->version != 1)
+		if (exinfo->version != 1)
 			return;
 
 		uint8_t* data_buffer = nullptr;
-		uint8_t* current = &info->first;
+		uint8_t* current = &exinfo->first;
 
-		if (info->encoding == 0x03) // relative to base address
+		if (exinfo->encoding == 0x03) // relative to base address
 		{
 			auto offset = *reinterpret_cast<uint32_t*>(current);
 			current += 4;
-			data_buffer = (uint8_t*)&base[offset];
+
+			data_buffer = (uint8_t*)&info.base[offset];
 		}
-		else if (info->encoding == 0x1B) // relative to eh_frame
+		else if (exinfo->encoding == 0x1B) // relative to eh_frame
 		{
 			auto offset = *reinterpret_cast<int32_t*>(current);
 			current += 4;
@@ -551,7 +538,7 @@ namespace krnl
 		}
 
 		size_t fde_count;
-		if (info->fdeCount == 0x03) // absolute
+		if (exinfo->fdeCount == 0x03) // absolute
 		{
 			fde_count = *reinterpret_cast<uint32_t*>(current);
 			current += 4;
@@ -561,10 +548,13 @@ namespace krnl
 			return;
 		}
 
-		if (info->encodingTable != 0x3B) // relative to eh_frame
+		if (exinfo->encodingTable != 0x3B) // relative to eh_frame
 		{
 			return;
 		}
+
+		info.ehFrameheaderAddr = data_buffer;
+		info.ehFrameheaderSize = data_buffer_end - data_buffer;
 	}
 
 	void elfModule::logDbgInfo()

@@ -6,12 +6,6 @@
 
 namespace runtime
 {
-	int PS4ABI sys_mdbg_service()
-	{
-		__debugbreak();
-		return 0;
-	}
-
 	int PS4ABI sys_exit()
 	{
 		__debugbreak();

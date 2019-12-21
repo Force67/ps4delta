@@ -10,8 +10,7 @@ namespace runtime
 		none,
 		exec = 1,
 		write = 2,
-		read = 4,
-		all = read | write | exec,
+		read = 4
 	};
 
 	enum mFlags : uint32_t {

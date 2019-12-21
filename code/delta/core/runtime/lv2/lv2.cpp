@@ -3,26 +3,22 @@
 
 #include <cstdint>
 #include <cstdio>
-
-#include "../vprx/vprx.h"
+#include <intrin.h>
 
 #include "sys_mem.h"
 #include "sys_info.h"
+#include "sys_dynlib.h"
+#include "sys_debug.h"
+#include "sys_thread.h"
 
 namespace runtime
 {
-	int sys_mdbg_service();
 	int sys_write(uint32_t fd, const void* buf, size_t nbytes);
 	int sys_sigprocmask(int, const int*, int*);
 	int sys_regmgr_call(uint32_t op, uint32_t id, void* result, void* value, uint64_t type);
 
 	int sys_namedobj_create(int);
 	int sys_namedobj_delete();
-
-	int sys_dynlib_process_needed_and_relocate();
-	int sys_dynlib_get_proc_param(void**, size_t*);
-	int sys_dynlib_get_list(uint32_t*, size_t, size_t*);
-	int sys_dynlib_get_info_ex(uint32_t, int32_t, struct dynlib_info*);
 
 	int sys_budget_get_ptype();
 
@@ -64,6 +60,7 @@ namespace runtime
 		{251, (void*)&sys_rfork},
 		{340, (void*)&sys_sigprocmask},
 		{379, (void*)&null_handler}, //sys_mtypeprotect
+		{432, (void*)&sys_thr_self},
 		{477, (void*)&sys_mmap},
 		{532, (void*)&sys_regmgr_call},
 		{533, (void*)&null_handler}, //sys_jitshm_create
@@ -120,7 +117,7 @@ namespace runtime
 		{584, (void*)&null_handler}, //sys_eport_close
 		{585, (void*)&sys_is_in_sandbox},
 		{586, (void*)&null_handler}, //sys_dmem_container
-		{587, (void*)&null_handler}, //sys_get_authinfo
+		{587, (void*)&sys_get_authinfo},
 		{588, (void*)&sys_mname}, 
 		{589, (void*)&null_handler}, //sys_dynlib_dlopen
 		{590, (void*)&null_handler}, //sys_dynlib_dlclose
@@ -221,6 +218,7 @@ namespace runtime
 			}
 		}
 
+	//	LOG_WARNING("unknown syscall {}", sid);
 		return reinterpret_cast<uintptr_t>(&null_handler_notable);
 	}
 }
