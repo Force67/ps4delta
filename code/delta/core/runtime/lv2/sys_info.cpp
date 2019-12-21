@@ -36,6 +36,7 @@ namespace runtime
 		if (name[0] == 1 && name[1] == 33 && namelen == 2) {
 			auto& info = proc::getActive()->getEnv();
 			*static_cast<void**>(oldp) = info.userStack + info.userStackSize;
+			std::printf("userstack -> base %p, end %p\n", info.userStack, oldp);
 			return 0;
 		}
 

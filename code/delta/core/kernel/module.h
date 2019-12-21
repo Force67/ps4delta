@@ -2,6 +2,8 @@
 
 // Copyright (C) Force67 2019
 
+#include <string>
+
 #include <elf_types.h>
 #include <sce_types.h>
 #include "proc.h"

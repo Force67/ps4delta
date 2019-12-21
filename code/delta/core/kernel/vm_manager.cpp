@@ -2,26 +2,47 @@
 // Copyright (C) Force67 2019
 
 #include <utl/mem.h>
+
+#include "proc.h"
 #include "vm_manager.h"
 
 namespace krnl
 {
-	uint8_t* vmManager::mapMemory(uint8_t* preference, size_t size, bool code)
+	vmManager::vmManager(procInfo& info) :
+		pinfo(info)
+	{}
+
+	vmManager::~vmManager()
 	{
-		auto prot = code ? utl::pageProtection::rwx : utl::pageProtection::write;
+		if (pinfo.userStack)
+			utl::freeMem(pinfo.userStack);
 
-		void* ptr = utl::allocMem(static_cast<void*>(preference), size, prot,
-			utl::allocationType::reservecommit);
+		pinfo.userStack = nullptr;
+	}
+
+	bool vmManager::init()
+	{
+		/*reserve address space for the user stack*/
+		pinfo.userStack = static_cast<uint8_t*>(
+			utl::allocMem(nullptr, pinfo.userStackSize,
+				utl::pageProtection::priv,
+				utl::allocationType::reserve));
+
+		return pinfo.userStack;
+	}
+
+	uint8_t* vmManager::mapMemory(uint8_t* preference, size_t size, utl::pageProtection prot)
+	{
+		auto allocType = utl::allocationType::reservecommit;
+
+		/*this is a bit hacky right now*/
+		if ((uintptr_t)preference <= (uintptr_t)(pinfo.userStack + pinfo.userStackSize) &&
+			(uintptr_t)preference >= (uintptr_t)pinfo.userStack) {
+			allocType = utl::allocationType::commit;
+		}
+
+		void* ptr = utl::allocMem(static_cast<void*>(preference), size, prot, allocType);
 		if (ptr) {
-			if (code) {
-				codeMemTotal += size;
-				codePages.emplace_back(static_cast<uint8_t*>(ptr), size);
-			}
-			else {
-				rtMemTotal += size;
-				rtPages.emplace_back(static_cast<uint8_t*>(ptr), size);
-			}
-
 			return static_cast<uint8_t*>(ptr);
 		}
 

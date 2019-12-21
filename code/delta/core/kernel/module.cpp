@@ -215,7 +215,7 @@ namespace krnl
 			codeSize += pcfg.ripZoneSize;
 
 		// reserve segment
-		info.base = process->vmem.mapMemory(nullptr, codeSize, true);
+		info.base = process->vmem.mapMemory(nullptr, codeSize, utl::pageProtection::rwx);
 		if (!info.base)
 			return false;
 
@@ -270,10 +270,10 @@ namespace krnl
 				auto trans_perm = [](uint32_t op)
 				{
 					switch (op) {
-					case (PF_R | PF_X): return utl::pageProtection::rwx;
-					case (PF_R | PF_W): return utl::pageProtection::write;
-					case (PF_R): return utl::pageProtection::read;
-					default: return utl::pageProtection::rwx;
+					case (PF_R | PF_X): return utl::pageProtection::rx;
+					case (PF_R | PF_W): return utl::pageProtection::w;
+					case (PF_R): return utl::pageProtection::r;
+					default: return utl::pageProtection::priv;
 					/*todo: invalid parameter bugcheck*/
 					}
 				};

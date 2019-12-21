@@ -5,8 +5,12 @@
 #include <cstdint>
 #include <vector>
 
+#include <utl/mem.h>
+
 namespace krnl
 {
+	struct procInfo;
+
 	struct pageInfo
 	{
 		uint8_t* ptr;
@@ -20,10 +24,17 @@ namespace krnl
 	class vmManager
 	{
 	public:
-		uint8_t* mapMemory(uint8_t* preference, size_t size, bool code = false);
+		vmManager(procInfo&);
+		~vmManager();
+
+		bool init();
+
+		uint8_t* mapMemory(uint8_t* preference, size_t size, utl::pageProtection);
 		void unmapRtMemory(uint8_t*);
 
 	private:
+		procInfo& pinfo;
+
 		size_t codeMemTotal{ 0 };
 		size_t rtMemTotal{ 0 };
 

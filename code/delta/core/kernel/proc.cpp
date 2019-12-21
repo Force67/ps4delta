@@ -53,7 +53,8 @@ namespace krnl
 
 	static proc* g_activeProc{ nullptr };
 
-	proc::proc()
+	proc::proc() :
+		vmem(env)
 	{
 		g_activeProc = this;
 	}
@@ -64,15 +65,13 @@ namespace krnl
 
 	bool proc::create(const std::string& path)
 	{
-		// register HLE prx modules
+		/*register HLE prx overrides*/
 		runtime::vprx_init();
 
-		// create a user stack
-		env.userStack = static_cast<uint8_t*>(
-			utl::allocMem(nullptr, env.userStackSize,
-			utl::pageProtection::noaccess,
-			utl::allocationType::reserve));
+		/*initialize memory manager*/
+		LOG_ASSERT(vmem.init());
 
+		/*register first main module*/
 		auto first = modules.emplace_back(std::make_shared<elfModule>(this));
 		first->getInfo().handle = 0;
 

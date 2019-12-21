@@ -20,29 +20,6 @@ namespace utl
 		return (begin == end) == (*other == '\0');
 	}
 
-	const char* TrimSourcePath(const char* path, const char* root)
-	{
-		const char* p = path;
-
-		while (*p != '\0') {
-			const char* next_slash = p;
-			while (*next_slash != '\0' && *next_slash != '/' && *next_slash != '\\') {
-				++next_slash;
-			}
-
-			bool is_src = ComparePartialString(p, next_slash, root);
-			p = next_slash;
-
-			if (*p != '\0') {
-				++p;
-			}
-			if (is_src) {
-				path = p;
-			}
-		}
-		return path;
-	}
-
 	class LogRegistry
 	{
 		std::mutex writing_lock;
@@ -104,7 +81,7 @@ namespace utl
 			backend_thread.join();
 		}
 
-		void AddEntry(logLevel lvl, const char* filename, uint32_t line, const char* func, std::string msg)
+		void AddEntry(logLevel lvl, uint32_t line, const char* func, std::string msg)
 		{
 
 			using std::chrono::duration_cast;
@@ -116,7 +93,6 @@ namespace utl
 			entry.line_num = line;
 			entry.function = func;
 			entry.message = std::move(msg);
-			entry.filename = TrimSourcePath(filename, "code");
 
 			pending.Push(entry);
 		}
@@ -174,19 +150,18 @@ namespace utl
 
 		const char* level_name = GetLevelName(entry.log_level);
 
-		return fmt::format("[{:4d}.{:06d}] <{}> {}:{}:{}: {}", time_seconds, time_fractional,
-			level_name, entry.filename, entry.function, entry.line_num,
-			entry.message);
+		return fmt::format("[{:4d}.{:06d}] <{}> {}:{}: {}", time_seconds, time_fractional,
+			level_name, entry.function, entry.line_num, entry.message);
 	}
 
 	logBase *addLogSink(std::unique_ptr<logBase> sink) {
 		return LogRegistry::Instance().AddSink(std::move(sink));
 	}
 
-	void formatLogMsg(logLevel lvl, const char* filename, uint32_t line, const char* func, const char* fmt, const fmt::format_args& args)
+	void formatLogMsg(logLevel lvl, uint32_t line, const char* func, const char* fmt, const fmt::format_args& args)
 	{
 		auto& reg = LogRegistry::Instance();
-		reg.AddEntry(lvl, filename, line, func, fmt::vformat(fmt, args));
+		reg.AddEntry(lvl, line, func, fmt::vformat(fmt, args));
 	}
 
 	logBase* getLogSink(std::string_view name)

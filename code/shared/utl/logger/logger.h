@@ -23,7 +23,6 @@ namespace utl
 	struct logEntry {
 		std::chrono::microseconds timestamp;
 		logLevel log_level;
-		std::string filename;
 		unsigned int line_num;
 		std::string function;
 		std::string message;
@@ -51,57 +50,57 @@ namespace utl
 	std::string formatLogEntry(const logEntry& entry);
 	logBase* addLogSink(std::unique_ptr<logBase> sink);
 	logBase* getLogSink(std::string_view name);
-	void formatLogMsg(logLevel lvl, const char* filename, uint32_t line, const char* func, const char* fmt, const fmt::format_args& args);
+	void formatLogMsg(logLevel lvl, uint32_t line, const char* func, const char* fmt, const fmt::format_args& args);
 
 	void createLogger(bool withConsole = false);
 
 	template <typename... Args>
-	inline void fmtLogMsg(logLevel lvl, const char* filename, uint32_t line,
+	inline void fmtLogMsg(logLevel lvl, uint32_t line,
 		const char* func, const char* fmt, const Args&... args)
 	{
-		formatLogMsg(lvl, filename, line, func, fmt,
+		formatLogMsg(lvl, line, func, fmt,
 			fmt::make_format_args(args...));
 	}
 
 	template <typename... Args>
-	inline void fmtLogMsg(logLevel lvl, const char* filename, uint32_t line,
+	inline void fmtLogMsg(logLevel lvl, uint32_t line,
 		const char* func, const std::string& text)
 	{
-		formatLogMsg(lvl, filename, line, func, text.c_str(), {});
+		formatLogMsg(lvl, line, func, text.c_str(), {});
 	}
 }
 
 #ifdef _DEBUG
 #define LOG_TRACE(...)                                           \
-	::utl::fmtLogMsg(::utl::logLevel::Trace, __FILE__, __LINE__, \
+	::utl::fmtLogMsg(::utl::logLevel::Trace, __LINE__, \
 						 __func__, __VA_ARGS__)
 #else
 #define LOG_TRACE(fmt, ...) (void(0))
 #endif
 
 #define LOG_DEBUG(...)                                           \
-	::utl::fmtLogMsg(::utl::logLevel::Debug, __FILE__, __LINE__, \
+	::utl::fmtLogMsg(::utl::logLevel::Debug, __LINE__, \
 						 __func__, __VA_ARGS__)
 #define LOG_INFO(...)                                           \
-	::utl::fmtLogMsg(::utl::logLevel::Info, __FILE__, __LINE__, \
+	::utl::fmtLogMsg(::utl::logLevel::Info, __LINE__, \
 						 __func__, __VA_ARGS__)
 #define LOG_WARNING(...)                                           \
-	::utl::fmtLogMsg(::utl::logLevel::Warning, __FILE__, __LINE__, \
+	::utl::fmtLogMsg(::utl::logLevel::Warning, __LINE__, \
 						 __func__, __VA_ARGS__)
 #define LOG_ERROR(...)                                           \
-	::utl::fmtLogMsg(::utl::logLevel::Error, __FILE__, __LINE__, \
+	::utl::fmtLogMsg(::utl::logLevel::Error, __LINE__, \
 						 __func__, __VA_ARGS__)
 #define LOG_CRITICAL(...)                                           \
-	::utl::fmtLogMsg(::utl::logLevel::Critical, __FILE__, __LINE__, \
+	::utl::fmtLogMsg(::utl::logLevel::Critical, __LINE__, \
 						 __func__, __VA_ARGS__)
 #define LOG_ASSERT(expression) do {                              \
 	if (!(expression))	{										 \
-	::utl::fmtLogMsg(::utl::logLevel::Error, __FILE__, __LINE__, \
+	::utl::fmtLogMsg(::utl::logLevel::Error, __LINE__, \
 						 __func__, "assertion failed at " #expression); \
 		__debugbreak();													\
 	}																	\
 } while (0)
 
 #define LOG_UNIMPLEMENTED										 \
-	::utl::fmtLogMsg(::utl::logLevel::Error, __FILE__, __LINE__, \
+	::utl::fmtLogMsg(::utl::logLevel::Error, __LINE__, \
 		__func__, "Unimplemented function")

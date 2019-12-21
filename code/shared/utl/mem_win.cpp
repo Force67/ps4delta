@@ -12,18 +12,19 @@ namespace utl
 	DWORD protection_ToWin32(pageProtection prot)
 	{
 		switch (prot) {
-		case pageProtection::noaccess:
+		case pageProtection::priv:
 			return PAGE_NOACCESS;
-		case pageProtection::read:
+		case pageProtection::r:
 			return PAGE_READONLY;
-		case pageProtection::write:
+		case pageProtection::w:
 			return PAGE_READWRITE;
-		case pageProtection::execute:
+		case pageProtection::rx:
 			return PAGE_EXECUTE_READ;
 		case pageProtection::rwx:
 			return PAGE_EXECUTE_READWRITE;
 		default:
-			return PAGE_READWRITE;
+			__debugbreak();
+			return 0;
 		}
 	}
 
@@ -37,12 +38,17 @@ namespace utl
 		case allocationType::reservecommit:
 			return MEM_RESERVE | MEM_COMMIT;
 		default:
-			return MEM_COMMIT;
+			__debugbreak();
+			return 0;
 		}
 	}
 
 	void* allocMem(void* preferredAddr, size_t length, pageProtection prot, allocationType type) {
 		return VirtualAlloc(preferredAddr, length, allocType_ToWin32(type), protection_ToWin32(prot));
+	}
+
+	void freeMem(void* Addr) {
+		VirtualFree(Addr, 0, MEM_RELEASE);
 	}
 
 	bool protectMem(void* addr, size_t len, pageProtection prot) {

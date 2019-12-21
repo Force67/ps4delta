@@ -17,4 +17,9 @@ namespace runtime
 		*arg = (void*)357;
 		return 135;
 	}
+
+	int PS4ABI sys_rtprio_thread(int, uint64_t, void*)
+	{
+		return 0;
+	}
 }

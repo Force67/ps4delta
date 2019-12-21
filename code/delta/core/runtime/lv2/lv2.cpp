@@ -61,6 +61,7 @@ namespace runtime
 		{340, (void*)&sys_sigprocmask},
 		{379, (void*)&null_handler}, //sys_mtypeprotect
 		{432, (void*)&sys_thr_self},
+		{466, (void*)&sys_rtprio_thread},
 		{477, (void*)&sys_mmap},
 		{532, (void*)&sys_regmgr_call},
 		{533, (void*)&null_handler}, //sys_jitshm_create
