@@ -7,8 +7,6 @@
 
 #include "dcore.h"
 
-#include <Windows.h>
-
 static bool verifyViablity()
 {
 	size_t mavail = utl::getAvailableMem() / 1024;
