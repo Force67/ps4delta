@@ -1,18 +1,28 @@
 
 // Copyright (C) 2019 Force67
 
-// temp shit
-#ifdef _WIN32
-#define EXP extern "C" __declspec(dllexport)
-#endif
-
-#include "dcore.h"
+#include <base.h>
+#include <utl/mem.h>
 #include <logger/logger.h>
 
-// temp exposed
-EXP int dcoreMain(int argc, char** argv)
+#include "dcore.h"
+
+#include <Windows.h>
+
+static bool verifyViablity()
+{
+	size_t mavail = utl::getAvailableMem() / 1024;
+	return (mavail / 1024) >= 8160;
+}
+
+EXPORT int dcoreMain(int argc, char** argv)
 {
 	utl::createLogger(true);
+
+	if (!verifyViablity()) {
+		LOG_ERROR("Your system doesn't have enough physical memory to run " FXNAME);
+		return -1;
+	}
 
 	/*if (argc < 2) {
 		LOG_ERROR("Please supply ELF path");

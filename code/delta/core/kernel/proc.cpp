@@ -4,12 +4,12 @@
 #include <xbyak.h>
 #include <utl/file.h>
 #include <utl/path.h>
+#include <utl/mem.h>
 
 #include "proc.h"
 #include "module.h"
 #include "runtime/vprx/vprx.h"
 
-#include <filesystem>
 
 namespace krnl
 {
@@ -66,6 +66,12 @@ namespace krnl
 	{
 		// register HLE prx modules
 		runtime::vprx_init();
+
+		// create a user stack
+		env.userStack = static_cast<uint8_t*>(
+			utl::allocMem(nullptr, env.userStackSize,
+			utl::pageProtection::noaccess,
+			utl::allocationType::reserve));
 
 		auto first = modules.emplace_back(std::make_shared<elfModule>(this));
 		first->getInfo().handle = 0;

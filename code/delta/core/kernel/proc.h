@@ -11,10 +11,12 @@
 
 namespace krnl
 {
-	struct procEnv
+	struct procInfo
 	{
 		bool ripZoneEnabled{ true };
 		uint32_t ripZoneSize = 1024;
+		uint8_t* userStack = nullptr;
+		size_t userStackSize = 20 * 1024 * 1024;
 	};
 
 	class proc
@@ -37,10 +39,11 @@ namespace krnl
 		std::shared_ptr<elfModule> getModule(uint32_t);
 
 		inline vmManager& getVma() { return vmem; }
+		inline procInfo& getEnv() { return env; }
 
 	private:
 		vmManager vmem;
-		procEnv env;
+		procInfo env;
 		moduleList modules;
 		uint32_t handleCounter = 1;
 

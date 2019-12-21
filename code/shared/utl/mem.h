@@ -20,4 +20,6 @@ namespace utl
 
 	void* allocMem(void* preferredAddr, size_t len, pageProtection, allocationType);
 	bool protectMem(void* addr, size_t len, pageProtection);
+
+	size_t getAvailableMem();
 }

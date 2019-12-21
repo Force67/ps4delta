@@ -49,4 +49,15 @@ namespace utl
 		DWORD old;
 		return VirtualProtect(addr, len, protection_ToWin32(prot), &old);
 	}
+
+	size_t getAvailableMem()
+	{
+		MEMORYSTATUSEX statex{};
+		statex.dwLength = sizeof(statex);
+
+		if (GlobalMemoryStatusEx(&statex))
+			return statex.ullTotalPhys;
+
+		return -1;
+	}
 }

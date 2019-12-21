@@ -46,3 +46,9 @@
 #define dbg_break() DebugBreak()
 
 #endif
+
+#ifdef _WIN32
+#define EXPORT extern "C" __declspec(dllexport)
+#elif
+#define EXPORT
+#endif
