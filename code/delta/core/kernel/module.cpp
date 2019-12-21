@@ -1,7 +1,7 @@
 
 // Copyright (C) Force67 2019
 
-#include <utl/File.h>
+#include <utl/file.h>
 
 #include "runtime/vprx/vprx.h"
 #include "runtime/code_lift.h"
@@ -13,10 +13,11 @@
 
 namespace krnl
 {
-	elfModule::elfModule(krnl::proc *owner) :
-		owner(owner)
+	elfModule::elfModule(krnl::proc *process) :
+		process(process)
 	{
 		/*-1 = no tls used*/
+		handle = -1;
 		tlsSlot = -1;
 	}
 
@@ -45,7 +46,7 @@ namespace krnl
 				auto pos = path.find_last_of('\\');
 				if (pos != std::string::npos) {
 					name = path.substr(pos + 1, path.length() - pos);
-					LOG_INFO("Loading {}", name);
+					//LOG_INFO("Loading {}", name);
 				}
 				else {
 					name = "#unk";
@@ -75,28 +76,32 @@ namespace krnl
 		doDynamics();
 		setupTLS();
 
+		if (!isSprx()) {
+			auto* seg = getSegment(ElfSegType::PT_SCE_PROCPARAM);
+			if (seg) {
+				procParam = getAddress<uint8_t>(seg->vaddr);
+				procParamSize = seg->filesz;
+			}
+
+			logDbgInfo();
+		}
+
 		if (!applyRelocations()) {
 			LOG_ERROR("elfModule: Failed to relocate image");
 			return false;
 		}
 
 		if (!resolveImports()) {
-			LOG_ERROR("elfModule: Failed to resolve imports");
+			LOG_ERROR("elfModule: Failed to resolve symbols");
 			return false;
 		}
 
 		installEHFrame();
 
-		if (elf->entry == 0) {
-			LOG_WARNING("{} has no entry?", name);
+		if (elf->entry == 0) 
 			entry = nullptr;
-		}
-		else {
+		else
 			entry = getAddress<uint8_t>(elf->entry);
-
-			if (!isSprx())
-				std::printf("MAIN PROC %p\n", entry);
-		}
 
 		//callConstructors();
 		return true;
@@ -228,22 +233,20 @@ namespace krnl
 
 		uint32_t realCodeSize = codeSize;
 
-		auto& pcfg = owner->env;
+		auto& pcfg = process->env;
 
 		// additional space for relative in module rip addressing
 		if (pcfg.ripZoneEnabled)
 			codeSize += pcfg.ripZoneSize;
 
 		// reserve segment
-		base = (uint8_t*)owner->vmem.AllocateSeg(codeSize);
+		base = process->vmem.mapMemory(nullptr, codeSize, true);
 		if (!base)
 			return false;
 
 #ifdef _DEBUG
-		LOG_WARNING("base for {} is at {}", name, fmt::ptr(base));
+		std::printf("Mapped %s @ %p\n", name.c_str(), base);
 #endif
-
-		std::printf("base %p\n", base); 
 
 		// pad out space with int3d's
 		if (pcfg.ripZoneEnabled)
@@ -308,7 +311,7 @@ namespace krnl
 		auto* p = getSegment(PT_TLS);
 		if (p) {
 
-			tlsSlot = owner->nextFreeTLS();
+			tlsSlot = process->nextFreeTLS();
 		}
 
 		return true;
@@ -327,7 +330,7 @@ namespace krnl
 
 			if (type != R_X86_64_JUMP_SLOT) {
 				LOG_WARNING("resolveImports: bad jump slot {}", i);
-				continue;;
+				continue;
 			}
 
 			if ((uint32_t)isym >= numSymbols ||
@@ -342,6 +345,7 @@ namespace krnl
 			// see above: libid, modid
 
 			int32_t binding = ELF64_ST_BIND(sym->st_info);
+
 			if (binding == STB_LOCAL) {
 				*getAddress<uintptr_t>(r->offset) = (uintptr_t)getAddress<uintptr_t>(sym->st_value);
 				continue;
@@ -362,25 +366,28 @@ namespace krnl
 	
 				for (auto& imp : implibs) {
 					if (imp.modid == static_cast<int32_t>(modid)) {
+						auto mod = process->loadModule(imp.name);
+						if (!mod) {
+							LOG_ERROR("resolveImports: Unknown module {} ({}) requestd", imp.name, imp.modid);
+							return false;
+						}
 
-						auto* lib = static_cast<elfModule*>(owner->loadModule(imp.name));
-						*getAddress<uintptr_t>(r->offset) = 
-							reinterpret_cast<uintptr_t>(lib->getExport(hid));
+						*getAddress<uintptr_t>(r->offset) = mod->getExport(hid);
 						break;
 					}
 				}
-			} 
+			}
 		}
 
 		return true;
 	}
 
-	uint8_t* elfModule::getExport(uint64_t nid)
+	uintptr_t elfModule::getExport(uint64_t nid)
 	{
 		// are there any overrides for me?
 		auto imp = runtime::vprx_get(name.c_str(), nid);
 		if (imp != 0)
-			return (uint8_t*)imp;
+			return imp;
 
 		for (uint32_t i = 0; i < numSymbols; i++) {
 			const auto* s = &symbols[i];
@@ -389,23 +396,27 @@ namespace krnl
 				continue;
 
 			// if the symbol is exported
-			int32_t binding = ELF64_ST_BIND(s->st_info);
-			if (binding == STB_GLOBAL) {
-				const char* name = &strtab.ptr[s->st_name];
+			//int32_t binding = ELF64_ST_BIND(s->st_info);
 
-				uint64_t hid = 0;
-				if (!runtime::decode_nid(name, 11, hid)) {
-					LOG_ERROR("resolveExport: cant handle NID");
-					return nullptr;
-				}
+			const char* name = &strtab.ptr[s->st_name];
 
-				if (nid == hid) {
-					return getAddress<uint8_t>(s->st_value);
-				}
+			uint64_t hid = 0;
+			if (!runtime::decode_nid(name, 11, hid)) {
+				LOG_ERROR("resolveExport: cant handle NID");
+				return 0;
+			}
+
+			if (nid == hid) {
+				return getAddressNPTR<uintptr_t>(s->st_value);
 			}
 		}
 
-		return nullptr;
+		return 0;
+	}
+
+	static PS4ABI void IDontDoNuffin()
+	{
+
 	}
 
 	bool elfModule::applyRelocations()
@@ -422,6 +433,30 @@ namespace krnl
 				LOG_ERROR("Invalid symbol index {}", isym);
 				continue;
 			}
+
+#if 1
+			bool hack = false;
+
+			//f7uOxY9mM1U
+			switch (type) {
+			case R_X86_64_64:
+			case R_X86_64_GLOB_DAT: {
+				auto bind = ELF_ST_BIND(sym->st_info);
+				if (bind == STB_GLOBAL || STB_LOCAL) {
+					const char* name = &strtab.ptr[sym->st_name];
+					if (strstr(name, "f7uOxY9mM1U")) {
+						//std::printf("name %s, bind %d, type %d\n", name, bind, type);
+						*getAddress<uint64_t>(r->offset) = (uint64_t)&IDontDoNuffin;
+						hack = true;
+					}
+				}
+			}
+			default: break;
+			}
+
+			if (hack)
+				continue;
+#endif
 
 			switch (type) {
 			case R_X86_64_NONE: break;
@@ -440,8 +475,6 @@ namespace krnl
 			case R_X86_64_DTPMOD64:
 				*getAddress<uint16_t>(r->offset) = tlsSlot;
 				break;
-			case R_X86_64_TPOFF64:
-			case R_X86_64_TPOFF32: 
 			default:
 				continue;
 			}
@@ -539,23 +572,6 @@ namespace krnl
 		for (uint16_t i = 0; i < elf->phnum; i++) {
 			auto s = &segments[i];
 			switch (s->type) {
-			case PT_SCE_PROCPARAM:
-			{
-				struct SCEPROC
-				{
-					uint32_t length;
-					uint32_t unk;
-					uint32_t magic;
-					uint32_t version;
-					uint32_t ofs;
-				};
-
-				SCEPROC* pr = getOffset<SCEPROC>(s->offset);
-
-
-				std::printf("FOUND PROCPARAM %llx (%llx byts big) proc ofs %llx, %llx\n", s->offset, s->filesz, pr->ofs, getOffset<uintptr_t>(pr->ofs));
-
-			} break;
 			case PT_SCE_COMMENT:
 			{
 				// this is similar to the windows pdb path

@@ -57,13 +57,21 @@ namespace runtime
 			};
 
 			if (insn->id == X86_INS_SYSCALL) {
-				//LOG_TRACE("syscall found {0:x}", insn->address);
+				emit_syscall(getOps(-10), *(uint32_t*)(getOps(-7)));
+			}
 
-				// naked syscall
-				if (std::memcmp(getOps(-10), "\x48\xC7\xC0", 3) == 0) {
-					emit_syscall(getOps(-10), *(uint32_t*)(getOps(-7)));
+#if 0
+			if (insn->id == X86_INS_INT) {
+				auto op = detail.operands[0];
+
+				/*abort interrupt*/
+				if (op.type == X86_OP_IMM && *(uint8_t*)(getOps(1)) == 0x44) {
+					auto* target = getOps(1);
+					*target = 3;
 				}
 			}
+#endif
+
 		}
 
 		return false;
@@ -73,11 +81,9 @@ namespace runtime
 	{
 		auto address = lv2_get(idx);
 		if (address) {
-			// we jump *far away*
 			*(uint16_t*)base = 0xB848;
 			*(uint64_t*)(base + 2) = address;
 			*(uint16_t*)(base + 10) = 0xE0FF;
-			*(uint32_t*)(base + 12) = 0xCCCCCCCC;
 		}
 	}
 }
