@@ -33,13 +33,7 @@ namespace krnl
 
 	uint8_t* vmManager::mapMemory(uint8_t* preference, size_t size, utl::pageProtection prot)
 	{
-		auto allocType = utl::allocationType::reservecommit;
-
-		/*this is a bit hacky right now*/
-		if ((uintptr_t)preference <= (uintptr_t)(pinfo.userStack + pinfo.userStackSize) &&
-			(uintptr_t)preference >= (uintptr_t)pinfo.userStack) {
-			allocType = utl::allocationType::commit;
-		}
+		const auto allocType = utl::allocationType::reservecommit;
 
 		void* ptr = utl::allocMem(static_cast<void*>(preference), size, prot, allocType);
 		if (ptr) {

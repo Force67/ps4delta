@@ -27,6 +27,8 @@ namespace runtime
 	int sys_rfork();
 	int sys_execve();
 
+	int PS4ABI sys_sysarch(int num, void* args);
+
 	static int PS4ABI null_handler()
 	{
 		std::printf(">>>>>>>>>>>>> NULL HANDLER CALLED BY %p\n", _ReturnAddress());
@@ -56,6 +58,7 @@ namespace runtime
 		{114, (void*)&null_handler}, //sys_socketclose
 		{125, (void*)&null_handler}, //sys_netgetiflist
 		{141, (void*)&null_handler}, //sys_kqueueex
+		{165, (void*)&sys_sysarch},
 		{202, (void*)&sys_sysctl},
 		{251, (void*)&sys_rfork},
 		{340, (void*)&sys_sigprocmask},

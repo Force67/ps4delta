@@ -43,6 +43,17 @@ namespace runtime
 		return 0;
 	}
 
+	int PS4ABI sys_sysarch(int num, void* args)
+	{
+		//amd64_set_fsbase
+		if (num == 129) {
+			LOG_WARNING("ACTUALLY SET FS BASE");
+			return 0;
+		}
+
+		return -1;
+	}
+
 	struct nonsys_int
 	{
 		union

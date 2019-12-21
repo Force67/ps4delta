@@ -12,6 +12,9 @@ namespace runtime
 {
 	using namespace krnl;
 
+	using ppt = utl::pageProtection;
+	using alt = utl::allocationType;
+
 	uint8_t* PS4ABI sys_mmap(void* addr, size_t len, mprotFlags prot, mFlags flags, uint32_t fd, size_t offset)
 	{
 		if (fd != -1)
@@ -19,18 +22,25 @@ namespace runtime
 
 		/*TODO: should we allocate aligned?*/
 
-		auto &vma = proc::getActive()->getVma();
-		uint8_t *ptr = vma.mapMemory(static_cast<uint8_t*>(addr), len, utl::pageProtection::w);
+		/*attempt to allocate in one batch*/
+		void* ptr = utl::allocMem(addr, len, ppt::w, alt::reservecommit);
 		if (!ptr) {
-			__debugbreak();
-			return reinterpret_cast<uint8_t*>(-1);
+
+			/*maybe we try to allocate in a previously reserved region?*/
+			ptr = utl::allocMem(addr, len, ppt::w, alt::commit);
+			if (!ptr) {
+				__debugbreak();
+				return reinterpret_cast<uint8_t*>(-1);
+			}
 		}
 
-		auto tprot = utl::pageProtection::r;
+		/*todo: register with mem mng*/
+
+		auto tprot = ppt::r;
 		if (prot & mprotFlags::write)
-			tprot |= utl::pageProtection::w;
+			tprot |= ppt::w;
 		if (prot & mprotFlags::exec)
-			tprot |= utl::pageProtection::x;
+			tprot |= ppt::x;
 
 		if (flags & mFlags::anon)
 			std::memset(ptr, 0, len);
@@ -44,7 +54,7 @@ namespace runtime
 		if (flags & mFlags::stack)
 			return &static_cast<uint8_t*>(ptr)[len];
 
-		return ptr;
+		return static_cast<uint8_t*>(ptr);
 	}
 
 	int PS4ABI sys_mname(uint8_t*, size_t len, const char* name, void*)
