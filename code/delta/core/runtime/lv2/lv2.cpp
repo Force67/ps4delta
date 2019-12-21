@@ -8,6 +8,7 @@
 
 #include "sys_mem.h"
 #include "sys_info.h"
+#include "sys_dynlib.h"
 
 namespace runtime
 {
@@ -18,11 +19,6 @@ namespace runtime
 
 	int sys_namedobj_create(int);
 	int sys_namedobj_delete();
-
-	int sys_dynlib_process_needed_and_relocate();
-	int sys_dynlib_get_proc_param(void**, size_t*);
-	int sys_dynlib_get_list(uint32_t*, size_t, size_t*);
-	int sys_dynlib_get_info_ex(uint32_t, int32_t, struct dynlib_info*);
 
 	int sys_budget_get_ptype();
 

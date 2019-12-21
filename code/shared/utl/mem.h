@@ -18,5 +18,6 @@ namespace utl
 		rwx
 	};
 
-	void* allocMem(void* preferredAddr, size_t length, pageProtection, allocationType);
+	void* allocMem(void* preferredAddr, size_t len, pageProtection, allocationType);
+	bool protectMem(void* addr, size_t len, pageProtection);
 }

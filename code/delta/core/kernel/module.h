@@ -5,7 +5,6 @@
 #include <elf_types.h>
 #include <sce_types.h>
 #include "proc.h"
-#include <base.h>
 
 namespace utl {
 	class File;
@@ -13,32 +12,60 @@ namespace utl {
 
 namespace krnl
 {
-	//PS4ABI
-	using linker_function = void(*)();
+	struct moduleSeg
+	{
+		uint8_t* addr;
+		uint32_t size;
+	};
+
+	struct moduleInfo
+	{
+		std::string name;
+		uint32_t handle;
+		uint8_t* base;
+		uint8_t* entry;
+		uint16_t tlsSlot;
+		uint32_t codeSize;
+
+		uint8_t* procParam;
+		uint32_t procParamSize;
+
+		uint8_t* initAddr;
+		uint8_t* finiAddr;
+
+		moduleSeg textSeg;
+		moduleSeg dataSeg;
+
+		uint8_t* tlsAddr;
+		size_t tlsSizeMem;
+		size_t tlsSizeFile;
+		uint32_t tlsalign;
+
+		uint8_t* ehFrameheaderAddr;
+		uint8_t* ehFrameAddr;
+		uint32_t ehFrameheaderSize;
+		uint32_t ehFrameSize;
+	};
 
 	class elfModule
 	{
 		friend class proc;
 	public:
 		explicit elfModule(proc*);
+
 		bool fromFile(const std::string&);
 		bool fromMem(std::unique_ptr<uint8_t[]>);
-		uintptr_t getExport(uint64_t);
 
+		uintptr_t getSymbol(uint64_t);
 		bool unload();
 
-	public:
-		std::string name;
-		uint32_t type;
-		uint32_t handle;
-		uint8_t* base;
-		uint8_t* entry;
-		uint8_t* procParam{ nullptr };
-		uint32_t procParamSize = 0;
-		uint16_t tlsSlot;
-		uint32_t codeSize;
+		inline moduleInfo& getInfo() {
+			return info;
+		}
 
 	private:
+		moduleInfo info{};
+
 		void doDynamics();
 		void logDbgInfo();
 		void installEHFrame();
@@ -46,8 +73,6 @@ namespace krnl
 		bool mapImage();
 		bool resolveImports();
 		bool applyRelocations();
-		void callConstructors();
-		void callDestructors();
 
 		template<typename Type, typename TAdd>
 		Type* getOffset(const TAdd dist) {
@@ -56,12 +81,12 @@ namespace krnl
 
 		template<typename Type, typename TAdd>
 		Type* getAddress(const TAdd dist) {
-			return (Type*)(base + dist);
+			return (Type*)(info.base + dist);
 		}
 
 		template<typename Type, typename TAdd>
 		Type getAddressNPTR(const TAdd dist) {
-			return (Type)(base + dist);
+			return (Type)(info.base + dist);
 		}
 
 		template<typename Type = ELFPgHeader>
@@ -110,16 +135,5 @@ namespace krnl
 		uint32_t numJmpSlots;
 		uint32_t numSymbols;
 		uint32_t numRela;
-
-		linker_function init_func{ nullptr };
-		linker_function fini_func{ nullptr };
-
-		linker_function* preinit_array{ nullptr };
-		linker_function* init_array{ nullptr };
-		linker_function* fini_array{ nullptr };
-
-		uint32_t numPreInitArray = 0;
-		uint32_t numInitArray = 0;
-		uint32_t numFiniArray = 0;
 	};
 }

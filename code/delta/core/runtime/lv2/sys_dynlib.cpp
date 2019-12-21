@@ -6,60 +6,56 @@
 
 #include <kernel/proc.h>
 
+#include "error_table.h"
+#include "sys_dynlib.h"
+
 namespace runtime 
 {
 	using namespace krnl;
 
-	struct proc_param {
-		uint64_t length;
-		uint32_t magic;
-		uint32_t unk;
-		uint32_t kvers;
-	};
-
-	struct dynlib_seg {
-		uint64_t addr;
-		uint32_t size;
-		uint32_t flags;
-	};
-
-	struct dynlib_info {
-		size_t size;
-		char name[256];
-		int32_t id;
-		uint32_t tls_index;
-		uint64_t tls_init_addr;
-		uint32_t tls_init_size;
-		uint32_t tls_size;
-		uint32_t tls_offset;
-		uint32_t tls_align;
-		uint64_t init_proc_addr;
-		uint64_t fini_proc_addr;
-		uint64_t reserved1;
-		uint64_t reserved2;
-		uint64_t eh_frame_hdr_addr;
-		uint64_t eh_frame_addr;
-		uint32_t eh_frame_hdr_size;
-		uint32_t eh_frame_size;
-		dynlib_seg segs[4];
-		uint32_t segment_count;
-		uint32_t ref_count;
-	};
-
-	static_assert(sizeof(dynlib_info) == 424);
-
-	int PS4ABI sys_dynlib_get_info_ex(uint32_t handle, int32_t ukn /*always 1*/, dynlib_info* info)
+	int PS4ABI sys_dynlib_get_info_ex(uint32_t handle, int32_t ukn /*always 1*/, dynlib_info_ex* dyn_info)
 	{
+		if (dyn_info->size != sizeof(*dyn_info)) {
+			__debugbreak();
+			return SysError::eINVAL;
+		}
+
 		auto mod = proc::getActive()->getModule(handle);
 		if (!mod)
-			/*TODO*/
-			return -1;
+			return SysError::eSRCH;
 
-		std::memset(info, 0, sizeof(dynlib_info));
-		std::strncpy(info->name, mod->name.c_str(), 256);
-		info->size = sizeof(dynlib_info);
+		auto& info = mod->getInfo();
+		std::memset(dyn_info, 0, sizeof(dynlib_info_ex));
 
-		LOG_WARNING("FIXME: properly populate dynlib_info");
+		dyn_info->size = sizeof(dynlib_info_ex);
+		dyn_info->handle = info.handle;
+		std::strncpy(dyn_info->name, info.name.c_str(), 256);
+
+		dyn_info->tls_index = info.tlsSlot;
+		dyn_info->tls_align = info.tlsalign;
+		dyn_info->tls_init_size = info.tlsSizeFile;
+		dyn_info->tls_size = info.tlsSizeMem;
+		dyn_info->tls_init_addr = reinterpret_cast<uintptr_t>(info.tlsAddr);
+
+		dyn_info->init_proc_addr = reinterpret_cast<uintptr_t>(info.initAddr);
+		dyn_info->fini_proc_addr = reinterpret_cast<uintptr_t>(info.finiAddr);
+
+		dyn_info->eh_frame_addr = reinterpret_cast<uintptr_t>(info.ehFrameAddr);
+		dyn_info->eh_frame_hdr_addr = reinterpret_cast<uintptr_t>(info.ehFrameheaderAddr);
+		dyn_info->eh_frame_size = info.ehFrameSize;
+		dyn_info->eh_frame_hdr_size = info.ehFrameheaderSize;
+
+		auto& text = dyn_info->segs[0];
+		text.addr = reinterpret_cast<uintptr_t>(info.textSeg.addr);
+		text.size = info.textSeg.size;
+		text.flags = 1 | 4;
+
+		auto& data = dyn_info->segs[1];
+		data.addr = reinterpret_cast<uintptr_t>(info.dataSeg.addr);
+		data.size = info.dataSeg.size;
+		data.flags = 1 | 2;
+
+		dyn_info->ref_count = 1;
 		return 0;
 	}
 
@@ -67,12 +63,12 @@ namespace runtime
 	{
 		auto mod = proc::getActive()->getMainModule();
 		if (mod) {
-			*data = reinterpret_cast<void*>(mod->procParam);
-			*size = mod->procParamSize;
+			auto& info = mod->getInfo();
+
+			*data = reinterpret_cast<void*>(info.procParam);
+			*size = info.procParamSize;
 			return 0;
 		}
-
-		//TODO: report err
 
 		*data = nullptr;
 		*size = 0;
@@ -86,7 +82,7 @@ namespace runtime
 
 		int listCount = 0;
 		for (auto& mod : list) {
-			*(handles++) = mod->handle;
+			*(handles++) = mod->getInfo().handle;
 			listCount++;
 		}
 
