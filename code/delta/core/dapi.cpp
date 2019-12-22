@@ -9,18 +9,23 @@
 
 static bool verifyViablity()
 {
-	size_t mavail = utl::getAvailableMem() / 1024;
-	return (mavail / 1024) >= 8160;
+	constexpr size_t one_mb = 1024ull * 1024ull;
+	constexpr size_t eight_gb = 8ull * 1024ull * one_mb;
+
+	if (utl::getAvailableMem() < eight_gb) {
+		LOG_ERROR("Your system doesn't have enough physical memory to run " FXNAME);
+		return false;
+	}
+
+	return true;
 }
 
 EXPORT int dcoreMain(int argc, char** argv)
 {
 	utl::createLogger(true);
 
-	if (!verifyViablity()) {
-		LOG_ERROR("Your system doesn't have enough physical memory to run " FXNAME);
+	if (!verifyViablity())
 		return -1;
-	}
 
 	/*if (argc < 2) {
 		LOG_ERROR("Please supply ELF path");

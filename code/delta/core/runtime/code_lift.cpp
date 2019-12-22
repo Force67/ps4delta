@@ -1,21 +1,66 @@
 
 // Copyright (C) Force67 2019
 
-#include <logger/logger.h>
-
-#include "code_lift.h"
 #include <cstdio>
-
 #include <xbyak.h>
+#include <base.h>
+
+#include <logger/logger.h>
+#include "code_lift.h"
+
+#include "kernel/proc.h"
 
 namespace runtime
 {
+	static Xbyak::Operand::Code capstone_to_xbyak(x86_reg reg)
+	{
+#define CASE_R(x) \
+  case X86_REG_E ## x: \
+  case X86_REG_R ## x: \
+  { \
+    return Xbyak::Operand::R ## x; \
+  }
+#define CASE_N(x) \
+  case X86_REG_R ## x ## D: \
+  case X86_REG_R ## x: \
+  { \
+    return Xbyak::Operand::R ## x; \
+  }
+		switch (reg)
+		{
+			CASE_R(AX)
+				CASE_R(CX)
+				CASE_R(DX)
+				CASE_R(BX)
+				CASE_R(SP)
+				CASE_R(BP)
+				CASE_R(SI)
+				CASE_R(DI)
+				CASE_N(8)
+				CASE_N(9)
+				CASE_N(10)
+				CASE_N(11)
+				CASE_N(12)
+				CASE_N(13)
+				CASE_N(14)
+				CASE_N(15)
+		}
+		__debugbreak();
+		return Xbyak::Operand::Code::RAX;
+#undef CASE_N
+#undef CASE_R
+	}
+
 	uintptr_t lv2_get(uint32_t sysIndex);
 
 	// for debugging
 	static void printOpInfo(const cs_x86_op& op) {
 		std::printf("Operand: Type %d, Reg %d, (Mem: base %d)\n", op.type, op.reg, op.mem.base);
 	}
+
+	codeLift::codeLift(uint8_t *& rip) :
+		ripPointer(rip)
+	{}
 
 	codeLift::~codeLift()
 	{
@@ -32,7 +77,7 @@ namespace runtime
 	{
 		auto err = cs_open(CS_ARCH_X86, CS_MODE_64, &handle);
 		if (err == CS_ERR_MEM) {
-			LOG_ERROR("vabiPass: not enough mem for disasembler");
+			LOG_ERROR("codeLift: not enough mem for disasembler");
 			return false;
 		}
 
@@ -49,28 +94,52 @@ namespace runtime
 		while (cs_disasm_iter(handle, &codePtr, &size, &base, insn)) {
 
 			auto detail = insn->detail->x86;
-			uint32_t dest = static_cast<uint32_t>(X86_REL_ADDR(*insn));
+			//uint32_t dest = static_cast<uint32_t>(X86_REL_ADDR(*insn));
 
 			auto getOps = [&](int32_t ofs) {
-				//return codePtr + ofs;
 				return &data[insn->address + ofs];
 			};
 
+			/*syscall -> custom handler*/
 			if (insn->id == X86_INS_SYSCALL) {
 				emit_syscall(getOps(-10), *(uint32_t*)(getOps(-7)));
 			}
 
-#if 0
-			if (insn->id == X86_INS_INT) {
-				auto op = detail.operands[0];
+			/*interrupt -> debugbreak*/
+			else if (insn->id == X86_INS_INT) {
+				uint8_t* tgt = getOps(0);
+				*(uint16_t*)(tgt) = 0xCCCC;
+			}
 
-				/*abort interrupt*/
-				if (op.type == X86_OP_IMM && *(uint8_t*)(getOps(1)) == 0x44) {
-					auto* target = getOps(1);
-					*target = 3;
+			/*fs base (tls) access*/
+			else
+			{
+				/*idea inspired by uplift*/
+				bool isTls = false;
+
+				for (uint8_t i = 0; i < insn->detail->x86.op_count; i++)
+				{
+					auto operand = insn->detail->x86.operands[i];
+					if (operand.type == X86_OP_MEM)
+					{
+						if (operand.mem.segment == X86_REG_FS)
+						{
+							isTls = true;
+							break;
+						}
+						else if (operand.mem.segment == X86_REG_DS ||
+							operand.mem.segment == X86_REG_ES ||
+							operand.mem.segment == X86_REG_GS)
+						{
+							//__debugbreak();
+						}
+					}
+				}
+
+				if (isTls && insn->id == X86_INS_MOV) {
+					emit_fsbase(getOps(0));
 				}
 			}
-#endif
 
 		}
 
@@ -81,9 +150,87 @@ namespace runtime
 	{
 		auto address = lv2_get(idx);
 		if (address) {
+			/*call to rax*/
 			*(uint16_t*)base = 0xB848;
 			*(uint64_t*)(base + 2) = address;
 			*(uint16_t*)(base + 10) = 0xE0FF;
 		}
+	}
+
+	/*fetch fs base ptr from current process*/
+	static PS4ABI void* getFsBase() {
+		std::printf("GETFSBASE %p\n", _ReturnAddress());
+		return krnl::proc::getActive()->getEnv().fsBase;
+	}
+
+	/*this implementation is based on uplift*/
+	void codeLift::emit_fsbase(uint8_t* base)
+	{
+		if (insn->detail->x86.op_count != 2)
+			__debugbreak();
+
+		auto operands = insn->detail->x86.operands;
+
+		if (operands[0].type != X86_OP_REG)
+			__debugbreak();
+
+		if (operands[1].type != X86_OP_MEM ||
+			operands[1].mem.segment != X86_REG_FS ||
+			operands[1].mem.base != X86_REG_INVALID ||
+			operands[1].mem.index != X86_REG_INVALID)
+		{
+			__debugbreak();
+		}
+
+		/*call directly in rip zone*/
+		base[0] = 0xE8;
+		auto disp = static_cast<uint32_t>(ripPointer - &base[5]);
+		*reinterpret_cast<uint32_t*>(&base[1]) = disp;
+
+		/*pad out any remaining code*/
+		if (insn->size > 5)
+			std::memset(&base[5], 0x90, insn->size - 5);
+
+		if (operands[0].size != 8 && operands[0].size != 4) {
+			__debugbreak();
+			return;
+		}
+
+		/*translate the register that we set*/
+		auto reg = Xbyak::Reg64(capstone_to_xbyak(operands[0].reg));
+
+		/*jit assemble a register setter*/
+		struct fsGen : Xbyak::CodeGenerator {
+			/*note: this is sys-v abi*/
+			fsGen(Xbyak::Reg64 reg, int64_t tlsOffset, uint8_t size, uintptr_t end) {
+				mov(rax, reinterpret_cast<uintptr_t>(&getFsBase));
+				call(rax);
+
+				//sysv returns directly into rax
+				if (reg.getIdx() != Xbyak::Reg64::RAX)
+					mov(reg, rax);
+
+				if (tlsOffset)
+					add(reg, static_cast<uint32_t>(tlsOffset));
+
+				if (size == 4)
+					mov(reg.cvt32(), ptr[reg]);
+				else
+					mov(reg, ptr[reg]);
+
+				ret();
+			}
+		};
+
+		uintptr_t theEnd = reinterpret_cast<uintptr_t>(base + insn->size);
+		fsGen gen(reg, operands[0].mem.disp, operands[0].size, theEnd);
+
+		/*align the block and pad out the rest*/
+		const auto alignedSize = align_up<size_t>(gen.getSize(), 8);
+		if (gen.getSize() < alignedSize)
+			std::memset(ripPointer + gen.getSize(), 0xCC, alignedSize - gen.getSize());
+
+		std::memcpy(ripPointer, gen.getCode(), gen.getSize());
+		ripPointer += alignedSize;
 	}
 }

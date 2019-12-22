@@ -4,8 +4,12 @@
 #include <logger/logger.h>
 #include "../vprx/vprx.h"
 
+#include "kernel/proc.h"
+
 namespace runtime
 {
+	using namespace krnl;
+
 	int PS4ABI sys_exit()
 	{
 		__debugbreak();
@@ -47,7 +51,9 @@ namespace runtime
 	{
 		//amd64_set_fsbase
 		if (num == 129) {
-			LOG_WARNING("ACTUALLY SET FS BASE");
+			auto fsbase = *static_cast<void**>(args);
+			proc::getActive()->getEnv().fsBase = fsbase;
+			std::printf("FSBASE %p\n", fsbase);
 			return 0;
 		}
 

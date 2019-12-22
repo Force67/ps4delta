@@ -52,3 +52,10 @@
 #elif
 #define EXPORT
 #endif
+
+#define POW2_MASK (align - static_cast<T>(1))
+
+template<typename T> inline T align_up(const T addr, const T align)
+{
+	return (addr + POW2_MASK) & ~POW2_MASK;
+}

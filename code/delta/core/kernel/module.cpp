@@ -18,6 +18,9 @@ namespace krnl
 		/*-1 = no tls used*/
 		info.handle = -1;
 		info.tlsSlot = -1;
+
+		/*set size from process config*/
+		info.ripZoneSize = process->getEnv().ripZoneSize;
 	}
 
 	bool elfModule::fromFile(const std::string& path)
@@ -198,7 +201,7 @@ namespace krnl
 		for (uint16_t i = 0; i < elf->phnum; ++i) {
 			const auto* p = &segments[i];
 			if (p->type == PT_LOAD || p->type == PT_SCE_RELRO) {
-				codeSize += elf_align_up(p->memsz, p->align);
+				codeSize += align_up(p->memsz, p->align);
 			}
 		}
 
@@ -206,26 +209,28 @@ namespace krnl
 		if (codeSize == 0)
 			return false;
 
-		uint32_t realCodeSize = codeSize;
+		// reserve a region from xxxxxxxx00000000 - xxxxxxxxFFFFFFFF
+		constexpr size_t one_mb = 1024ull * 1024ull;
+		constexpr size_t eight_gb = 8ull * 1024ull * one_mb;
 
-		auto& pcfg = process->env;
+		info.base = static_cast<uint8_t*>(utl::allocMem(nullptr,
+			eight_gb, utl::pageProtection::w, utl::allocationType::reserve));
 
-		// additional space for relative in module rip addressing
-		if (pcfg.ripZoneEnabled)
-			codeSize += pcfg.ripZoneSize;
-
-		// reserve segment
-		info.base = process->vmem.mapMemory(nullptr, codeSize, utl::pageProtection::rwx);
 		if (!info.base)
 			return false;
+
+		// immediately take module memory + rip Zone memory
+		utl::allocMem(info.base, codeSize + info.ripZoneSize, utl::pageProtection::w, utl::allocationType::commit);
+
+		info.codeSize = codeSize;
+		info.ripZone = info.base + codeSize;
+
+		std::memset(info.ripZone, 0xCC, info.ripZoneSize);
+		utl::protectMem(info.ripZone, info.ripZoneSize, utl::pageProtection::rwx);
 
 #ifdef _DEBUG
 		std::printf("Mapped %s @ %p\n", info.name.c_str(), info.base);
 #endif
-
-		// pad out space with int3d's
-		if (pcfg.ripZoneEnabled)
-			std::memset(info.base + realCodeSize, 0xCC, pcfg.ripZoneSize);
 
 		// step 0: map data
 		for (uint16_t i = 0; i < elf->phnum; i++) {
@@ -248,7 +253,7 @@ namespace krnl
 			const auto *s = &segments[i];
 			uint32_t perm = s->flags & (PF_R | PF_W | PF_X);
 			if (s->type == PT_LOAD && perm == (PF_R | PF_X)) {
-				runtime::codeLift lift;
+				runtime::codeLift lift(info.ripZone);
 				LOG_ASSERT(lift.init());
 				lift.transform(getAddress<uint8_t>(s->vaddr), s->filesz);
 			}
@@ -258,7 +263,8 @@ namespace krnl
 		// temp hack: raise 5.05 kernel debug msg level
 		if (info.name == "libkernel.sprx") {
 			*getAddress<uint32_t>(0x68264) = UINT32_MAX;
-				LOG_WARNING("Enabling libkernel debug messages");
+			*getAddress<uint16_t>(0x2BC9) = 0xCCCC;
+			LOG_WARNING("Enabling libkernel debug messages");
 		}
 #endif
 

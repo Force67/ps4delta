@@ -13,10 +13,10 @@ namespace krnl
 {
 	struct procInfo
 	{
-		bool ripZoneEnabled{ true };
-		uint32_t ripZoneSize = 1024;
+		uint32_t ripZoneSize = 5 * 1024;
 		uint8_t* userStack = nullptr;
 		size_t userStackSize = 20 * 1024 * 1024;
+		void* fsBase = nullptr;
 	};
 
 	class proc

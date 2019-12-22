@@ -29,6 +29,9 @@ namespace krnl
 		uint16_t tlsSlot;
 		uint32_t codeSize;
 
+		uint8_t* ripZone;
+		size_t ripZoneSize;
+
 		uint8_t* procParam;
 		uint32_t procParamSize;
 
