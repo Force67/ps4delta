@@ -459,7 +459,6 @@ namespace krnl
 
 			const char* sname = &strtab.ptr[s->st_name];
 			if (std::strncmp(sname, name, 10) == 0) {
-				std::printf("it was a match!\n");
 				return getAddressNPTR<uintptr_t>(s->st_value);
 			}
 		}

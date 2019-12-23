@@ -58,7 +58,6 @@ namespace runtime
 		if (num == 129) {
 			auto fsbase = *static_cast<void**>(args);
 			proc::getActive()->getEnv().fsBase = fsbase;
-			std::printf("FSBASE %p\n", fsbase);
 			return 0;
 		}
 

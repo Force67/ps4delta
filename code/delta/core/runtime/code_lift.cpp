@@ -182,15 +182,6 @@ namespace runtime
 			__debugbreak();
 		}
 
-		/*call directly in rip zone*/
-		base[0] = 0xE8;
-		auto disp = static_cast<uint32_t>(ripPointer - &base[5]);
-		*reinterpret_cast<uint32_t*>(&base[1]) = disp;
-
-		/*pad out any remaining code*/
-		if (insn->size > 5)
-			std::memset(&base[5], 0x90, insn->size - 5);
-
 		if (operands[0].size != 8 && operands[0].size != 4) {
 			__debugbreak();
 			return;
@@ -202,7 +193,7 @@ namespace runtime
 		/*jit assemble a register setter*/
 		struct fsGen : Xbyak::CodeGenerator {
 			/*note: this is sys-v abi*/
-			fsGen(Xbyak::Reg64 reg, int64_t tlsOffset, uint8_t size) {
+			fsGen(Xbyak::Reg64 reg, uint32_t disp, uint8_t size) {
 				mov(rax, reinterpret_cast<uintptr_t>(&getFsBase));
 				call(rax);
 
@@ -210,8 +201,8 @@ namespace runtime
 				if (reg.getIdx() != Xbyak::Reg64::RAX)
 					mov(reg, rax);
 
-				if (tlsOffset)
-					add(reg, static_cast<uint32_t>(tlsOffset));
+				if (disp)
+					add(reg, disp);
 
 				if (size == 4)
 					mov(reg.cvt32(), ptr[reg]);
@@ -222,7 +213,17 @@ namespace runtime
 			}
 		};
 
-		fsGen gen(reg, operands[0].mem.disp, operands[0].size);
+		uint32_t dispOff = insn->size > 5 ? *(uint32_t*)(base + 5) : 0;
+		fsGen gen(reg, dispOff, operands[0].size);
+
+		/*call directly in rip zone*/
+		base[0] = 0xE8;
+		auto disp = static_cast<uint32_t>(ripPointer - &base[5]);
+		*reinterpret_cast<uint32_t*>(&base[1]) = disp;
+
+		/*pad out any remaining code*/
+		if (insn->size > 5)
+			std::memset(&base[5], 0x90, insn->size - 5);
 
 		/*align the block and pad out the rest*/
 		const auto alignedSize = align_up<size_t>(gen.getSize(), 8);
