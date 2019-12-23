@@ -45,8 +45,11 @@ namespace runtime
 
 	static_assert(sizeof(dynlib_info_ex) == 424);
 
+	int PS4ABI sys_dynlib_dlopen(const char*);
 	int PS4ABI sys_dynlib_get_info_ex(uint32_t handle, int32_t ukn /*always 1*/, dynlib_info_ex* dyn_info);
 	int PS4ABI sys_dynlib_get_proc_param(void** data, size_t* size);
 	int PS4ABI sys_dynlib_get_list(uint32_t* handles, size_t maxCount, size_t* count);
+	int PS4ABI sys_dynlib_dlsym(uint32_t handle, const char* cname, void** sym);
+	int PS4ABI dynlib_get_obj_member(uint32_t handle, uint8_t index, void** value);
 	int PS4ABI sys_dynlib_process_needed_and_relocate();
 }

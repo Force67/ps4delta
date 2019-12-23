@@ -129,12 +129,9 @@ namespace krnl
 			auto* d = &dynamics[i];
 
 			switch (d->tag) {
-			/*case DT_PREINIT_ARRAY:
-				preinit_array = reinterpret_cast<linker_function*>(dynldAddr + d->un.ptr);
+			case DT_SCE_HASH:
+				hashes = reinterpret_cast<uint8_t*>(dynldPtr + d->un.value);
 				break;
-			case DT_PREINIT_ARRAYSZ:
-				numPreInitArray = static_cast<uint32_t>(d->un.value / sizeof(uintptr_t));
-				break;*/
 			case DT_INIT:
 				info.initAddr = reinterpret_cast<uint8_t*>(dynldAddr + d->un.ptr);
 				break;
@@ -263,7 +260,6 @@ namespace krnl
 		// temp hack: raise 5.05 kernel debug msg level
 		if (info.name == "libkernel.sprx") {
 			*getAddress<uint32_t>(0x68264) = UINT32_MAX;
-			*getAddress<uint16_t>(0x2BC9) = 0xCCCC;
 			LOG_WARNING("Enabling libkernel debug messages");
 		}
 #endif
@@ -403,9 +399,77 @@ namespace krnl
 		return 0;
 	}
 
+	uintptr_t elfModule::getSymbol(const char *name)
+	{
+		//TODO: fix elf hash lookup
+
+		auto elfHash = [](const char *name)
+		{
+			auto p = (const uint8_t*)name;
+			uint32_t h = 0;
+			uint32_t g;
+			while (*p != '\0')
+			{
+				h = (h << 4) + *p++;
+				if ((g = h & 0xF0000000ull) != 0)
+				{
+					h ^= g >> 24;
+				}
+				h &= ~g;
+			}
+			return h;
+		};
+
+		auto hash = elfHash(name);
+
+		auto* htab = reinterpret_cast<uint32_t*>(hashes);
+		uint32_t nbucket = htab[0];
+		uint32_t nchain = htab[1];
+		uint32_t* bucket = &htab[2];
+		uint32_t* chain = &bucket[nbucket];
+
+		char nameOut[11]{};
+		runtime::encode_nid("module_start", reinterpret_cast<uint8_t*>(&nameOut));
+	
+		for (uint32_t i = bucket[hash % nbucket]; i; i = chain[i]) {
+			const auto* s = &symbols[i];
+
+			if (i > nchain)
+				return 0;
+
+			if (!s->st_value)
+				continue;
+
+			const char* sname = &strtab.ptr[s->st_name];
+			if (std::strncmp(sname, nameOut, 10) == 0) {
+				return s->st_value;
+			}
+		}
+
+		return 0;
+	}
+
+	uintptr_t elfModule::getSymbol2(const char* name)
+	{
+		for (uint32_t i = 0; i < numSymbols; i++) {
+			const auto* s = &symbols[i];
+
+			if (!s->st_value)
+				continue;
+
+			const char* sname = &strtab.ptr[s->st_name];
+			if (std::strncmp(sname, name, 10) == 0) {
+				std::printf("it was a match!\n");
+				return getAddressNPTR<uintptr_t>(s->st_value);
+			}
+		}
+
+		return 0;
+	}
+
 	static PS4ABI void IDontDoNuffin()
 	{
-
+		__debugbreak();
 	}
 
 	bool elfModule::applyRelocations()

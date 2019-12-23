@@ -26,6 +26,7 @@ namespace runtime
 	uintptr_t vprx_get(const char* lib, uint64_t hid);
 
 	bool decode_nid(const char* subset, size_t len, uint64_t&);
+	void encode_nid(const char* symName, uint8_t *out);
 }
 
 #define MODULE_INIT(tname) \

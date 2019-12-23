@@ -62,6 +62,9 @@ namespace krnl
 		bool fromMem(std::unique_ptr<uint8_t[]>);
 
 		uintptr_t getSymbol(uint64_t);
+		uintptr_t getSymbol(const char *name);
+		uintptr_t getSymbol2(const char* name);
+
 		bool unload();
 
 		inline moduleInfo& getInfo() {
@@ -127,6 +130,7 @@ namespace krnl
 		ElfRel* jmpslots;
 		ElfRel* rela;
 		ElfSym* symbols;
+		uint8_t* hashes;
 
 		struct table
 		{

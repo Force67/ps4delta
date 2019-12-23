@@ -159,7 +159,7 @@ namespace runtime
 
 	/*fetch fs base ptr from current process*/
 	static PS4ABI void* getFsBase() {
-		std::printf("GETFSBASE %p\n", _ReturnAddress());
+		//std::printf("GETFSBASE %p\n", _ReturnAddress());
 		return krnl::proc::getActive()->getEnv().fsBase;
 	}
 
@@ -202,7 +202,7 @@ namespace runtime
 		/*jit assemble a register setter*/
 		struct fsGen : Xbyak::CodeGenerator {
 			/*note: this is sys-v abi*/
-			fsGen(Xbyak::Reg64 reg, int64_t tlsOffset, uint8_t size, uintptr_t end) {
+			fsGen(Xbyak::Reg64 reg, int64_t tlsOffset, uint8_t size) {
 				mov(rax, reinterpret_cast<uintptr_t>(&getFsBase));
 				call(rax);
 
@@ -222,8 +222,7 @@ namespace runtime
 			}
 		};
 
-		uintptr_t theEnd = reinterpret_cast<uintptr_t>(base + insn->size);
-		fsGen gen(reg, operands[0].mem.disp, operands[0].size, theEnd);
+		fsGen gen(reg, operands[0].mem.disp, operands[0].size);
 
 		/*align the block and pad out the rest*/
 		const auto alignedSize = align_up<size_t>(gen.getSize(), 8);

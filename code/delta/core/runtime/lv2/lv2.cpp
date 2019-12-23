@@ -15,6 +15,7 @@ namespace runtime
 {
 	int sys_write(uint32_t fd, const void* buf, size_t nbytes);
 	int sys_sigprocmask(int, const int*, int*);
+	int sys_sigaction(int how, void(*cb)(void*, void*, void*));
 	int sys_regmgr_call(uint32_t op, uint32_t id, void* result, void* value, uint64_t type);
 
 	int sys_namedobj_create(int);
@@ -63,6 +64,7 @@ namespace runtime
 		{251, (void*)&sys_rfork},
 		{340, (void*)&sys_sigprocmask},
 		{379, (void*)&null_handler}, //sys_mtypeprotect
+		{416, (void*)&sys_sigaction},
 		{432, (void*)&sys_thr_self},
 		{466, (void*)&sys_rtprio_thread},
 		{477, (void*)&sys_mmap},
@@ -123,9 +125,9 @@ namespace runtime
 		{586, (void*)&null_handler}, //sys_dmem_container
 		{587, (void*)&sys_get_authinfo},
 		{588, (void*)&sys_mname}, 
-		{589, (void*)&null_handler}, //sys_dynlib_dlopen
+		{589, (void*)&sys_dynlib_dlopen},
 		{590, (void*)&null_handler}, //sys_dynlib_dlclose
-		{591, (void*)&null_handler}, //sys_dynlib_dlsym
+		{591, (void*)&sys_dynlib_dlsym}, 
 		{592, (void*)&sys_dynlib_get_list},
 		{593, (void*)&null_handler}, //sys_dynlib_get_info
 		{594, (void*)&null_handler}, //sys_dynlib_load_prx
@@ -183,7 +185,7 @@ namespace runtime
 		{646, (void*)&null_handler}, //sys_get_kernel_mem_statistics
 		{647, (void*)&null_handler}, //sys_get_sdk_compiled_version
 		{648, (void*)&null_handler}, //sys_app_state_change
-		{649, (void*)&null_handler}, //sys_dynlib_get_obj_member
+		{649, (void*)&dynlib_get_obj_member },
 		{650, (void*)&null_handler}, //sys_budget_get_ptype_of_budget
 		{651, (void*)&null_handler}, //sys_prepare_to_resume_process
 		{652, (void*)&null_handler}, //sys_process_terminate

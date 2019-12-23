@@ -33,6 +33,11 @@ namespace runtime
 		return 0;
 	}
 
+	int PS4ABI sys_sigaction(int how, void(*cb)(void*, void*, void*))
+	{
+		return 0;
+	}
+
 	/*does not belong here*/
 	int PS4ABI sys_namedobj_create(int idk)
 	{

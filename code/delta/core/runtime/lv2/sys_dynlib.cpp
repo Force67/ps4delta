@@ -8,10 +8,18 @@
 
 #include "error_table.h"
 #include "sys_dynlib.h"
+#include <runtime/vprx/vprx.h>
 
 namespace runtime 
 {
 	using namespace krnl;
+
+	int PS4ABI sys_dynlib_dlopen(const char*)
+	{
+		/*TODO: implement, however note that this function is only
+		present in devkits*/
+		return SysError::eNOSYS;
+	}
 
 	int PS4ABI sys_dynlib_get_info_ex(uint32_t handle, int32_t ukn /*always 1*/, dynlib_info_ex* dyn_info)
 	{
@@ -56,6 +64,53 @@ namespace runtime
 		data.flags = 1 | 2;
 
 		dyn_info->ref_count = 1;
+		return 0;
+	}
+
+	int PS4ABI sys_dynlib_dlsym(uint32_t handle, const char* symName, void** sym)
+	{
+		auto mod = proc::getActive()->getModule(handle);
+		if (!mod)
+			return -1;
+
+#if 0
+		auto name = std::string(symName);
+		size_t pos = name.find_first_of('#');
+		if (pos != std::string::npos) {
+			// generate name from triplet
+			LOG_WARNING("we cant handle long names yet");
+		}
+
+		auto libName = mod->getInfo().name;
+		pos = libName.rfind('.');
+		if (pos != std::string::npos)
+			libName = libName.substr(0, pos);
+
+		/*make a long name e.g sceKernelReportUnpatchedFunctionCall#libkernel#libkernel*/
+		auto longName = name + "#" + libName + "#" + libName;
+#endif
+
+		std::printf("DLSYM %s!%s\n", mod->getInfo().name.c_str(), symName);
+
+		char nameOut[11]{};
+		runtime::encode_nid(symName, reinterpret_cast<uint8_t*>(&nameOut));
+
+		auto value = mod->getSymbol2(nameOut);
+		*sym = reinterpret_cast<void*>(value);
+
+		return 0;
+	}
+
+	int PS4ABI dynlib_get_obj_member(uint32_t handle, uint8_t index, void** value)
+	{
+		if (index != 1)
+			return SysError::eINVAL;
+
+		auto mod = proc::getActive()->getModule(handle);
+		if (!mod)
+			return -1;
+
+		*value = mod->getInfo().initAddr;
 		return 0;
 	}
 
