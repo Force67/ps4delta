@@ -4,7 +4,7 @@
 
 #include <base.h>
 
-namespace runtime
+namespace krnl
 {
 	struct proc_param {
 		uint64_t length;

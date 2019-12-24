@@ -6,12 +6,10 @@
 
 #include <intrin.h>
 
-#include "kernel/proc.h"
+#include "../proc.h"
 
-namespace runtime
+namespace krnl
 {
-	using namespace krnl;
-
 	int PS4ABI sys_is_in_sandbox()
 	{
 		return 0;

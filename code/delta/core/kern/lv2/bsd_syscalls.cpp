@@ -1,15 +1,12 @@
 
 // Copyright (C) Force67 2019
 
+#include <base.h>
 #include <logger/logger.h>
-#include "../vprx/vprx.h"
+#include "../proc.h"
 
-#include "kernel/proc.h"
-
-namespace runtime
+namespace krnl
 {
-	using namespace krnl;
-
 	int PS4ABI sys_exit()
 	{
 		__debugbreak();

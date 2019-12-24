@@ -10,8 +10,9 @@
 #include "sys_dynlib.h"
 #include "sys_debug.h"
 #include "sys_thread.h"
+#include "sys_vfs.h"
 
-namespace runtime
+namespace krnl
 {
 	int sys_write(uint32_t fd, const void* buf, size_t nbytes);
 	int sys_sigprocmask(int, const int*, int*);
@@ -50,6 +51,7 @@ namespace runtime
 	static const syscall_Reg syscall_dpt[] = {
 		{1, (void*)&sys_exit},
 		{4, (void*)&sys_write},
+		{5, (void*)&sys_open},
 		{20, (void*)&sys_getpid},
 		{59, (void*)&sys_execve},
 		{99, (void*)&null_handler}, //sys_netcontrol

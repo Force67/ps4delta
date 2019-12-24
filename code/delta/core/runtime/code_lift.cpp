@@ -8,7 +8,11 @@
 #include <logger/logger.h>
 #include "code_lift.h"
 
-#include "kernel/proc.h"
+#include "kern/proc.h"
+
+namespace krnl {
+	uintptr_t lv2_get(uint32_t sysIndex);
+}
 
 namespace runtime
 {
@@ -50,8 +54,6 @@ namespace runtime
 #undef CASE_N
 #undef CASE_R
 	}
-
-	uintptr_t lv2_get(uint32_t sysIndex);
 
 	// for debugging
 	static void printOpInfo(const cs_x86_op& op) {
@@ -148,7 +150,7 @@ namespace runtime
 
 	void codeLift::emit_syscall(uint8_t* base, uint32_t idx)
 	{
-		auto address = lv2_get(idx);
+		auto address = krnl::lv2_get(idx);
 		if (address) {
 			/*call to rax*/
 			*(uint16_t*)base = 0xB848;
@@ -159,7 +161,6 @@ namespace runtime
 
 	/*fetch fs base ptr from current process*/
 	static PS4ABI void* getFsBase() {
-		//std::printf("GETFSBASE %p\n", _ReturnAddress());
 		return krnl::proc::getActive()->getEnv().fsBase;
 	}
 

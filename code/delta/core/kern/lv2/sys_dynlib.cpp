@@ -4,16 +4,14 @@
 #include <logger/logger.h>
 #include <base.h>
 
-#include <kernel/proc.h>
+#include "../proc.h"
 
 #include "error_table.h"
 #include "sys_dynlib.h"
 #include <runtime/vprx/vprx.h>
 
-namespace runtime 
+namespace krnl
 {
-	using namespace krnl;
-
 	int PS4ABI sys_dynlib_dlopen(const char*)
 	{
 		/*TODO: implement, however note that this function is only

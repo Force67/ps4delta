@@ -4,7 +4,7 @@
 
 #include <base.h>
 
-namespace runtime
+namespace krnl
 {
 	enum mprotFlags : uint32_t {
 		none,

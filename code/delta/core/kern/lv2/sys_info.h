@@ -4,7 +4,7 @@
 
 #include <base.h>
 
-namespace runtime
+namespace krnl
 {
 	int PS4ABI sys_is_in_sandbox();
 	int PS4ABI sys_get_authinfo(int value);

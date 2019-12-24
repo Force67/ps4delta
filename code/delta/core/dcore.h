@@ -4,7 +4,7 @@
 
 #include <string>
 #include <memory>
-#include <kernel/proc.h>
+#include <kern/proc.h>
 
 #include <QApplication>
 #include <QFontDatabase>

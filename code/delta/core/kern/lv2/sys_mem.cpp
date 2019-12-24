@@ -5,13 +5,11 @@
 #include <utl/mem.h>
 #include <logger/logger.h>
 
-#include "kernel/proc.h"
+#include "../proc.h"
 #include "sys_mem.h"
 
-namespace runtime 
+namespace krnl 
 {
-	using namespace krnl;
-
 	using ppt = utl::pageProtection;
 	using alt = utl::allocationType;
 

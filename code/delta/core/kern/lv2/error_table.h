@@ -4,7 +4,7 @@
 
 #include <cstdint>
 
-namespace runtime
+namespace krnl
 {
 	enum SysError : uint64_t
 	{

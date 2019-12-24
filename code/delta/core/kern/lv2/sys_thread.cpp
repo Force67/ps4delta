@@ -6,12 +6,10 @@
 
 #include <intrin.h>
 
-#include "kernel/proc.h"
+#include "../proc.h"
 
-namespace runtime
+namespace krnl
 {
-	using namespace krnl;
-
 	int PS4ABI sys_thr_self(void** arg)
 	{
 		*arg = (void*)357;

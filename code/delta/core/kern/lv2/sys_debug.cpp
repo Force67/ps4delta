@@ -6,12 +6,8 @@
 
 #include <intrin.h>
 
-#include "kernel/proc.h"
-
-namespace runtime
+namespace krnl
 {
-	using namespace krnl;
-
 	int PS4ABI sys_mdbg_service(uint32_t op, void*, void*)
 	{
 		__debugbreak();
