@@ -18,21 +18,22 @@ namespace krnl
 		if (fd != -1)
 			__debugbreak(); // TODO: object table
 
+		auto* proc = proc::getActive();
+		if (!proc)
+			return reinterpret_cast<uint8_t*>(-1);
+
 		/*TODO: should we allocate aligned?*/
 
-		/*attempt to allocate in one batch*/
 		void* ptr = utl::allocMem(addr, len, ppt::w, alt::reservecommit);
 		if (!ptr) {
 
-			/*maybe we try to allocate in a previously reserved region?*/
+			// maybe a previously reserved page?
 			ptr = utl::allocMem(addr, len, ppt::w, alt::commit);
 			if (!ptr) {
 				__debugbreak();
 				return reinterpret_cast<uint8_t*>(-1);
 			}
 		}
-
-		/*todo: register with mem mng*/
 
 		auto tprot = ppt::r;
 		if (prot & mprotFlags::write)
@@ -43,11 +44,12 @@ namespace krnl
 		if (flags & mFlags::anon)
 			std::memset(ptr, 0, len);
 
-		/*we apply target protection later so we can setup the memory
-		properly beforehand*/
+		proc->getVma().add(static_cast<uint8_t*>(ptr), len, tprot);
+
+		// now we apply target protection
 		utl::protectMem(static_cast<void*>(ptr), len, tprot);
 
-		std::printf("mmap: addr=%p, len=%I64x, allocated @ %p\n", addr, len, ptr);
+		LOG_TRACE("addr={}, len={}, requested by {}", fmt::ptr(addr), len, fmt::ptr(_ReturnAddress()));
 
 		if (flags & mFlags::stack)
 			return &static_cast<uint8_t*>(ptr)[len];
@@ -55,9 +57,20 @@ namespace krnl
 		return static_cast<uint8_t*>(ptr);
 	}
 
-	int PS4ABI sys_mname(uint8_t*, size_t len, const char* name, void*)
+	int PS4ABI sys_mname(uint8_t* ptr, size_t len, const char* name, void*)
 	{
-		std::printf("Sys_mname : %s\n", name);
+		auto* proc = proc::getActive();
+		if (!proc)
+			return -1;
+
+		auto* info = proc->getVma().get(ptr);
+		if (!info) {
+			LOG_WARNING("attempted to tag unknown memory ({}, {})", fmt::ptr(ptr), name);
+			return -1;
+		}
+
+		LOG_TRACE("tagged {} with name {}", fmt::ptr(ptr), name);
+		info->name = name;
 		return 0;
 	}
 }

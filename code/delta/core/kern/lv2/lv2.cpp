@@ -68,6 +68,7 @@ namespace krnl
 		{379, (void*)&null_handler}, //sys_mtypeprotect
 		{416, (void*)&sys_sigaction},
 		{432, (void*)&sys_thr_self},
+		{454, (void*)&sys_umtx_op},
 		{466, (void*)&sys_rtprio_thread},
 		{477, (void*)&sys_mmap},
 		{532, (void*)&sys_regmgr_call},

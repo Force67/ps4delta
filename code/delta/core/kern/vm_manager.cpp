@@ -31,6 +31,23 @@ namespace krnl
 		return pinfo.userStack;
 	}
 
+	void vmManager::add(uint8_t* ptr, size_t size, mprot prot)
+	{
+		rtPages.emplace_back(ptr, size, prot);
+	}
+
+	pageInfo* vmManager::get(uint8_t* ptr)
+	{
+		auto it = std::find_if(
+			rtPages.begin(), rtPages.end(),
+			[&ptr](const auto& page) { return page.ptr == ptr; });
+
+		if (it != rtPages.end())
+			return &*it;
+
+		return nullptr;
+	}
+
 	uint8_t* vmManager::mapMemory(uint8_t* preference, size_t size, utl::pageProtection prot)
 	{
 		const auto allocType = utl::allocationType::reservecommit;

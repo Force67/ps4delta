@@ -11,13 +11,18 @@ namespace krnl
 {
 	struct procInfo;
 
+	using mprot = utl::pageProtection;
+	using alloct = utl::allocationType;
+
 	struct pageInfo
 	{
 		uint8_t* ptr;
 		size_t size;
+		mprot prot;
+		const char* name = nullptr;
 
-		pageInfo(uint8_t* p, size_t s) :
-			ptr(p), size(s)
+		pageInfo(uint8_t* p, size_t s, mprot mp) :
+			ptr(p), size(s), prot(mp)
 		{}
 	};
 
@@ -28,6 +33,8 @@ namespace krnl
 		~vmManager();
 
 		bool init();
+		void add(uint8_t* ptr, size_t size, mprot);
+		pageInfo* get(uint8_t* ptr);
 
 		uint8_t* mapMemory(uint8_t* preference, size_t size, utl::pageProtection);
 		void unmapRtMemory(uint8_t*);

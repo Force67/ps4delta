@@ -20,4 +20,12 @@ namespace krnl
 	{
 		return 0;
 	}
+
+	int PS4ABI sys_umtx_op(void* ptr, int, uint32_t, void*, void*)
+	{
+		std::printf("locking kmutex! %p\n", ptr);
+
+		//TODO:
+		return 0;
+	}
 }
