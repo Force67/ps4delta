@@ -180,6 +180,9 @@ namespace krnl
 			case DT_SCE_RELASZ:
 				numRela = static_cast<uint32_t>(d->un.value / sizeof(ElfRel));
 				break;
+		/*	case DT_NEEDED:
+				std::printf("DT_NEEDED %s\n", (const char*)(strtab.ptr + (d->un.value)));
+				break;*/
 			case DT_SCE_NEEDED_MODULE:
 			{
 				auto& e = implibs.emplace_back();
@@ -256,13 +259,25 @@ namespace krnl
 			}
 		}
 
-#ifdef _DEBUG
+#if 1
 		// temp hack: raise 5.05 kernel debug msg level
 		if (info.name == "libkernel.sprx") {
 			*getAddress<uint32_t>(0x68264) = UINT32_MAX;
+			//*getAddress<uint32_t>(0x12C60) = 0xCCCCCCCC;
+			LOG_WARNING("Enabling libkernel debug messages");
+		}
+
+		/*if (info.name == "libSceLibcInternal.sprx") {
+			*getAddress<uint16_t>(0x23A30) = 0xCCCC;
+		}*/
+#else
+		// 3.55
+		if (info.name == "libkernel.sprx") {
+			//*getAddress<uint32_t>(0x6036C) = UINT32_MAX;
 			LOG_WARNING("Enabling libkernel debug messages");
 		}
 #endif
+
 
 		//step 2: apply page protections
 		for (uint16_t i = 0; i < elf->phnum; i++) {
@@ -351,6 +366,16 @@ namespace krnl
 	
 				for (auto& imp : implibs) {
 					if (imp.modid == static_cast<int32_t>(modid)) {
+						std::string_view xname(imp.name);
+
+#if 1
+						if (xname == "libSceAppContentUtil")
+							continue;
+
+						if (xname == "libSceNpScore")
+							continue;
+#endif
+
 						auto mod = process->loadModule(imp.name);
 						if (!mod) {
 							LOG_ERROR("resolveImports: Unknown module {} ({}) requestd", imp.name, imp.modid);
@@ -468,7 +493,7 @@ namespace krnl
 
 	static PS4ABI void IDontDoNuffin()
 	{
-		__debugbreak();
+		//__debugbreak();
 	}
 
 	bool elfModule::applyRelocations()
@@ -643,6 +668,7 @@ namespace krnl
 				LOG_INFO("Starting: {}", name);
 				break;
 			}
+#if 0
 			case PT_SCE_LIBVERSION:
 			{
 				uint8_t* sec = getOffset<uint8_t>(s->offset);
@@ -669,7 +695,7 @@ namespace krnl
 							uint32_t version = *(uint32_t*)& sec[i + 1];
 							uint8_t* vptr = (uint8_t*)& version;
 
-							//std::printf("lib <%s>, version %x.%x.%x.%x\n", name.c_str(), vptr[0], vptr[1], vptr[2], vptr[3]);
+							std::printf("lib <%s>, version %x.%x.%x.%x\n", name.c_str(), vptr[0], vptr[1], vptr[2], vptr[3]);
 							break;
 						}
 					}
@@ -679,6 +705,7 @@ namespace krnl
 				}
 				break;
 			}
+#endif
 			}
 		}
 	}

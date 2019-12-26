@@ -124,39 +124,35 @@ namespace krnl
 
 	void proc::start()
 	{
-		auto invoke = [](elfModule& mod)
-		{
-			auto& info = mod.getInfo();
+		LOG_ASSERT(modules[1]->getInfo().name == "libkernel.sprx");
 
-			// todo: get rid of this mess
-			entryGen callingCtx(info.entry);
-			auto func = callingCtx.getCode<void* (*)(void*)>();
+		auto& info = getMainModule()->getInfo();
+		auto& kinfo = modules[1]->getInfo();
 
-			union stack_entry
-			{
-				const void* ptr;
-				uint64_t val;
-			}
-			stack[128];
-
-			stack[0].val = 1 + 0; // argc
-			auto s = reinterpret_cast<stack_entry*>(&stack[1]);
-			(*s++).ptr = info.name.c_str();
-			(*s++).ptr = nullptr; // arg null terminator
-			(*s++).ptr = nullptr; // env null terminator
-			(*s++).val = 9ull; // entrypoint type
-			(*s++).ptr = (const void*)(info.entry - info.base);
-			(*s++).ptr = nullptr; // aux null type
-			(*s++).ptr = nullptr;
-
-			func(stack);
-		};
-
-		for (int i = 1; i < modules.size(); i++) {
-			invoke(*modules[i]);
+		if (!info.entry) {
+			LOG_WARNING("entry missing for {}", info.name);
+			return;
 		}
 
-		auto mod = getMainModule();
-		invoke(*mod);
+		entryGen callingCtx(kinfo.entry);
+		auto func = callingCtx.getCode<void* (*)(void*)>();
+
+		union stack_entry
+		{
+			const void* ptr;
+			uint64_t val;
+		}
+		stack[128];
+
+		stack[0].val = 1 + 0; // argc
+		auto s = reinterpret_cast<stack_entry*>(&stack[1]);
+		(*s++).ptr = info.name.c_str();
+		(*s++).ptr = nullptr; // arg null terminator
+		(*s++).ptr = nullptr; // env null terminator
+		(*s++).val = 9ull; // entrypoint type
+		(*s++).ptr = (const void*)(info.entry);
+		(*s++).ptr = nullptr; // aux null type
+		(*s++).ptr = nullptr;
+		func(stack);
 	}
 }

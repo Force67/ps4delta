@@ -88,6 +88,16 @@ namespace runtime
 		return true;
 	}
 
+	static bool is_bmi1_instruction(int op)
+	{
+		return op == X86_INS_ANDN ||
+			op == X86_INS_BEXTR ||
+			op == X86_INS_BLSI ||
+			op == X86_INS_BLSMSK ||
+			op == X86_INS_BLSR ||
+			op == X86_INS_TZCNT;
+	};
+
 	bool codeLift::transform(uint8_t* data, size_t size, uint64_t base)
 	{
 		insn = cs_malloc(handle);
@@ -112,6 +122,10 @@ namespace runtime
 				uint8_t* tgt = getOps(0);
 				*(uint16_t*)(tgt) = 0xCCCC;
 			}
+
+			/*else if (is_bmi1_instruction(insn->id)) {
+				std::printf("encountered bm1 instruction %p\n", getOps(0));
+			}*/
 
 			/*fs base (tls) access*/
 			else
@@ -195,12 +209,19 @@ namespace runtime
 		struct fsGen : Xbyak::CodeGenerator {
 			/*note: this is sys-v abi*/
 			fsGen(Xbyak::Reg64 reg, uint32_t disp, uint8_t size) {
+				int idx = reg.getIdx();
+
+				if (idx != Xbyak::Reg64::RAX)
+					push(rax);
+
 				mov(rax, reinterpret_cast<uintptr_t>(&getFsBase));
 				call(rax);
 
 				//sysv returns directly into rax
-				if (reg.getIdx() != Xbyak::Reg64::RAX)
+				if (idx != Xbyak::Reg64::RAX) {
 					mov(reg, rax);
+					pop(rax);
+				}
 
 				if (disp)
 					add(reg, disp);

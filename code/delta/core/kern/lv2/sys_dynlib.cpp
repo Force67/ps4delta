@@ -99,7 +99,7 @@ namespace krnl
 		return 0;
 	}
 
-	int PS4ABI dynlib_get_obj_member(uint32_t handle, uint8_t index, void** value)
+	int PS4ABI sys_dynlib_get_obj_member(uint32_t handle, uint8_t index, void** value)
 	{
 		if (index != 1)
 			return SysError::eINVAL;

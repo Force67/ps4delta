@@ -65,6 +65,8 @@ namespace krnl
 		uintptr_t getSymbol(const char *name);
 		uintptr_t getSymbol2(const char* name);
 
+		bool applyRelocations();
+
 		bool unload();
 
 		inline moduleInfo& getInfo() {
@@ -80,7 +82,6 @@ namespace krnl
 		bool setupTLS();
 		bool mapImage();
 		bool resolveImports();
-		bool applyRelocations();
 
 		template<typename Type, typename TAdd>
 		Type* getOffset(const TAdd dist) {

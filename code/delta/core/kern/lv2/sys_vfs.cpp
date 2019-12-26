@@ -22,6 +22,8 @@ namespace krnl
 		if (!path)
 			return SysError::eINVAL;
 
+		std::printf("open: %s, %x, %x\n", path, flags, mode);
+
 		if (std::strncmp(path, "/dev/", 5) == 0) {
 			const char* name = &path[5];
 
@@ -32,8 +34,6 @@ namespace krnl
 			return make_device(name)->init(path, flags, mode);
 		}
 
-
-		std::printf("open: %s, %x, %x\n", path, flags, mode);
 		__debugbreak();
 		return 0;
 	}

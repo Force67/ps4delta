@@ -15,10 +15,9 @@ namespace krnl
 		return 0;
 	}
 
-	int PS4ABI sys_get_authinfo(int pid)
+	int PS4ABI sys_get_authinfo(int pid, void* infoOut)
 	{
-		/*i had some odd clang error*/
-		sys_is_in_sandbox();
+		std::memset(infoOut, 0, 136);
 		return 1;
 	}
 

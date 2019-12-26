@@ -36,11 +36,12 @@ namespace krnl
 	}
 
 	/*does not belong here*/
-	int PS4ABI sys_namedobj_create(int idk)
+	int PS4ABI sys_namedobj_create(const char* name, void* arg2, uint32_t arg3)
 	{
 		static int fakecounter = 0;
 		int value = fakecounter;
 		fakecounter++;
+		std::printf("creating named obj %s -> %d\n", name, fakecounter);
 		return value;
 	}
 
@@ -117,6 +118,8 @@ namespace krnl
 			}
 			return 0;
 		}
+
+		__debugbreak();
 
 		return -1;
 	}
