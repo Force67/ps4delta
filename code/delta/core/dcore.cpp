@@ -32,13 +32,6 @@ bool deltaCore::init()
 
 void deltaCore::boot(std::string& dir)
 {
-#if 0
-	vfs::pupReader read(R"(C:\Users\vince\Desktop\PUP\PS4UPDATE1.PUP.dec)");
-	read.load();
-
-	return;
-#endif
-
 	// sanitize path
 	std::replace(dir.begin(), dir.end(), '/', '\\');
 

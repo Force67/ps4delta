@@ -53,15 +53,15 @@ EXPORT int dcoreMain(int argc, char** argv)
 	if (!verifyViablity())
 		return -1;
 
-	/*if (argc < 2) {
-		LOG_ERROR("Please supply ELF path");
+	if (argc < 2) {
+		LOG_ERROR("Please supply ELF/eboot.bin path");
 		return -2;
-	}*/
+	}
 
 	auto app = std::make_unique<deltaCore>(argc, argv);
 	if (app) {
 		if (app->init()) {
-			std::string temp(R"(C:\Users\vince\Desktop\ISHALLRISE\eboot.bin-decrypted)");
+			std::string temp(argv[1]);
 			app->boot(temp);
 
 			// enter event loop
