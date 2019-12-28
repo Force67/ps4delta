@@ -12,7 +12,7 @@
 
 namespace krnl
 {
-	elfModule::elfModule(krnl::proc *process) :
+	smodule::smodule(proc *process) :
 		process(process)
 	{
 		/*-1 = no tls used*/
@@ -23,7 +23,7 @@ namespace krnl
 		info.ripZoneSize = process->getEnv().ripZoneSize;
 	}
 
-	bool elfModule::fromFile(const std::string& path)
+	bool smodule::fromFile(const std::string& path)
 	{
 		utl::File file(path);
 		if (!file.IsOpen())
@@ -37,32 +37,13 @@ namespace krnl
 			
 			data = std::make_unique<uint8_t[]>(file.GetSize());
 			file.Read(data.get(), file.GetSize());
-
-			// this is the main module
-			if (diskHeader.type != ET_SCE_DYNAMIC) {
-				info.name = "#main";
-				LOG_INFO("Loading proc main module");
-			}
-			else {
-				// attempt to gather module name from file path
-				auto pos = path.find_last_of('\\');
-				if (pos != std::string::npos) {
-					info.name = path.substr(pos + 1, path.length() - pos);
-					//LOG_INFO("Loading {}", name);
-				}
-				else {
-					info.name = "#unk";
-					LOG_WARNING("Unknown module name?");
-				}
-			}
-
 			return fromMem(std::move(data));
 		}
 
 		return false;
 	}
 
-	bool elfModule::fromMem(std::unique_ptr<uint8_t[]> data)
+	bool smodule::fromMem(std::unique_ptr<uint8_t[]> data)
 	{
 		/*TODO: figure out a way of getting rid of the back buffer*/
 		this->data = std::move(data);
@@ -71,31 +52,24 @@ namespace krnl
 		segments = getOffset<ELFPgHeader>(elf->phoff);
 
 		if (!mapImage()) {
-			LOG_ERROR("elfModule: Failed to map image");
+			LOG_ERROR("smodule: Failed to map image");
 			return false;
 		}
 
-		doDynamics();
+		digestDynamic();
+
+#ifdef _DEBUG
+		LOG_TRACE("mapped {} at {}", info.name, fmt::ptr(info.base));
+#endif
+
 		setupTLS();
 
-		if (!isSprx()) {
+		if (!isDynlib()) {
 			auto* seg = getSegment(ElfSegType::PT_SCE_PROCPARAM);
 			if (seg) {
 				info.procParam = getAddress<uint8_t>(seg->vaddr);
 				info.procParamSize = seg->filesz;
 			}
-
-			logDbgInfo();
-		}
-
-		if (!applyRelocations()) {
-			LOG_ERROR("elfModule: Failed to relocate image");
-			return false;
-		}
-
-		if (!resolveImports()) {
-			LOG_ERROR("elfModule: Failed to resolve symbols");
-			return false;
 		}
 
 		installEHFrame();
@@ -105,10 +79,14 @@ namespace krnl
 		else
 			info.entry = getAddress<uint8_t>(elf->entry);
 
+		for (auto& m : impModules) {
+			process->loadModule(m.name);
+		}
+
 		return true;
 	}
 
-	bool elfModule::unload()
+	bool smodule::unload()
 	{
 		data.reset();
 
@@ -116,7 +94,7 @@ namespace krnl
 		return true;
 	}
 
-	void elfModule::doDynamics()
+	void smodule::digestDynamic()
 	{
 		const auto* dynS = getSegment(ElfSegType::PT_DYNAMIC);
 		const auto* dyldS = getSegment(ElfSegType::PT_SCE_DYNLIBDATA);
@@ -138,18 +116,6 @@ namespace krnl
 			case DT_FINI:
 				info.finiAddr = reinterpret_cast<uint8_t*>(dynldAddr + d->un.ptr);
 				break;
-			/*case DT_INIT_ARRAY:
-				init_array = reinterpret_cast<linker_function*>(dynldAddr + d->un.ptr);
-				break;
-			case DT_INIT_ARRAYSZ:
-				numInitArray = static_cast<uint32_t>(d->un.value / sizeof(uintptr_t));
-				break;
-			case DT_FINI_ARRAY:
-				fini_array = reinterpret_cast<linker_function*>(dynldAddr + d->un.ptr);
-				break;
-			case DT_FINI_ARRAYSZ:
-				numFiniArray = static_cast<uint32_t>(d->un.value / sizeof(uintptr_t));
-				break;*/
 			case DT_SCE_JMPREL:
 				jmpslots = (ElfRel*)(dynldPtr + d->un.ptr);
 				break;
@@ -164,9 +130,6 @@ namespace krnl
 			case DT_SCE_STRSIZE:
 				strtab.size = d->un.value;
 				break;
-			case DT_SCE_EXPLIB:
-			case DT_SCE_IMPLIB:
-				break;
 			case DT_SCE_SYMTAB:
 				symbols = reinterpret_cast<ElfSym*>(dynldPtr + d->un.ptr);
 				break;
@@ -176,27 +139,89 @@ namespace krnl
 			case DT_SCE_RELA:
 				rela = reinterpret_cast<ElfRel*>(dynldPtr + d->un.ptr);
 				break;
+			case DT_SONAME:
+			{
+				auto name = (const char*)(strtab.ptr + (d->un.value & 0xFFFFFFFF));
+				std::printf("SONAME %s\n", name);
+				break;
+			}
+			case DT_NEEDED:
+			{
+				auto name = (const char*)(strtab.ptr + (d->un.value & 0xFFFFFFFF));
+				if (name) {
+					std::printf("i need %s -> %d\n", name, d->un.value >> 48);
+				}
+
+				break;
+			}
 			case DT_RELASZ:
 			case DT_SCE_RELASZ:
 				numRela = static_cast<uint32_t>(d->un.value / sizeof(ElfRel));
 				break;
-		/*	case DT_NEEDED:
-				std::printf("DT_NEEDED %s\n", (const char*)(strtab.ptr + (d->un.value)));
-				break;*/
-			case DT_SCE_NEEDED_MODULE:
+			case DT_SCE_EXPLIB:
+			case DT_SCE_IMPLIB:
 			{
-				auto& e = implibs.emplace_back();
+				/*for now, in the future we also want to store explibs*/
+				auto& e = impLibs.emplace_back();
+				e.id = d->un.value >> 48;
+				e.exported = d->tag == DT_SCE_EXPLIB;
 				e.name = (const char*)(strtab.ptr + (d->un.value & 0xFFFFFFFF));
-				e.modid = d->un.value >> 48;
 				break;
 			}
+			case DT_SCE_EXPORT_LIB_ATTR:
+			case DT_SCE_IMPORT_LIB_ATTR:
+			{
+				uint16_t id = d->un.value >> 48;
+				uint16_t idx = d->un.value & 0xFFF;
+
+				for (auto& mod : impLibs) {
+					if (mod.id == id) {
+						mod.attr = idx;
+						break;
+					}
+				}
+				break;
+			}
+			case DT_SCE_NEEDED_MODULE:
+			{
+				auto& e = impModules.emplace_back();
+				e.id = d->un.value >> 48;
+				e.name = (const char*)(strtab.ptr + (d->un.value & 0xFFFFFFFF));
+				break;
+			}
+			case DT_SCE_MODULE_ATTR:
+			{
+				uint16_t id = d->un.value >> 48;
+				uint16_t idx = d->un.value & 0xFFF;
+
+				for (auto& mod : impModules) {
+					if (mod.id == id) {
+						mod.attr = idx;
+						break;
+					}
+				}
+				break;
+			}
+			case DT_SCE_MODULEINFO:
+				info.name = (const char*)(strtab.ptr + (d->un.value & 0xFFFFFFFF));
+				break;
 			}
 		}
+
+#if 0
+		for (auto& mod : impModules)
+			std::printf("impmod %s\n", mod.name);
+
+		for (auto& mod : impLibs) {
+			if (!mod.exported)
+				std::printf("implib %s\n", mod.name);
+		}
+#endif
 	}
 
-	bool elfModule::mapImage()
+	bool smodule::mapImage()
 	{
-		// calculate total aligned code size
+		// calculate total aligned code size  
 		uint32_t codeSize = 0;
 		for (uint16_t i = 0; i < elf->phnum; ++i) {
 			const auto* p = &segments[i];
@@ -228,10 +253,6 @@ namespace krnl
 		std::memset(info.ripZone, 0xCC, info.ripZoneSize);
 		utl::protectMem(info.ripZone, info.ripZoneSize, utl::pageProtection::rwx);
 
-#ifdef _DEBUG
-		std::printf("Mapped %s @ %p\n", info.name.c_str(), info.base);
-#endif
-
 		// step 0: map data
 		for (uint16_t i = 0; i < elf->phnum; i++) {
 			const auto *s = &segments[i];
@@ -261,23 +282,11 @@ namespace krnl
 
 #if 1
 		// temp hack: raise 5.05 kernel debug msg level
-		if (info.name == "libkernel.sprx") {
+		if (info.handle == 1) {
 			*getAddress<uint32_t>(0x68264) = UINT32_MAX;
-			//*getAddress<uint32_t>(0x12C60) = 0xCCCCCCCC;
-			LOG_WARNING("Enabling libkernel debug messages");
-		}
-
-		/*if (info.name == "libSceLibcInternal.sprx") {
-			*getAddress<uint16_t>(0x23A30) = 0xCCCC;
-		}*/
-#else
-		// 3.55
-		if (info.name == "libkernel.sprx") {
-			//*getAddress<uint32_t>(0x6036C) = UINT32_MAX;
 			LOG_WARNING("Enabling libkernel debug messages");
 		}
 #endif
-
 
 		//step 2: apply page protections
 		for (uint16_t i = 0; i < elf->phnum; i++) {
@@ -302,7 +311,7 @@ namespace krnl
 		return true;
 	}
 
-	bool elfModule::setupTLS()
+	bool smodule::setupTLS()
 	{
 		auto* p = getSegment(PT_TLS);
 		if (p) {
@@ -317,8 +326,8 @@ namespace krnl
 		return true;
 	}
 
-	// pltrela_table_offset 
-	bool elfModule::resolveImports()
+	/*invoked by sys_dynlib_process_needed_and_relocate*/
+	bool smodule::resolveImports()
 	{
 		for (uint32_t i = 0; i < numJmpSlots; i++) {
 			const auto* r = &jmpslots[i];
@@ -340,59 +349,77 @@ namespace krnl
 			}
 
 			const char* name = &strtab.ptr[sym->st_name];
-			// example: weDug8QD-lE#L#M
-			//				^      ^
-			// see above: libid, modid
 
 			int32_t binding = ELF64_ST_BIND(sym->st_info);
-
 			if (binding == STB_LOCAL) {
-				*getAddress<uintptr_t>(r->offset) = (uintptr_t)getAddress<uintptr_t>(sym->st_value);
+				*getAddress<uintptr_t>(r->offset) = getAddressNPTR<uintptr_t>(sym->st_value);
 				continue;
 			}
 
-			if (std::strlen(name) == 15) {
+			const char* ptr = std::strchr(name, '#');
+			if (!ptr) {
+				LOG_ERROR("resolveImports: invalid symbol form");
+				return false;
+			}
 
-				auto *ptr = &name[14];
+			if (std::strlen(name) != 15)
+				__debugbreak();
 
-				uint64_t modid = 0;
-				runtime::decode_nid(ptr, 1, modid);
+			bool decodeSuccess = true;
 
-				uint64_t hid = 0;
-				if (!runtime::decode_nid(name, 11, hid)) {
-					LOG_ERROR("resolveImports: cant handle NID");
-					return false;
-				}
-	
-				for (auto& imp : implibs) {
-					if (imp.modid == static_cast<int32_t>(modid)) {
-						std::string_view xname(imp.name);
+			uint64_t modid = 0, libid = 0, hid = 0;
+			if (!runtime::decode_nid(ptr + 1, 1, libid))
+				decodeSuccess = false;
+			if (!runtime::decode_nid(ptr + 3, 1, modid))
+				decodeSuccess = false;
+			if (!runtime::decode_nid(name, 11, hid))
+				decodeSuccess = false;
 
-#if 1
-						if (xname == "libSceAppContentUtil")
-							continue;
+			if (!decodeSuccess) {
+				LOG_ERROR("resolveImports: can't decode symbol");
+				return false;
+			}
 
-						if (xname == "libSceNpScore")
-							continue;
-#endif
-
-						auto mod = process->loadModule(imp.name);
-						if (!mod) {
-							LOG_ERROR("resolveImports: Unknown module {} ({}) requestd", imp.name, imp.modid);
-							return false;
-						}
-
-						*getAddress<uintptr_t>(r->offset) = mod->getSymbol(hid);
-						break;
+			/*first try import modules*/
+			for (auto& mod : impModules) {
+				if (mod.id == static_cast<int32_t>(modid)) {
+					auto xmod = process->getModule(mod.name);
+					if (!xmod) {
+						LOG_ERROR("resolveImports: Unknown module {} ({}) requestd", mod.name, mod.id);
+						__debugbreak();
+						return false;
 					}
+
+					*getAddress<uintptr_t>(r->offset) = xmod->getSymbol(hid);
+					goto found;
 				}
 			}
+
+			__debugbreak();
+#if 0
+			__debugbreak();
+
+			for (auto& lib : impLibs) {
+				if (lib.modid == static_cast<int32_t>(libid)) {
+					std::string fullName = std::string(name) + "#" + lib.name + "#" + lib.name;
+					auto v = getSymbolFullName(fullName.c_str());
+					__debugbreak();
+
+					goto found;
+				}
+			}
+
+			__debugbreak();
+#endif
+
+		found:
+			continue;
 		}
 
 		return true;
 	}
 
-	uintptr_t elfModule::getSymbol(uint64_t nid)
+	uintptr_t smodule::getSymbol(uint64_t nid)
 	{
 		// are there any overrides for me?
 		auto imp = runtime::vprx_get(info.name.c_str(), nid);
@@ -424,7 +451,7 @@ namespace krnl
 		return 0;
 	}
 
-	uintptr_t elfModule::getSymbol(const char *name)
+	uintptr_t smodule::getSymbolFullName(const char *name)
 	{
 		//TODO: fix elf hash lookup
 
@@ -453,8 +480,8 @@ namespace krnl
 		uint32_t* bucket = &htab[2];
 		uint32_t* chain = &bucket[nbucket];
 
-		char nameOut[11]{};
-		runtime::encode_nid("module_start", reinterpret_cast<uint8_t*>(&nameOut));
+		/*char nameOut[11]{};
+		runtime::encode_nid("module_start", reinterpret_cast<uint8_t*>(&nameOut));*/
 	
 		for (uint32_t i = bucket[hash % nbucket]; i; i = chain[i]) {
 			const auto* s = &symbols[i];
@@ -464,9 +491,10 @@ namespace krnl
 
 			if (!s->st_value)
 				continue;
+			std::printf("considering %s\n", &strtab.ptr[s->st_name]);
 
 			const char* sname = &strtab.ptr[s->st_name];
-			if (std::strncmp(sname, nameOut, 10) == 0) {
+			if (std::strncmp(sname, name, 10) == 0) {
 				return s->st_value;
 			}
 		}
@@ -474,7 +502,7 @@ namespace krnl
 		return 0;
 	}
 
-	uintptr_t elfModule::getSymbol2(const char* name)
+	uintptr_t smodule::getSymbol2(const char* name)
 	{
 		for (uint32_t i = 0; i < numSymbols; i++) {
 			const auto* s = &symbols[i];
@@ -483,7 +511,8 @@ namespace krnl
 				continue;
 
 			const char* sname = &strtab.ptr[s->st_name];
-			if (std::strncmp(sname, name, 10) == 0) {
+
+			if (std::strcmp(sname, name) == 0) {
 				return getAddressNPTR<uintptr_t>(s->st_value);
 			}
 		}
@@ -491,12 +520,8 @@ namespace krnl
 		return 0;
 	}
 
-	static PS4ABI void IDontDoNuffin()
-	{
-		//__debugbreak();
-	}
-
-	bool elfModule::applyRelocations()
+	/*invoked by sys_dynlib_process_needed_and_relocate*/
+	bool smodule::applyRelocations()
 	{
 		for (size_t i = 0; i < numRela; i++) {
 			auto* r = &rela[i];
@@ -505,52 +530,122 @@ namespace krnl
 			int32_t type = ELF64_R_TYPE(r->info);
 
 			ElfSym* sym = &symbols[isym];
+			int32_t bind = ELF64_ST_BIND(sym->st_info);
 
 			if (isym >= numSymbols) {
 				LOG_ERROR("Invalid symbol index {}", isym);
 				continue;
 			}
 
-#if 1
-			bool hack = false;
+			uint64_t symVal = 0;
 
-			//f7uOxY9mM1U
-			switch (type) {
-			case R_X86_64_64:
-			case R_X86_64_GLOB_DAT: {
-				auto bind = ELF_ST_BIND(sym->st_info);
-				if (bind == STB_GLOBAL || STB_LOCAL) {
+			if (bind == STB_LOCAL)
+				symVal = sym->st_value;
+			else if (bind == STB_GLOBAL || bind == STB_WEAK) {
+				if (sym->st_value)
+					/*pthread bug*/
+					symVal = sym->st_value;
+				else {
+
+
 					const char* name = &strtab.ptr[sym->st_name];
-					if (strstr(name, "f7uOxY9mM1U")) {
-						//std::printf("name %s, bind %d, type %d\n", name, bind, type);
-						*getAddress<uint64_t>(r->offset) = (uint64_t)&IDontDoNuffin;
-						hack = true;
+					/*hack*/
+					const char* ptr = std::strchr(name, '#');
+					if (!ptr) {
+						LOG_ERROR("resolveImports: invalid symbol form");
+						return false;
+					}
+
+					bool decodeSuccess = true;
+
+					uint64_t modid = 0, libid = 0, hid = 0;
+					if (!runtime::decode_nid(ptr + 1, 1, libid))
+						decodeSuccess = false;
+					if (!runtime::decode_nid(ptr + 3, 1, modid))
+						decodeSuccess = false;
+
+					if (!decodeSuccess) {
+						LOG_ERROR("resolveImports: can't decode symbol");
+						return false;
+					}
+
+					const char* modName = nullptr;
+					const char* libName = nullptr;
+
+					bool good = false;
+
+					/*first try import modules*/
+					for (auto& mod : impModules) {
+						if (mod.id == static_cast<int32_t>(modid)) {
+							modName = mod.name;
+							uint64_t hid = 0;
+							if (!runtime::decode_nid(name, 11, hid))
+								__debugbreak();
+
+							std::string nameFull = std::string(modName) + ".sprx";
+							auto mod = process->getModule(nameFull);
+							if (mod) {
+								//__debugbreak();
+								symVal = mod->getSymbol(hid);
+								//std::printf("symval %d, %p\n", i, (void*)symVal);
+								good = true;
+							}
+							break;
+						}
+					}
+
+					//if (!good)
+						//__debugbreak();
+				}
+#if 0
+				for (auto& lib : impLibs) {
+					if (lib.modid == static_cast<int32_t>(libid)) {
+						libName = lib.name;
+						break;
 					}
 				}
-			}
-			default: break;
-			}
 
-			if (hack)
-				continue;
+				char ns[11];
+				strncpy(ns, name, 11);
+
+				std::string nameFull = std::string(ns) + "#" + libName + "#" + modName;
+				auto val = getSymbol2(name);
+				if (!val) {
+					for (auto& mod : process->getModuleList()) {
+						if (mod->getInfo().name.empty())
+							continue;
+
+						val = mod->getSymbol2(name);
+						if (val)
+							__debugbreak();
+					}
+
+					__debugbreak();
+				}
+
+				__debugbreak();
 #endif
 
+				//std::printf("sym %s %s\n", &strtab.ptr[sym->st_name], bind == STB_GLOBAL ? "global" : "weak");
+			}
+
 			switch (type) {
-			case R_X86_64_NONE: break;
 			case R_X86_64_64:
-				*getAddress<uint64_t>(r->offset) = sym->st_value + r->addend;
+				*getAddress<uint64_t>(r->offset) = symVal + r->addend;
 				break;
 			case R_X86_64_RELATIVE: /* base + ofs*/
 				*getAddress<int64_t>(r->offset) = (int64_t)getAddress<int64_t>(r->addend);
 				break;
 			case R_X86_64_GLOB_DAT:
-				*getAddress<uint64_t>(r->offset) = sym->st_value;
+				*getAddress<uint64_t>(r->offset) = symVal;
 				break;
 			case R_X86_64_PC32:
-				*getAddress<uint32_t>(r->offset) = (uint32_t)(sym->st_value + r->addend - (uint64_t)getAddress<uint64_t>(r->offset));
+				*getAddress<uint32_t>(r->offset) = (uint32_t)(symVal + r->addend - (uint64_t)getAddress<uint64_t>(r->offset));
 				break;
 			case R_X86_64_DTPMOD64:
-				*getAddress<uint16_t>(r->offset) = info.tlsSlot;
+				*getAddress<uint16_t>(r->offset) += info.tlsSlot;
+				break;
+			case R_X86_64_NONE:
 				break;
 			default:
 				continue;
@@ -561,7 +656,7 @@ namespace krnl
 	}
 
 	// taken from idc's "uplift" project
-	void elfModule::installEHFrame()
+	void smodule::installEHFrame()
 	{
 		const auto* p = getSegment(PT_GNU_EH_FRAME);
 		if (p->filesz > p->memsz)
@@ -651,7 +746,7 @@ namespace krnl
 		info.ehFrameheaderSize = data_buffer_end - data_buffer;
 	}
 
-	void elfModule::logDbgInfo()
+	void smodule::logDbgInfo()
 	{
 		for (uint16_t i = 0; i < elf->phnum; i++) {
 			auto s = &segments[i];

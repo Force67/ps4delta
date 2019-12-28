@@ -50,22 +50,25 @@ namespace krnl
 		uint8_t* ehFrameAddr;
 		uint32_t ehFrameheaderSize;
 		uint32_t ehFrameSize;
+
+		uint8_t fingerprint[20];
 	};
 
-	class elfModule
+	class smodule
 	{
 		friend class proc;
 	public:
-		explicit elfModule(proc*);
+		explicit smodule(proc*);
 
 		bool fromFile(const std::string&);
 		bool fromMem(std::unique_ptr<uint8_t[]>);
 
 		uintptr_t getSymbol(uint64_t);
-		uintptr_t getSymbol(const char *name);
+		uintptr_t getSymbolFullName(const char *name);
 		uintptr_t getSymbol2(const char* name);
 
 		bool applyRelocations();
+		bool resolveImports();
 
 		bool unload();
 
@@ -73,15 +76,22 @@ namespace krnl
 			return info;
 		}
 
+		inline bool isDynlib() {
+			return elf->type == ET_SCE_DYNAMIC;
+		}
+
+		/*traits -> object_ref*/
+		void release() {};
+		void retain() {};
+
 	private:
 		moduleInfo info{};
 
-		void doDynamics();
+		void digestDynamic();
 		void logDbgInfo();
 		void installEHFrame();
 		bool setupTLS();
 		bool mapImage();
-		bool resolveImports();
 
 		template<typename Type, typename TAdd>
 		Type* getOffset(const TAdd dist) {
@@ -109,9 +119,6 @@ namespace krnl
 			return nullptr;
 		}
 
-		inline bool isSprx() {
-			return elf->type == ET_SCE_DYNAMIC;
-		}
 	private:
 		std::unique_ptr<uint8_t[]> data;
 
@@ -120,13 +127,24 @@ namespace krnl
 		ELFHeader* elf;
 		ELFPgHeader* segments;
 
-		struct impLib
+		struct libInfo
 		{
 			const char* name;
-			int32_t modid;
+			int32_t id;
+			uint16_t attr;
+			bool exported;
 		};
 
-		std::vector<impLib> implibs;
+		struct modInfo
+		{
+			const char* name;
+			int32_t id;
+			uint16_t attr;
+		};
+
+		std::vector<modInfo> impModules;
+		std::vector<libInfo> impLibs;
+		std::vector<std::string> targetlibs;
 
 		ElfRel* jmpslots;
 		ElfRel* rela;

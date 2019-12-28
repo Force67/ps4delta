@@ -41,7 +41,7 @@ namespace krnl
 		static int fakecounter = 0;
 		int value = fakecounter;
 		fakecounter++;
-		std::printf("creating named obj %s -> %d\n", name, fakecounter);
+		std::printf("creating named obj %s -> %d, named obj %p\n", name, fakecounter, arg2);
 		return value;
 	}
 

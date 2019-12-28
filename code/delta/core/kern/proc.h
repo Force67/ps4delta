@@ -4,10 +4,11 @@
 
 #include <memory>
 #include <vector>
+#include <string>
+#include <utl/object_ref.h>
 
 #include "module.h"
 #include "vm_manager.h"
-#include <utl/object_ref.h>
 
 namespace krnl
 {
@@ -19,11 +20,16 @@ namespace krnl
 		void* fsBase = nullptr;
 	};
 
+	class smodule;
+
+	/*TODO: FIX MISUSE OF modulePtr*/
+	using modulePtr = utl::object_ref<smodule>;
+
 	class proc
 	{
-		friend class elfModule;
+		friend class smodule;
 	public:
-		using moduleList = std::vector<std::shared_ptr<elfModule>>;
+		using moduleList = std::vector<modulePtr>;
 
 		proc();
 		bool create(const std::string&);
@@ -31,12 +37,12 @@ namespace krnl
 
 		static proc* getActive();
 
-		inline std::shared_ptr<elfModule> getMainModule() { return modules[0]; }
+		//inline modulePtr getMainModule() { return modules[0]; }
 		inline moduleList& getModuleList() { return modules; }
 
-		std::shared_ptr<elfModule> loadModule(std::string_view);
-		std::shared_ptr<elfModule> getModule(std::string_view);
-		std::shared_ptr<elfModule> getModule(uint32_t);
+		modulePtr loadModule(std::string_view);
+		modulePtr getModule(std::string_view);
+		modulePtr getModule(uint32_t);
 
 		inline vmManager& getVma() { return vmem; }
 		inline procInfo& getEnv() { return env; }

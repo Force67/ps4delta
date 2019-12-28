@@ -21,13 +21,13 @@ namespace utl {
 		}
 		explicit object_ref(const object_ref& right) noexcept {
 			reset(right.get());
-			if (value_) value_->Retain();
+			if (value_) value_->retain();
 		}
 		template <class V, class = typename std::enable_if<
 			std::is_convertible<V*, T*>::value, void>::type>
 			object_ref(const object_ref<V>& right) noexcept {
 			reset(right.get());
-			if (value_) value_->Retain();
+			if (value_) value_->retain();
 		}
 
 		object_ref(object_ref&& right) noexcept : value_(right.release()) {}
@@ -55,7 +55,7 @@ namespace utl {
 
 		~object_ref() noexcept {
 			if (value_) {
-				value_->Release();
+				value_->release();
 				value_ = nullptr;
 			}
 		}

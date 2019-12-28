@@ -5,6 +5,7 @@
 #include <utl/file.h>
 #include <utl/path.h>
 #include <utl/mem.h>
+#include <base.h>
 
 #include "proc.h"
 #include "module.h"
@@ -13,44 +14,6 @@
 
 namespace krnl
 {
-	using namespace runtime;
-
-	class entryGen : public Xbyak::CodeGenerator
-	{
-	public:
-		entryGen(void* target)
-		{
-			push(rbp);
-			mov(rbp, rsp);
-			push(r12);
-			push(r13);
-			push(r14);
-			push(r15);
-			push(rdi);
-			push(rsi);
-			push(rbx);
-
-			sub(rsp, 8);
-
-			mov(rdi, rcx);
-			mov(rax, (size_t)target);
-
-			call(rax);
-
-			add(rsp, 8);
-
-			pop(rbx);
-			pop(rsi);
-			pop(rdi);
-			pop(r15);
-			pop(r14);
-			pop(r13);
-			pop(r12);
-			pop(rbp);
-			ret();
-		}
-	};
-
 	static proc* g_activeProc{ nullptr };
 
 	proc::proc() :
@@ -68,12 +31,22 @@ namespace krnl
 		/*register HLE prx overrides*/
 		runtime::vprx_init();
 
-		/*initialize memory manager*/
+		/*init memory manager*/
 		LOG_ASSERT(vmem.init());
 
-		/*register first main module*/
-		auto first = modules.emplace_back(std::make_shared<elfModule>(this));
+		/*reserve slot for main module*/
+		auto first = utl::make_ref<smodule>(this);
 		first->getInfo().handle = 0;
+
+		modules.emplace_back(first);
+
+		/*pre-load required modules
+		 (the kernel does it, so do we)*/
+		if (!loadModule("libkernel") ||
+			!loadModule("libSceLibcInternal")) {
+			LOG_ERROR("unable to preload sys modules");
+			return false;
+		}
 
 		if (!first->fromFile(path)) {
 			LOG_ERROR("unable to load main process module");
@@ -83,7 +56,7 @@ namespace krnl
 		return true;
 	}
 
-	std::shared_ptr<elfModule> proc::getModule(std::string_view name) {
+	modulePtr proc::getModule(std::string_view name) {
 		for (auto& mod : modules) {
 			if (mod->getInfo().name == name)
 				return mod;
@@ -91,31 +64,34 @@ namespace krnl
 		return { nullptr };
 	}
 
-	std::shared_ptr<elfModule> proc::getModule(uint32_t handle) {
+	modulePtr proc::getModule(uint32_t handle) {
 		for (auto& mod : modules) {
-
 			if (mod->getInfo().handle == handle)
 				return mod;
 		}
 		return { nullptr };
 	}
 
-	std::shared_ptr<elfModule> proc::loadModule(std::string_view name)
+	/*does not expect an extension*/
+	modulePtr proc::loadModule(std::string_view name)
 	{
-		// very hacky hack
-		std::string sprxname(name);
-		sprxname += ".sprx";
-
-		auto mod = getModule(sprxname);
+		auto mod = getModule(name);
 		if (!mod) {
-			auto lib = modules.emplace_back(std::make_shared<elfModule>(this));
+			auto lib = utl::make_ref<smodule>(this);
 			lib->getInfo().handle = handleCounter;
 			handleCounter++;
 
-			if (!lib->fromFile(utl::make_abs_path("modules\\" + sprxname))) {
+			modules.emplace_back(lib);
+
+			/*whack hack*/
+			std::string nameFull = std::string("modules\\") + std::string(name) + ".sprx";
+			if (!lib->fromFile(utl::make_abs_path(nameFull))) {
 				LOG_ERROR("unable to load module {}", name);
 				return nullptr;
 			}
+			/*else {
+				modules.emplace_back(lib);
+			}*/
 			
 			return lib;
 		}
@@ -124,9 +100,9 @@ namespace krnl
 
 	void proc::start()
 	{
-		LOG_ASSERT(modules[1]->getInfo().name == "libkernel.sprx");
+		LOG_ASSERT(modules[1]->getInfo().name == "libkernel");
 
-		auto& info = getMainModule()->getInfo();
+		auto& info = modules[0]->getInfo();
 		auto& kinfo = modules[1]->getInfo();
 
 		if (!info.entry) {
@@ -134,8 +110,7 @@ namespace krnl
 			return;
 		}
 
-		entryGen callingCtx(kinfo.entry);
-		auto func = callingCtx.getCode<void* (*)(void*)>();
+		auto func = (void*(PS4ABI*)(void*))kinfo.entry;
 
 		union stack_entry
 		{

@@ -5,6 +5,7 @@
 #include <base.h>
 
 #include "../proc.h"
+#include "../module.h"
 
 #include "error_table.h"
 #include "sys_dynlib.h"
@@ -114,7 +115,7 @@ namespace krnl
 
 	int PS4ABI sys_dynlib_get_proc_param(void** data, size_t* size)
 	{
-		auto mod = proc::getActive()->getMainModule();
+		auto mod = proc::getActive()->getModuleList()[0];
 		if (mod) {
 			auto& info = mod->getInfo();
 
@@ -145,8 +146,23 @@ namespace krnl
 
 	int PS4ABI sys_dynlib_process_needed_and_relocate()
 	{
-		// we always return success here as we
-		// automatically relocate everything on load
+		auto& list = proc::getActive()->getModuleList();
+		for (auto& mod : list) {
+			if (!mod)
+				__debugbreak();
+
+			std::printf("applying rel %s, %d\n", mod->getInfo().name.c_str(), mod->getInfo().handle);
+			if (mod->getInfo().name.empty())
+				continue;
+
+			if (!mod->applyRelocations() ||
+				!mod->resolveImports()) {
+				__debugbreak();
+				LOG_ERROR("failed to apply relocations for module {}", mod->getInfo().name);
+				return -1;
+			}
+		}
+
 		return 0;
 	}
 }

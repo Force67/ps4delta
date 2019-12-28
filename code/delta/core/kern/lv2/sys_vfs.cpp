@@ -17,6 +17,8 @@ namespace krnl
 		return dev;
 	}
 
+	static int fakehandle = 10;
+
 	int PS4ABI sys_open(const char* path, uint32_t flags, uint32_t mode)
 	{
 		if (!path)
@@ -25,13 +27,19 @@ namespace krnl
 		std::printf("open: %s, %x, %x\n", path, flags, mode);
 
 		if (std::strncmp(path, "/dev/", 5) == 0) {
+			int value = fakehandle;
+			fakehandle++;
 			const char* name = &path[5];
 
+			/*bug is here. mutex init fails*/
+
 			if (std::strcmp(name, "deci_tty6") == 0)
-				return 0;
+				return fakehandle;
 
 			// this is far from finished
-			return make_device(name)->init(path, flags, mode);
+			make_device(name)->init(path, flags, mode);
+
+			return fakehandle;
 		}
 
 		__debugbreak();

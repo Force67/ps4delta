@@ -14,6 +14,7 @@
 #include "sys_vfs.h"
 
 #include "kern/proc.h"
+#include "kern/module.h"
 
 namespace krnl
 {

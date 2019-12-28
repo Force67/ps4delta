@@ -629,10 +629,18 @@ namespace krnl
 		 {670, "sys_aio_init"},
 		 {671, "sys_get_page_table_stats"},
 		 {672, "sys_dynlib_get_list_for_libdbg"},
+		 {673, "blockpool_move"},
+		 {674, "virtual_query_all"},
+		 {675, "reserve_2mb_page"},
+		 {676, "cpumode_yield"},
+		 {677, "get_phys_page_size"},
 	};
 
 	const char* syscall_getname(uint32_t idx)
 	{
+		if (idx >= sizeof(syscall_names))
+			return nullptr;
+
 		for (auto& e : syscall_names) {
 			if (e.id == idx)
 				return e.name;

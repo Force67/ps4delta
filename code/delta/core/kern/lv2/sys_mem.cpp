@@ -7,14 +7,29 @@
 
 #include "../proc.h"
 #include "sys_mem.h"
+#include "error_table.h"
 
 namespace krnl 
 {
 	using ppt = utl::pageProtection;
 	using alt = utl::allocationType;
 
-	uint8_t* PS4ABI sys_mmap(void* addr, size_t len, mprotFlags prot, mFlags flags, uint32_t fd, size_t offset)
+	uint8_t* PS4ABI sys_mmap(void* addr, size_t size, uint32_t prot, uint32_t flags, uint32_t fd, size_t offset)
 	{
+		if (flags & mFlags::stack || flags & mFlags::noextend)
+			flags |= mFlags::anon;
+
+		if (flags & mFlags::fixed) {
+			__debugbreak();
+		}
+		else if (!addr) {
+			__debugbreak();
+			addr = reinterpret_cast<void*>(0x200000000);
+		}
+
+		/*align the page*/
+		size = (size + 0x3FFF) & 0xFFFFFFFFFFFFC000LL;
+
 		if (fd != -1)
 			__debugbreak(); // TODO: object table
 
@@ -22,16 +37,15 @@ namespace krnl
 		if (!proc)
 			return reinterpret_cast<uint8_t*>(-1);
 
-		/*TODO: should we allocate aligned?*/
-
-		void* ptr = utl::allocMem(addr, len, ppt::w, alt::reservecommit);
+		void* ptr = utl::allocMem(addr, size, ppt::w, alt::reservecommit);
 		if (!ptr) {
-
 			// maybe a previously reserved page?
-			ptr = utl::allocMem(addr, len, ppt::w, alt::commit);
-			if (!ptr) {
-				__debugbreak();
-				return reinterpret_cast<uint8_t*>(-1);
+			ptr = utl::allocMem(addr, size, ppt::w, alt::commit);
+			if (!ptr && !(flags & 0x10)) {
+				ptr = utl::allocMem(nullptr, size, ppt::w, alt::reservecommit);
+				if (!ptr) {
+					return reinterpret_cast<uint8_t*>(-1);
+				}
 			}
 		}
 
@@ -42,17 +56,18 @@ namespace krnl
 			tprot |= ppt::x;
 
 		if (flags & mFlags::anon)
-			std::memset(ptr, 0, len);
+			std::memset(ptr, 0, size);
 
-		proc->getVma().add(static_cast<uint8_t*>(ptr), len, tprot);
+		proc->getVma().add(static_cast<uint8_t*>(ptr), size, tprot);
 
 		// now we apply target protection
-		utl::protectMem(static_cast<void*>(ptr), len, tprot);
+		utl::protectMem(static_cast<void*>(ptr), size, tprot);
 
-		LOG_WARNING("addr={}, len={}, requested by {}", fmt::ptr(addr), len, fmt::ptr(_ReturnAddress()));
+		std::printf("mmap %p, %x, %p\n", addr, size, _ReturnAddress());
+		//LOG_WARNING("addr={}, len={}, requested by {}", fmt::ptr(addr), len, fmt::ptr(_ReturnAddress()));
 
 		if (flags & mFlags::stack)
-			return &static_cast<uint8_t*>(ptr)[len];
+			return &static_cast<uint8_t*>(ptr)[size];
 
 		return static_cast<uint8_t*>(ptr);
 	}
