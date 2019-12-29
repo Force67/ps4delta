@@ -7,7 +7,7 @@ package.path = package.path .. ";../tools/premake/premake-qt/?.lua"
 
 -- use clang instead of msvc on windows
 premake.override(premake.vstudio.vc2010, 'platformToolset', function(base, cfg)
-	premake.vstudio.vc2010.element("PlatformToolset", nil, "ClangCL")
+    premake.vstudio.vc2010.element("PlatformToolset", nil, "ClangCL")
 end)
 
 
@@ -17,32 +17,32 @@ qt = premake.extensions.qt
 
 workspace "PS4Delta"
     configurations { "Debug", "Release" }
-	platforms { "x64" }
+    platforms { "x64" }
 
-	location "../build"
-	os.mkdir"../build/symbols"
-	
+    location "../build"
+    os.mkdir"../build/symbols"
+    
     targetprefix ""
     buildoptions "/std:c++17"
     characterset "Unicode"
 
-	-- multi threaded compilation
-	flags "MultiProcessorCompile"
+    -- multi threaded compilation
+    flags "MultiProcessorCompile"
 
     pic "On"
-	symbols "On"
+    symbols "On"
     startproject "host"
-	targetdir '../bin/%{cfg.buildcfg}/'
-	
-	
+    targetdir '../bin/%{cfg.buildcfg}/'
+    
+    
     defines { "FXNAME=\"%{wks.name}\"", 
-			  "FXNAME_WIDE=L\"%{wks.name}\""}
+              "FXNAME_WIDE=L\"%{wks.name}\""}
 
-	libdirs
-	{
-		"./shared/Lib",
-	}
-	
+    libdirs
+    {
+        "./shared/Lib",
+    }
+    
     filter "platforms:x64"
          architecture "x86_64"
 
@@ -62,10 +62,10 @@ workspace "PS4Delta"
     filter "action:vs*"
         defines
         {
-			"NOMINMAX",
-			"WIN32_LEAN_AND_MEAN",
-			"_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING",
-			"_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING",
+            "NOMINMAX",
+            "WIN32_LEAN_AND_MEAN",
+            "_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING",
+            "_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING",
             "_CRT_SECURE_NO_WARNINGS",
             "_CRT_SECURE_NO_DEPRECATE",
             "_CRT_NONSTDC_NO_WARNINGS",
@@ -75,16 +75,16 @@ workspace "PS4Delta"
         }
 
     group "core"
-	include "delta/host"
-	include "delta/core"
-	include "./shared"
-	
-	group "tools"
-	include "tools/sedit"
-	
-	group "vendor"
-	include "vendor/3rdparty.lua"
-	
+    include "delta/host"
+    include "delta/core"
+    include "./shared"
+    
+    group "tools"
+    include "tools/sedit"
+    
+    group "vendor"
+    include "vendor/3rdparty.lua"
+    
 -- Cleanup
 if _ACTION == "clean" then
     os.rmdir("../bin");

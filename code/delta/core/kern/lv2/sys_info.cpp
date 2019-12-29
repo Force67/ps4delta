@@ -10,6 +10,9 @@
 
 namespace krnl
 {
+
+	moduleInfo* called_in(void* addr);
+
 	int PS4ABI sys_is_in_sandbox()
 	{
 		return 0;
@@ -70,6 +73,12 @@ namespace krnl
 			return 0;
 		}
 
+		// answer kern.sched.cpusize
+		else if (name[0] == 0x1337 && name[1] == 4 && namelen == 2) {
+			*reinterpret_cast<uint32_t*>(oldp) = 8;
+			return 0;
+		}
+
 		if (name[0] == 0 && name[1] == 3 && namelen == 2) {
 			auto name = std::string_view(static_cast<const char*>(newp), newlen);
 			if (name == "kern.neomode") {
@@ -89,11 +98,19 @@ namespace krnl
 				*oldlenp = 8;
 				return 0;
 			}
+			else if (name == "kern.sched.cpusetsize")
+			{
+				static_cast<uint32_t*>(oldp)[0] = 0x1337;
+				static_cast<uint32_t*>(oldp)[1] = 4;
+				*oldlenp = 8;
+				return true;
+			}
 		}
 
 		/*for sceKernelGetLibkernelTextLocation*/
 
 		std::printf("sysctl referenced by %p\n", _ReturnAddress());
+		called_in(_ReturnAddress());
 		__debugbreak();
 		return 0;
 	}

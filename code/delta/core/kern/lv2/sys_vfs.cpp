@@ -2,17 +2,28 @@
 // Copyright (C) Force67 2019
 
 #include <base.h>
-#include <memory>
-#include "../dev/console_dev.h"
+
+#include "kern/proc.h"
+#include "kern/dev/console_device.h"
+#include "kern/dev/tty6_device.h"
+#include "kern/dev/gc_device.h"
+
+#include <utl/object_ref.h>
 
 namespace krnl
 {
-	std::shared_ptr<device> make_device(const char* deviceName)
+	static device* make_device(const char* deviceName)
 	{
-		std::shared_ptr<device> dev(nullptr);
+		std::string_view xname(deviceName);
 
-		if (std::strcmp(deviceName, "console") == 0)
-			dev = std::make_shared<consoleDevice>();
+		device* dev = nullptr;
+		auto* proc = proc::getActive();
+		if (xname == "console")
+			dev = new consoleDevice(proc);
+		if (xname == "deci_tty6")
+			dev = new tty6Device(proc);
+		if (xname == "gc")
+			dev = new gcDevice(proc);
 
 		return dev;
 	}
@@ -27,11 +38,17 @@ namespace krnl
 		if (std::strncmp(path, "/dev/", 5) == 0) {
 			const char* name = &path[5];
 
-			if (std::strcmp(name, "deci_tty6") == 0)
-				return 0;
+			auto dev = make_device(name);
+			if (dev) {
 
-			// this is far from finished
-			return make_device(name)->init(path, flags, mode);
+				if (!dev->init(name, flags, mode)) {
+					dev->releaseHandle();
+					return -1;
+				}
+
+				return dev->handle();
+			}
+			return -1;
 		}
 
 		__debugbreak();

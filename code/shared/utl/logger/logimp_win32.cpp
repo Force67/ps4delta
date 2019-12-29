@@ -118,7 +118,7 @@ namespace utl
 		if (createConsole) {
 			::AllocConsole();
 			::AttachConsole(GetCurrentProcessId());
-			::SetConsoleTitleW(FXNAME_WIDE L" - conOut");
+			::SetConsoleTitleW(FXNAME_WIDE L" - console");
 
 			FILE* file = nullptr;
 			freopen_s(&file, "CON", "w", stdout);

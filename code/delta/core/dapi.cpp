@@ -24,7 +24,7 @@ static bool verifyViablity()
 #define CHECK_FEATURE(x,y) \
 	if (!cpu.has(Xbyak::util::Cpu::t ## x)) \
 	{ \
-		LOG_ERROR("your cpu does not feature " y " instructions"); \
+		LOG_ERROR("Your cpu does not feature " y " instructions"); \
 		missing_set = true; \
 	}
 

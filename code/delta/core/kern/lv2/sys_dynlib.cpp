@@ -5,6 +5,7 @@
 #include <base.h>
 
 #include "../proc.h"
+#include "../module.h"
 
 #include "error_table.h"
 #include "sys_dynlib.h"
@@ -71,30 +72,21 @@ namespace krnl
 		if (!mod)
 			return -1;
 
-#if 0
-		auto name = std::string(symName);
-		size_t pos = name.find_first_of('#');
-		if (pos != std::string::npos) {
-			// generate name from triplet
-			LOG_WARNING("we cant handle long names yet");
-		}
-
-		auto libName = mod->getInfo().name;
-		pos = libName.rfind('.');
-		if (pos != std::string::npos)
-			libName = libName.substr(0, pos);
-
-		/*make a long name e.g sceKernelReportUnpatchedFunctionCall#libkernel#libkernel*/
-		auto longName = name + "#" + libName + "#" + libName;
-#endif
-
 		std::printf("DLSYM %s!%s\n", mod->getInfo().name.c_str(), symName);
 
-		char nameOut[11]{};
-		runtime::encode_nid(symName, reinterpret_cast<uint8_t*>(&nameOut));
+		char nameenc[12]{};
+		runtime::encode_nid(symName, reinterpret_cast<uint8_t*>(&nameenc));
 
-		auto value = mod->getSymbol2(nameOut);
-		*sym = reinterpret_cast<void*>(value);
+		auto& modName = mod->getInfo().name;
+		std::string longName = std::string(nameenc) + "#" + modName + "#" + modName;
+
+		uintptr_t addrOut = 0;
+		if (!mod->resolveObfSymbol(longName.c_str(), addrOut)) {
+			*sym = nullptr;
+			return -1;
+		}
+
+		*sym = reinterpret_cast<void*>(addrOut);
 
 		return 0;
 	}
@@ -114,7 +106,7 @@ namespace krnl
 
 	int PS4ABI sys_dynlib_get_proc_param(void** data, size_t* size)
 	{
-		auto mod = proc::getActive()->getMainModule();
+		auto mod = proc::getActive()->getModuleList()[0];
 		if (mod) {
 			auto& info = mod->getInfo();
 
@@ -145,8 +137,17 @@ namespace krnl
 
 	int PS4ABI sys_dynlib_process_needed_and_relocate()
 	{
-		// we always return success here as we
-		// automatically relocate everything on load
+		auto& list = proc::getActive()->getModuleList();
+		for (auto& mod : list) {
+			LOG_ASSERT(mod);
+	
+			if (!mod->resolveImports() || 
+				!mod->applyRelocations()) {
+				LOG_ERROR("failed to apply relocations for module {}", mod->getInfo().name);
+				return -1;
+			}
+		}
+
 		return 0;
 	}
 }
