@@ -61,7 +61,6 @@ namespace krnl
 #ifdef _DEBUG
 		LOG_TRACE("mapped {} at {}", info.name, fmt::ptr(info.base));
 #endif
-
 		setupTLS();
 
 		if (!isDynlib()) {
@@ -79,8 +78,8 @@ namespace krnl
 		else
 			info.entry = getAddress<uint8_t>(elf->entry);
 
-		for (auto& m : impModules) {
-			process->loadModule(m.name);
+		for (auto& it : sharedObjects) {
+			process->loadModule(it);
 		}
 
 		return true;
@@ -139,17 +138,16 @@ namespace krnl
 			case DT_SCE_RELA:
 				rela = reinterpret_cast<ElfRel*>(dynldPtr + d->un.ptr);
 				break;
-			case DT_SONAME:
-			{
-				auto name = (const char*)(strtab.ptr + (d->un.value & 0xFFFFFFFF));
-				std::printf("SONAME %s\n", name);
-				break;
-			}
 			case DT_NEEDED:
 			{
 				auto name = (const char*)(strtab.ptr + (d->un.value & 0xFFFFFFFF));
 				if (name) {
-					std::printf("i need %s -> %d\n", name, d->un.value >> 48);
+					std::string xname = name;
+					/*quick but (valid?) hack for determining if an object is exported*/
+					auto pos = xname.find(".prx");
+					if (pos != -1) {
+						sharedObjects.push_back(xname.substr(0, pos));
+					}
 				}
 
 				break;
@@ -207,16 +205,6 @@ namespace krnl
 				break;
 			}
 		}
-
-#if 0
-		for (auto& mod : impModules)
-			std::printf("impmod %s\n", mod.name);
-
-		for (auto& mod : impLibs) {
-			if (!mod.exported)
-				std::printf("implib %s\n", mod.name);
-		}
-#endif
 	}
 
 	bool smodule::mapImage()
@@ -276,6 +264,8 @@ namespace krnl
 			if (s->type == PT_LOAD && perm == (PF_R | PF_X)) {
 				runtime::codeLift lift(info.ripZone);
 				LOG_ASSERT(lift.init());
+
+				/*TODO: we should really introduce a cache here*/
 				lift.transform(getAddress<uint8_t>(s->vaddr), s->filesz);
 			}
 		}
@@ -326,9 +316,68 @@ namespace krnl
 		return true;
 	}
 
+	static bool decodeNid(const char* name, uint64_t &lid, uint64_t &mid)
+	{
+		/*nid's are always 16 bytes long so we should get away
+		 with hard coding the access offset*/
+
+		bool decodeSuccess = true;
+		if (!runtime::decode_nid(&name[12], 1, lid))
+			decodeSuccess = false;
+		if (!runtime::decode_nid(&name[14], 1, mid))
+			decodeSuccess = false;
+		if (!decodeSuccess) {
+			LOG_ERROR("decodeNid: can't decode symbol");
+			return false;
+		}
+		return decodeSuccess;
+	}
+
+	bool smodule::resolveObfSymbol(const char* name, uintptr_t &ptrOut)
+	{
+		uint64_t libid = 0, modid = 0;
+		if (!decodeNid(name, libid, modid))
+			__debugbreak();
+
+		const char* libname = nullptr;
+
+		//TODO: could be done nicer
+		for (auto& mod : impLibs) {
+			if (mod.id == static_cast<int32_t>(libid)) {
+				libname = mod.name;
+				break;
+			}
+		}
+
+		if (!libname)
+			return false;
+
+		for (auto& mod : impModules) {
+			if (mod.id == static_cast<int32_t>(modid)) {
+				auto xmod = process->getModule(mod.name);
+				if (!xmod) {
+					LOG_ERROR("resolveObfSymbol: Unknown module {} ({}) requestd", mod.name, mod.id);
+					return false;
+				}
+
+				char nameenc[12]{}; // name + null terminator
+				std::strncpy(nameenc, name, 11);
+
+				std::string longName = std::string(nameenc) + "#" + libname + "#" + mod.name;
+				ptrOut = xmod->getSymbolFullName(longName.c_str());
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	/*invoked by sys_dynlib_process_needed_and_relocate*/
 	bool smodule::resolveImports()
 	{
+		/*unpatched functioncall*/
+		uintptr_t addrBadCall = process->getModule("libkernel")->getSymbolFullName("M0z6Dr6TNnM#libkernel#libkernel");
+
 		for (uint32_t i = 0; i < numJmpSlots; i++) {
 			const auto* r = &jmpslots[i];
 
@@ -348,72 +397,93 @@ namespace krnl
 				continue;
 			}
 
-			const char* name = &strtab.ptr[sym->st_name];
-
 			int32_t binding = ELF64_ST_BIND(sym->st_info);
 			if (binding == STB_LOCAL) {
 				*getAddress<uintptr_t>(r->offset) = getAddressNPTR<uintptr_t>(sym->st_value);
 				continue;
 			}
 
-			const char* ptr = std::strchr(name, '#');
-			if (!ptr) {
-				LOG_ERROR("resolveImports: invalid symbol form");
+			uintptr_t addr = 0;
+			const char* name = &strtab.ptr[sym->st_name];
+
+			if (!resolveObfSymbol(name, addr)) {
 				return false;
 			}
 
-			if (std::strlen(name) != 15)
-				__debugbreak();
+			if (!addr)
+				addr = addrBadCall;
 
-			bool decodeSuccess = true;
+			*getAddress<uintptr_t>(r->offset) = addr;
+		}
 
-			uint64_t modid = 0, libid = 0, hid = 0;
-			if (!runtime::decode_nid(ptr + 1, 1, libid))
-				decodeSuccess = false;
-			if (!runtime::decode_nid(ptr + 3, 1, modid))
-				decodeSuccess = false;
-			if (!runtime::decode_nid(name, 11, hid))
-				decodeSuccess = false;
+		return true;
+	}
 
-			if (!decodeSuccess) {
-				LOG_ERROR("resolveImports: can't decode symbol");
-				return false;
+
+	/*invoked by sys_dynlib_process_needed_and_relocate*/
+	bool smodule::applyRelocations()
+	{
+		for (size_t i = 0; i < numRela; i++) {
+			auto* r = &rela[i];
+
+			uint32_t isym = ELF64_R_SYM(r->info);
+			int32_t type = ELF64_R_TYPE(r->info);
+
+			ElfSym* sym = &symbols[isym];
+			int32_t bind = ELF64_ST_BIND(sym->st_info);
+
+			if (isym >= numSymbols) {
+				LOG_ERROR("Invalid symbol index {}", isym);
+				continue;
 			}
 
-			/*first try import modules*/
-			for (auto& mod : impModules) {
-				if (mod.id == static_cast<int32_t>(modid)) {
-					auto xmod = process->getModule(mod.name);
-					if (!xmod) {
-						LOG_ERROR("resolveImports: Unknown module {} ({}) requestd", mod.name, mod.id);
-						__debugbreak();
+			uint64_t symVal = 0;
+
+			if (bind == STB_LOCAL)
+				symVal = sym->st_value;
+			else if (bind == STB_GLOBAL || bind == STB_WEAK) {
+				/*relative offset*/ //TODO (force): should we check MID here?
+				if (sym->st_value)
+					symVal = getAddressNPTR<uintptr_t>(sym->st_value);
+				else {
+					const char* name = &strtab.ptr[sym->st_name];
+
+					if (!resolveObfSymbol(name, symVal)) {
 						return false;
 					}
 
-					*getAddress<uintptr_t>(r->offset) = xmod->getSymbol(hid);
-					goto found;
+					if (!symVal)
+						__debugbreak();
 				}
 			}
 
-			__debugbreak();
-#if 0
-			__debugbreak();
-
-			for (auto& lib : impLibs) {
-				if (lib.modid == static_cast<int32_t>(libid)) {
-					std::string fullName = std::string(name) + "#" + lib.name + "#" + lib.name;
-					auto v = getSymbolFullName(fullName.c_str());
-					__debugbreak();
-
-					goto found;
-				}
+			switch (type) {
+			case R_X86_64_64:
+				*getAddress<uint64_t>(r->offset) = symVal + r->addend;
+				break;
+			case R_X86_64_RELATIVE: /* base + ofs*/
+				*getAddress<int64_t>(r->offset) = getAddressNPTR<int64_t>(r->addend);
+				break;
+			case R_X86_64_GLOB_DAT:
+				*getAddress<uint64_t>(r->offset) = symVal;
+				break;
+			case R_X86_64_PC32:
+				*getAddress<uint32_t>(r->offset) = static_cast<uint32_t>(symVal + r->addend - getAddressNPTR<uint64_t>(r->offset));
+				break;
+			case R_X86_64_DTPMOD64:
+				*getAddress<uint64_t>(r->offset) += info.tlsSlot;
+				break;
+			case R_X86_64_DTPOFF32:
+				*getAddress<uint32_t>(r->offset) += static_cast<uint32_t>(symVal + r->addend);
+				break;
+			case R_X86_64_DTPOFF64:
+				*getAddress<uint64_t>(r->offset) += symVal + r->addend;
+				break;
+			case R_X86_64_NONE:
+				break;
+			default:
+				continue;
 			}
-
-			__debugbreak();
-#endif
-
-		found:
-			continue;
 		}
 
 		return true;
@@ -491,11 +561,10 @@ namespace krnl
 
 			if (!s->st_value)
 				continue;
-			std::printf("considering %s\n", &strtab.ptr[s->st_name]);
 
 			const char* sname = &strtab.ptr[s->st_name];
-			if (std::strncmp(sname, name, 10) == 0) {
-				return s->st_value;
+			if (std::strncmp(sname, name, 11) == 0) {
+				return getAddressNPTR<uintptr_t>(s->st_value);
 			}
 		}
 
@@ -518,141 +587,6 @@ namespace krnl
 		}
 
 		return 0;
-	}
-
-	/*invoked by sys_dynlib_process_needed_and_relocate*/
-	bool smodule::applyRelocations()
-	{
-		for (size_t i = 0; i < numRela; i++) {
-			auto* r = &rela[i];
-
-			uint32_t isym = ELF64_R_SYM(r->info);
-			int32_t type = ELF64_R_TYPE(r->info);
-
-			ElfSym* sym = &symbols[isym];
-			int32_t bind = ELF64_ST_BIND(sym->st_info);
-
-			if (isym >= numSymbols) {
-				LOG_ERROR("Invalid symbol index {}", isym);
-				continue;
-			}
-
-			uint64_t symVal = 0;
-
-			if (bind == STB_LOCAL)
-				symVal = sym->st_value;
-			else if (bind == STB_GLOBAL || bind == STB_WEAK) {
-				if (sym->st_value)
-					/*pthread bug*/
-					symVal = sym->st_value;
-				else {
-
-
-					const char* name = &strtab.ptr[sym->st_name];
-					/*hack*/
-					const char* ptr = std::strchr(name, '#');
-					if (!ptr) {
-						LOG_ERROR("resolveImports: invalid symbol form");
-						return false;
-					}
-
-					bool decodeSuccess = true;
-
-					uint64_t modid = 0, libid = 0, hid = 0;
-					if (!runtime::decode_nid(ptr + 1, 1, libid))
-						decodeSuccess = false;
-					if (!runtime::decode_nid(ptr + 3, 1, modid))
-						decodeSuccess = false;
-
-					if (!decodeSuccess) {
-						LOG_ERROR("resolveImports: can't decode symbol");
-						return false;
-					}
-
-					const char* modName = nullptr;
-					const char* libName = nullptr;
-
-					bool good = false;
-
-					/*first try import modules*/
-					for (auto& mod : impModules) {
-						if (mod.id == static_cast<int32_t>(modid)) {
-							modName = mod.name;
-							uint64_t hid = 0;
-							if (!runtime::decode_nid(name, 11, hid))
-								__debugbreak();
-
-							std::string nameFull = std::string(modName) + ".sprx";
-							auto mod = process->getModule(nameFull);
-							if (mod) {
-								//__debugbreak();
-								symVal = mod->getSymbol(hid);
-								//std::printf("symval %d, %p\n", i, (void*)symVal);
-								good = true;
-							}
-							break;
-						}
-					}
-
-					//if (!good)
-						//__debugbreak();
-				}
-#if 0
-				for (auto& lib : impLibs) {
-					if (lib.modid == static_cast<int32_t>(libid)) {
-						libName = lib.name;
-						break;
-					}
-				}
-
-				char ns[11];
-				strncpy(ns, name, 11);
-
-				std::string nameFull = std::string(ns) + "#" + libName + "#" + modName;
-				auto val = getSymbol2(name);
-				if (!val) {
-					for (auto& mod : process->getModuleList()) {
-						if (mod->getInfo().name.empty())
-							continue;
-
-						val = mod->getSymbol2(name);
-						if (val)
-							__debugbreak();
-					}
-
-					__debugbreak();
-				}
-
-				__debugbreak();
-#endif
-
-				//std::printf("sym %s %s\n", &strtab.ptr[sym->st_name], bind == STB_GLOBAL ? "global" : "weak");
-			}
-
-			switch (type) {
-			case R_X86_64_64:
-				*getAddress<uint64_t>(r->offset) = symVal + r->addend;
-				break;
-			case R_X86_64_RELATIVE: /* base + ofs*/
-				*getAddress<int64_t>(r->offset) = (int64_t)getAddress<int64_t>(r->addend);
-				break;
-			case R_X86_64_GLOB_DAT:
-				*getAddress<uint64_t>(r->offset) = symVal;
-				break;
-			case R_X86_64_PC32:
-				*getAddress<uint32_t>(r->offset) = (uint32_t)(symVal + r->addend - (uint64_t)getAddress<uint64_t>(r->offset));
-				break;
-			case R_X86_64_DTPMOD64:
-				*getAddress<uint16_t>(r->offset) += info.tlsSlot;
-				break;
-			case R_X86_64_NONE:
-				break;
-			default:
-				continue;
-			}
-		}
-
-		return true;
 	}
 
 	// taken from idc's "uplift" project

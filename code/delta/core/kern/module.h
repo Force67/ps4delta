@@ -66,6 +66,7 @@ namespace krnl
 		uintptr_t getSymbol(uint64_t);
 		uintptr_t getSymbolFullName(const char *name);
 		uintptr_t getSymbol2(const char* name);
+		bool resolveObfSymbol(const char* name, uintptr_t& ptrOut);
 
 		bool applyRelocations();
 		bool resolveImports();
@@ -80,7 +81,7 @@ namespace krnl
 			return elf->type == ET_SCE_DYNAMIC;
 		}
 
-		/*traits -> object_ref*/
+		/*traits -> object_ref TODO: properly implement*/
 		void release() {};
 		void retain() {};
 
@@ -144,7 +145,7 @@ namespace krnl
 
 		std::vector<modInfo> impModules;
 		std::vector<libInfo> impLibs;
-		std::vector<std::string> targetlibs;
+		std::vector<std::string> sharedObjects;
 
 		ElfRel* jmpslots;
 		ElfRel* rela;

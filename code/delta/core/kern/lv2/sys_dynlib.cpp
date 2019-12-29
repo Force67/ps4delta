@@ -72,30 +72,21 @@ namespace krnl
 		if (!mod)
 			return -1;
 
-#if 0
-		auto name = std::string(symName);
-		size_t pos = name.find_first_of('#');
-		if (pos != std::string::npos) {
-			// generate name from triplet
-			LOG_WARNING("we cant handle long names yet");
-		}
-
-		auto libName = mod->getInfo().name;
-		pos = libName.rfind('.');
-		if (pos != std::string::npos)
-			libName = libName.substr(0, pos);
-
-		/*make a long name e.g sceKernelReportUnpatchedFunctionCall#libkernel#libkernel*/
-		auto longName = name + "#" + libName + "#" + libName;
-#endif
-
 		std::printf("DLSYM %s!%s\n", mod->getInfo().name.c_str(), symName);
 
-		char nameOut[11]{};
-		runtime::encode_nid(symName, reinterpret_cast<uint8_t*>(&nameOut));
+		char nameenc[12]{};
+		runtime::encode_nid(symName, reinterpret_cast<uint8_t*>(&nameenc));
 
-		auto value = mod->getSymbol2(nameOut);
-		*sym = reinterpret_cast<void*>(value);
+		auto& modName = mod->getInfo().name;
+		std::string longName = std::string(nameenc) + "#" + modName + "#" + modName;
+
+		uintptr_t addrOut = 0;
+		if (!mod->resolveObfSymbol(longName.c_str(), addrOut)) {
+			*sym = nullptr;
+			return -1;
+		}
+
+		*sym = reinterpret_cast<void*>(addrOut);
 
 		return 0;
 	}
@@ -148,16 +139,10 @@ namespace krnl
 	{
 		auto& list = proc::getActive()->getModuleList();
 		for (auto& mod : list) {
-			if (!mod)
-				__debugbreak();
-
-			std::printf("applying rel %s, %d\n", mod->getInfo().name.c_str(), mod->getInfo().handle);
-			if (mod->getInfo().name.empty())
-				continue;
-
-			if (!mod->applyRelocations() ||
-				!mod->resolveImports()) {
-				__debugbreak();
+			LOG_ASSERT(mod);
+	
+			if (!mod->resolveImports() || 
+				!mod->applyRelocations()) {
 				LOG_ERROR("failed to apply relocations for module {}", mod->getInfo().name);
 				return -1;
 			}
