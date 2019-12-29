@@ -5,10 +5,12 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include <utl/object_ref.h>
 
 #include "module.h"
+#include "object.h"
 #include "vm_manager.h"
+#include "dev/device.h"
+#include "util/object_table.h"
 
 namespace krnl
 {
@@ -21,6 +23,7 @@ namespace krnl
 	};
 
 	class smodule;
+	class kObject;
 
 	/*TODO: FIX MISUSE OF modulePtr*/
 	using modulePtr = utl::object_ref<smodule>;
@@ -39,6 +42,7 @@ namespace krnl
 
 		//inline modulePtr getMainModule() { return modules[0]; }
 		inline moduleList& getModuleList() { return modules; }
+		inline objectTable& getObjTable() { return objects; }
 
 		modulePtr loadModule(std::string_view);
 		modulePtr getModule(std::string_view);
@@ -51,6 +55,7 @@ namespace krnl
 		vmManager vmem;
 		procInfo env;
 		moduleList modules;
+		objectTable objects;
 		uint32_t handleCounter = 1;
 
 		uint32_t nextFreeTLS() {

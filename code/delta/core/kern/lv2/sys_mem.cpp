@@ -16,6 +16,10 @@ namespace krnl
 
 	uint8_t* PS4ABI sys_mmap(void* addr, size_t size, uint32_t prot, uint32_t flags, uint32_t fd, size_t offset)
 	{
+		auto* proc = proc::getActive();
+		if (!proc)
+			return reinterpret_cast<uint8_t*>(-1);
+
 		if (flags & mFlags::stack || flags & mFlags::noextend)
 			flags |= mFlags::anon;
 
@@ -30,12 +34,10 @@ namespace krnl
 		/*align the page*/
 		size = (size + 0x3FFF) & 0xFFFFFFFFFFFFC000LL;
 
-		if (fd != -1)
-			__debugbreak(); // TODO: object table
-
-		auto* proc = proc::getActive();
-		if (!proc)
-			return reinterpret_cast<uint8_t*>(-1);
+		if (fd > -1) {
+			auto* obj = proc::getActive()->getObjTable().get(fd);
+			return static_cast<device*>(obj)->map(addr, size, prot, flags, offset);
+		}
 
 		void* ptr = utl::allocMem(addr, size, ppt::w, alt::reservecommit);
 		if (!ptr) {

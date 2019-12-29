@@ -37,7 +37,7 @@ namespace krnl
 
 	int PS4ABI sys_sysarch(int num, void* args);
 
-	static moduleInfo* called_in(void* addr)
+	moduleInfo* called_in(void* addr)
 	{
 		uintptr_t addrsafe = (uintptr_t)addr;
 
