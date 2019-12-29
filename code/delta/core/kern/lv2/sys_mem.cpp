@@ -49,7 +49,7 @@ namespace krnl
 		// now we apply target protection
 		utl::protectMem(static_cast<void*>(ptr), len, tprot);
 
-		LOG_TRACE("addr={}, len={}, requested by {}", fmt::ptr(addr), len, fmt::ptr(_ReturnAddress()));
+		LOG_WARNING("addr={}, len={}, requested by {}", fmt::ptr(addr), len, fmt::ptr(_ReturnAddress()));
 
 		if (flags & mFlags::stack)
 			return &static_cast<uint8_t*>(ptr)[len];
@@ -69,7 +69,7 @@ namespace krnl
 			return -1;
 		}
 
-		LOG_TRACE("tagged {} with name {}", fmt::ptr(ptr), name);
+		LOG_WARNING("tagged {} with name {}", fmt::ptr(ptr), name);
 		info->name = name;
 		return 0;
 	}

@@ -50,6 +50,6 @@ namespace krnl
 	int PS4ABI sys_dynlib_get_proc_param(void** data, size_t* size);
 	int PS4ABI sys_dynlib_get_list(uint32_t* handles, size_t maxCount, size_t* count);
 	int PS4ABI sys_dynlib_dlsym(uint32_t handle, const char* cname, void** sym);
-	int PS4ABI dynlib_get_obj_member(uint32_t handle, uint8_t index, void** value);
+	int PS4ABI sys_dynlib_get_obj_member(uint32_t handle, uint8_t index, void** value);
 	int PS4ABI sys_dynlib_process_needed_and_relocate();
 }
