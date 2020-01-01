@@ -18,6 +18,11 @@ namespace krnl
 		return 0;
 	}
 
+	int PS4ABI sys_cpuset_getaffinity()
+	{
+		return 0;
+	}
+
 	int PS4ABI sys_get_authinfo(int pid, void* infoOut)
 	{
 		std::memset(infoOut, 0, 136);

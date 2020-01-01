@@ -509,7 +509,7 @@ namespace krnl
 		 {484, (void*)&null_handler}, //sys_cpuset
 		 {485, (void*)&null_handler}, //sys_cpuset_setid
 		 {486, (void*)&null_handler}, //sys_cpuset_getid
-		 {487, (void*)&null_handler}, //sys_cpuset_getaffinity
+		 {487, (void*)&sys_cpuset_getaffinity },
 		 {488, (void*)&null_handler}, //sys_cpuset_setaffinity
 		 {489, (void*)&null_handler}, //sys_faccessat
 		 {490, (void*)&null_handler}, //sys_fchmodat

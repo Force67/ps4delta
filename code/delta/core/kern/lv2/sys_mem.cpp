@@ -34,9 +34,12 @@ namespace krnl
 		/*align the page*/
 		size = (size + 0x3FFF) & 0xFFFFFFFFFFFFC000LL;
 
-		if (fd > -1) {
-			auto* obj = proc::getActive()->getObjTable().get(fd);
-			return static_cast<device*>(obj)->map(addr, size, prot, flags, offset);
+		if (fd != -1) {
+			auto* obj = proc->getObjTable().get(fd);
+			if (obj) {
+				/*TODO: mmap in device!!*/
+				static_cast<device*>(obj)->map(addr, size, prot, flags, offset);
+			}
 		}
 
 		void* ptr = utl::allocMem(addr, size, ppt::w, alt::reservecommit);
@@ -51,11 +54,15 @@ namespace krnl
 			}
 		}
 
-		auto tprot = ppt::r;
+#if 0
+		/*auto tprot = ppt::r;
 		if (prot & mprotFlags::write)
-			tprot |= ppt::w;
+			tprot = ppt::w; /*intentional*/
 		if (prot & mprotFlags::exec)
-			tprot |= ppt::x;
+			tprot = ppt::rx; */
+#endif
+		//FIXME: apply real protections
+		auto tprot = ppt::rwx;
 
 		if (flags & mFlags::anon)
 			std::memset(ptr, 0, size);
@@ -88,6 +95,35 @@ namespace krnl
 
 		LOG_WARNING("tagged {} with name {}", fmt::ptr(ptr), name);
 		info->name = name;
+		return 0;
+	}
+
+	struct mdbg_property
+	{
+		int32_t unk;
+		int32_t unk2;
+		void* addr;
+		size_t areaSize;
+		int64_t unk3;
+		int64_t unk4;
+		char name[32];
+	};
+
+	static_assert(sizeof(mdbg_property) == 72);
+
+	int PS4ABI sys_mdbg_service(uint32_t op, void* arg1, void* arg2, void *a3)
+	{
+		switch (op) {
+		case 1: {
+			auto* info = static_cast<mdbg_property*>(arg1);
+			LOG_WARNING("set property {} for addr {} with size {}", info->name, info->addr, info->areaSize);
+			/*TODO: create named object*/
+
+			break;
+		}
+		}
+
+
 		return 0;
 	}
 }

@@ -78,7 +78,7 @@ namespace krnl
 			auto& entry = table[slot];
 			if (!entry.obj) {
 				out = slot;
-				return 0;
+				return true;
 			}
 			scan_count++;
 			slot = (slot + 1) % tableCap;
@@ -150,6 +150,8 @@ namespace krnl
 			handleOut = handle;
 			return true;
 		}
+
+		__debugbreak();
 
 		handleOut = -1;
 		return false;
