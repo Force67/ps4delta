@@ -4,9 +4,11 @@
 #include <base.h>
 
 #include "kern/proc.h"
-#include "kern/dev/console_device.h"
-#include "kern/dev/tty6_device.h"
-#include "kern/dev/gc_device.h"
+#include "kern/dev/console_dev.h"
+#include "kern/dev/tty6_dev.h"
+#include "kern/dev/gc_dev.h"
+#include "kern/dev/dma_dev.h"
+#include "kern/dev/dipsw_dev.h"
 
 #include <utl/object_ref.h>
 
@@ -24,6 +26,11 @@ namespace krnl
 			dev = new tty6Device(proc);
 		if (xname == "gc")
 			dev = new gcDevice(proc);
+		if (xname == "dipsw")
+			dev = new dipswDevice(proc);
+		/*there are multiple of these*/
+		if (xname.find("dmem") != -1)
+			dev = new dmaDevice(proc);
 
 		return dev;
 	}
@@ -48,6 +55,8 @@ namespace krnl
 
 				return dev->handle();
 			}
+			else
+				__debugbreak();
 			return -1;
 		}
 

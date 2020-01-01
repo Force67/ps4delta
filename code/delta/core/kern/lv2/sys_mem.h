@@ -23,4 +23,7 @@ namespace krnl
 	uint8_t* PS4ABI sys_mmap(void* addr, size_t size, uint32_t prot, uint32_t flags, uint32_t fd, size_t offset);
 	int PS4ABI sys_mname(uint8_t*, size_t len, const char* name, void*);
 	int PS4ABI sys_mdbg_service(uint32_t op, void*, void*, void*);
+
+	/*direct memory access*/
+	int PS4ABI sys_dmem_container(uint32_t op);
 }

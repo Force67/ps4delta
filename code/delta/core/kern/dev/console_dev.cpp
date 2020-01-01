@@ -1,7 +1,7 @@
 
 // Copyright (C) Force67 2019
 
-#include "console_device.h"
+#include "console_dev.h"
 
 namespace krnl
 {

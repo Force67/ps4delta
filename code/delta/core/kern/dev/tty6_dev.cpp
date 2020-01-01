@@ -1,7 +1,7 @@
 
 // Copyright (C) Force67 2019
 
-#include "tty6_device.h"
+#include "tty6_dev.h"
 
 namespace krnl
 {

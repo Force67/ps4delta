@@ -20,6 +20,37 @@ namespace krnl
 		return SysError::eNOSYS;
 	}
 
+	int PS4ABI sys_dynlib_get_info(uint32_t handle, dynlib_info* dyn_info)
+	{
+		if (dyn_info->size != sizeof(*dyn_info)) {
+			__debugbreak();
+			return SysError::eINVAL;
+		}
+
+		auto mod = proc::getActive()->getModule(handle);
+		if (!mod)
+			return SysError::eSRCH;
+
+		auto& info = mod->getInfo();
+		std::memset(dyn_info, 0, sizeof(dynlib_info));
+		std::strncpy(dyn_info->name, info.name.c_str(), 256);
+
+		auto& text = dyn_info->segs[0];
+		text.addr = reinterpret_cast<uintptr_t>(info.textSeg.addr);
+		text.size = info.textSeg.size;
+		text.flags = 1 | 4;
+
+		auto& data = dyn_info->segs[1];
+		data.addr = reinterpret_cast<uintptr_t>(info.dataSeg.addr);
+		data.size = info.dataSeg.size;
+		data.flags = 1 | 2;
+
+		dyn_info->seg_count = 2;
+
+		std::memcpy(dyn_info->fingerprint, info.fingerprint, 20);
+		return 0;
+	}
+
 	int PS4ABI sys_dynlib_get_info_ex(uint32_t handle, int32_t ukn /*always 1*/, dynlib_info_ex* dyn_info)
 	{
 		if (dyn_info->size != sizeof(*dyn_info)) {
@@ -62,6 +93,7 @@ namespace krnl
 		data.size = info.dataSeg.size;
 		data.flags = 1 | 2;
 
+		dyn_info->seg_count = 2;
 		dyn_info->ref_count = 1;
 		return 0;
 	}

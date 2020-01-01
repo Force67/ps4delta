@@ -12,6 +12,7 @@
 #include "sys_debug.h"
 #include "sys_thread.h"
 #include "sys_vfs.h"
+#include "sys_generic.h"
 
 #include "kern/proc.h"
 #include "kern/module.h"
@@ -131,7 +132,7 @@ namespace krnl
 		 {51, (void*)&null_handler}, //sys_acct
 		 {52, (void*)&null_handler}, //sys_sigpending
 		 {53, (void*)&null_handler}, //sys_sigaltstack
-		 {54, (void*)&null_handler}, //sys_ioctl
+		 {54, (void*)&sys_ioctl},
 		 {55, (void*)&null_handler}, //sys_reboot
 		 {56, (void*)&null_handler}, //sys_revoke
 		 {57, (void*)&null_handler}, //sys_symlink
@@ -608,14 +609,14 @@ namespace krnl
 		 {583, (void*)&null_handler}, //sys_eport_open
 		 {584, (void*)&null_handler}, //sys_eport_close
 		 {585, (void*)&sys_is_in_sandbox},
-		 {586, (void*)&null_handler}, //sys_dmem_container
+		 {586, (void*)&sys_dmem_container},
 		 {587, (void*)&sys_get_authinfo},
 		 {588, (void*)&sys_mname},
 		 {589, (void*)&sys_dynlib_dlopen},
 		 {590, (void*)&null_handler}, //sys_dynlib_dlclose
 		 {591, (void*)&sys_dynlib_dlsym},
 		 {592, (void*)&sys_dynlib_get_list},
-		 {593, (void*)&null_handler}, //sys_dynlib_get_info
+		 {593, (void*)&sys_dynlib_get_info},
 		 {594, (void*)&null_handler}, //sys_dynlib_load_prx
 		 {595, (void*)&null_handler}, //sys_dynlib_unload_prx
 		 {596, (void*)&null_handler}, //sys_dynlib_do_copy_relocations
@@ -634,7 +635,7 @@ namespace krnl
 		 {609, (void*)&null_handler}, //sys_budget_getid
 		 {610, (void*)&sys_budget_get_ptype},
 		 {611, (void*)&null_handler}, //sys_get_paging_stats_of_all_threads
-		 {612, (void*)&null_handler}, //sys_get_proc_type_info
+		 {612, (void*)&sys_get_proc_type_info },
 		 {613, (void*)&null_handler}, //sys_get_resident_count
 		 {614, (void*)&null_handler}, //sys_prepare_to_suspend_process
 		 {615, (void*)&null_handler}, //sys_get_resident_fmem_count

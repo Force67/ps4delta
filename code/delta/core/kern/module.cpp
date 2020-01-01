@@ -203,6 +203,9 @@ namespace krnl
 			case DT_SCE_MODULEINFO:
 				info.name = (const char*)(strtab.ptr + (d->un.value & 0xFFFFFFFF));
 				break;
+			case DT_SCE_FINGERPRINT:
+				std::memcpy(info.fingerprint, getOffset<void>(d->un.value), 20);
+				break;
 			}
 		}
 	}

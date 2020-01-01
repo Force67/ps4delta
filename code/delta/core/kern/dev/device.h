@@ -17,8 +17,7 @@ namespace krnl
 		{}
 
 		virtual bool init(const char*, uint32_t, uint32_t) { return true; }
-		virtual uint8_t* map(void*, size_t, uint32_t, uint32_t,size_t) {
-			return reinterpret_cast<uint8_t*>(-1);
-		}
+		virtual uint8_t* map(void*, size_t, uint32_t, uint32_t, size_t) { __debugbreak(); return nullptr; }
+		virtual int32_t ioctl(uint32_t command, void* args) { __debugbreak(); return -1; }
 	};
 }

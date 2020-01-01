@@ -13,7 +13,7 @@ namespace krnl
 		uint32_t kvers;
 	};
 
-	struct dynlib_seg {
+	struct segment_info {
 		uintptr_t addr;
 		uint32_t size;
 		uint32_t flags;
@@ -38,14 +38,24 @@ namespace krnl
 		uintptr_t eh_frame_addr;
 		uint32_t eh_frame_hdr_size;
 		uint32_t eh_frame_size;
-		dynlib_seg segs[4];
-		uint32_t segment_count;
+		segment_info segs[4];
+		uint32_t seg_count;
 		uint32_t ref_count;
 	};
 
+	struct dynlib_info {
+		size_t size;
+		char name[256];
+		segment_info segs[4];
+		uint32_t seg_count;
+		uint8_t fingerprint[20];
+	};
+
 	static_assert(sizeof(dynlib_info_ex) == 424);
+	static_assert(sizeof(dynlib_info) == 352);
 
 	int PS4ABI sys_dynlib_dlopen(const char*);
+	int PS4ABI sys_dynlib_get_info(uint32_t handle, dynlib_info*);
 	int PS4ABI sys_dynlib_get_info_ex(uint32_t handle, int32_t ukn /*always 1*/, dynlib_info_ex* dyn_info);
 	int PS4ABI sys_dynlib_get_proc_param(void** data, size_t* size);
 	int PS4ABI sys_dynlib_get_list(uint32_t* handles, size_t maxCount, size_t* count);

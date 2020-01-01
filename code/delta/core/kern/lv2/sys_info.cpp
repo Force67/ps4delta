@@ -10,6 +10,7 @@
 
 namespace krnl
 {
+	int sys_budget_get_ptype();
 
 	moduleInfo* called_in(void* addr);
 
@@ -27,6 +28,22 @@ namespace krnl
 	{
 		std::memset(infoOut, 0, 136);
 		return 1;
+	}
+
+	/*maybe should be moved to a proc file*/
+	int PS4ABI sys_get_proc_type_info(void* oinfo)
+	{
+		struct dargs {
+			size_t size;
+			uint32_t ptype;
+			uint32_t pflags;
+		};
+
+		auto* args = reinterpret_cast<dargs*>(oinfo);
+		args->size = sizeof(dargs);
+		args->ptype = sys_budget_get_ptype();
+		args->pflags = 0; //TODO: handle flag 0x40 (sceprogramattr)
+		return 0;
 	}
 
 	int PS4ABI sys_sysctl(int* name, uint32_t namelen, void* oldp, size_t* oldlenp, const void* newp, size_t newlen)
@@ -109,6 +126,17 @@ namespace krnl
 				static_cast<uint32_t*>(oldp)[1] = 4;
 				*oldlenp = 8;
 				return true;
+			}
+
+			else if (name == "vm.ps4dev.vm1.cpu.pt_total" ||
+				name == "vm.ps4dev.vm1.cpu.pt_available" ||
+				name == "vm.ps4dev.vm1.gpu.pt_total" ||
+				name == "vm.ps4dev.vm1.gpu.pt_available" ||
+				name == "vm.ps4dev.trcmem_total" ||
+				name == "vm.ps4dev.trcmem_avail")
+			{
+				/*DK, not present on retail*/
+				return 2;
 			}
 		}
 

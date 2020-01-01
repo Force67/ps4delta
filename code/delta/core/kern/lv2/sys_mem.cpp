@@ -126,4 +126,13 @@ namespace krnl
 
 		return 0;
 	}
+
+	int PS4ABI sys_dmem_container(uint32_t op)
+	{
+		if (op == -1)
+			return 0;
+
+		__debugbreak();
+		return -1;
+	}
 }
