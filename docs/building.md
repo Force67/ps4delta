@@ -35,4 +35,7 @@ A - It means that you haven't got any tools for building the solution, so you mi
 Q - When I start the app it shows `Unable to load core`
 A - First check that you have built the entire solution and not just the host project. Then check if in the `bin/Debug` folder, there is a file named `dcore.dll`. Also, double check that you copied all the runtime dlls in the output folder.
 
+Q - When I start the app in release it crashes and when I start the app in debug it shows `This application failed to start because no Qt platform plugin could be initialized.`
+A - Copy the platforms folder from your `%QT_DIR%/plugins/` to your target folder (Debug or Release)
+
 If you have other issues at the building process, feel free to ask them on our discord server [here](https://discord.gg/WqWjujt).
