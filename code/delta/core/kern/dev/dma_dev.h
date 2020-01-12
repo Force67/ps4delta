@@ -10,16 +10,14 @@
 
 #include "device.h"
 
-namespace krnl
-{
-	class proc;
+namespace krnl {
+class proc;
 
-	class dmaDevice : public device
-	{
-	public:
-		dmaDevice(proc*);
+class dmaDevice : public device {
+public:
+  dmaDevice(proc *);
 
-		int32_t ioctl(uint32_t command, void* args) override;
-		uint8_t* map(void*, size_t, uint32_t, uint32_t, size_t) override;
-	};
+  int32_t ioctl(uint32_t command, void *args) override;
+  uint8_t *map(void *, size_t, uint32_t, uint32_t, size_t) override;
+};
 }

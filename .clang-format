@@ -1,0 +1,3 @@
+BasedOnStyle: LLVM
+PointerAlignment: Right
+SortIncludes: 'true'

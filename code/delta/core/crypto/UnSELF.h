@@ -2,11 +2,9 @@
 
 // Copyright (C) Force67 2019
 
-
 #include <utl/File.h>
 
-namespace crypto
-{
+namespace crypto {
 #if 0
 
 	// convert SELF to elf and return new image in out

@@ -2,9 +2,9 @@
 
 // Copyright (C) Force67 2019
 
-#include <string>
-#include <memory>
 #include <kern/proc.h>
+#include <memory>
+#include <string>
 
 #include <QApplication>
 #include <QFontDatabase>
@@ -12,16 +12,16 @@
 
 #include "ui/mainwindow.h"
 
-class deltaCore : public QApplication
-{
-	Q_OBJECT
+class deltaCore : public QApplication {
+  Q_OBJECT
 public:
-	deltaCore(int&, char**);
+  deltaCore(int &, char **);
 
-	bool init();
-	void boot(std::string& fromdir);
+  bool init();
+  void boot(std::string &fromdir);
+
 private:
-	bool headless{ false };
-	std::unique_ptr<mainWindow> window;
-	std::unique_ptr<krnl::proc> proc;
+  bool headless{false};
+  std::unique_ptr<mainWindow> window;
+  std::unique_ptr<krnl::proc> proc;
 };

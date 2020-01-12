@@ -4,6 +4,4 @@
 
 #include <base.h>
 
-namespace krnl
-{
-}
+namespace krnl {}

@@ -1,11 +1,10 @@
 
 // Copyright (C) Force67 2019
 
-#include <vector>
 #include "UnSELF.h"
+#include <vector>
 
-namespace crypto
-{
+namespace crypto {
 #if 0
 	using namespace loaders;
 
@@ -156,4 +155,4 @@ namespace crypto
 		return false;
 	}
 #endif
-}
+} // namespace crypto

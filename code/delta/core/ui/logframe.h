@@ -6,16 +6,15 @@
 
 class qtlogSink;
 
-class logFrame : public QPlainTextEdit
-{
-	Q_OBJECT
+class logFrame : public QPlainTextEdit {
+  Q_OBJECT
 
 public:
-	logFrame();
-	void addLine(const QString&);
+  logFrame();
+  void addLine(const QString &);
 
 private:
-	void update();
+  void update();
 
-	qtlogSink *sink;
+  qtlogSink *sink;
 };

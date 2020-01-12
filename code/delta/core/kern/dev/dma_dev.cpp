@@ -9,30 +9,25 @@
 
 #include "dma_dev.h"
 
-namespace krnl
-{
-	dmaDevice::dmaDevice(proc* p) :
-		device(p)
-	{}
+namespace krnl {
+dmaDevice::dmaDevice(proc *p) : device(p) {}
 
-	/* dmem_ioctl */
-	int32_t dmaDevice::ioctl(uint32_t cmd, void* data)
-	{
-		switch (cmd) {
-		case 0x4008800A: {
+/* dmem_ioctl */
+int32_t dmaDevice::ioctl(uint32_t cmd, void *data) {
+  switch (cmd) {
+  case 0x4008800A: {
 
-			/*FIXME: validate _real_ dma size*/
-			*static_cast<size_t*>(data) = 1024;
-			return 0;
-		}
-		}
+    /*FIXME: validate _real_ dma size*/
+    *static_cast<size_t *>(data) = 1024;
+    return 0;
+  }
+  }
 
-		return 0;
-	}
-
-	uint8_t* dmaDevice::map(void* addr, size_t, uint32_t, uint32_t, size_t)
-	{
-		//__debugbreak();
-		return reinterpret_cast<uint8_t*>(-1);
-	}
+  return 0;
 }
+
+uint8_t *dmaDevice::map(void *addr, size_t, uint32_t, uint32_t, size_t) {
+  //__debugbreak();
+  return reinterpret_cast<uint8_t *>(-1);
+}
+} // namespace krnl

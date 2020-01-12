@@ -1,12 +1,17 @@
 #pragma once
 
-// Copyright (c) Nomad Group 2019
+/*
+ * UTL : The universal utility library
+ *
+ * Copyright 2019-2020 Force67.
+ * For information regarding licensing see LICENSE
+ * in the root of the source tree.
+ */
 
 #include <string>
 
 // implements various path utility functions
-namespace utl
-{
-	std::wstring make_abs_path(const std::wstring &relative, void* handle = nullptr);
-	std::string make_abs_path(const std::string &relative, void* handle = nullptr);
+namespace utl {
+std::wstring make_abs_path(const std::wstring &relative);
+std::string make_abs_path(const std::string &relative);
 }

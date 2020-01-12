@@ -2,59 +2,50 @@
 
 // Copyright (C) Force67 2019
 
-#include <string>
-#include <vector>
-#include <mutex>
 #include <atomic>
+#include <mutex>
+#include <string>
 #include <utl/object_ref.h>
+#include <vector>
 
-namespace krnl
-{
-	class proc;
+namespace krnl {
+class proc;
 
-	class kObject
-	{
-	public:
-		using handleList = std::vector<uint32_t>;
+class kObject {
+public:
+  using handleList = std::vector<uint32_t>;
 
-		enum class oType
-		{
-			file,
-			device,
-		};
+  enum class oType {
+    file,
+    device,
+  };
 
-		explicit kObject(proc*, oType);
+  explicit kObject(proc *, oType);
 
-		void retain();
-		void release();
-		void retainHandle();
-		void releaseHandle();
+  void retain();
+  void release();
+  void retainHandle();
+  void releaseHandle();
 
-		oType type() const {
-			return otype;
-		}
+  oType type() const { return otype; }
 
-		handleList& handles() {
-			return handleCollection;
-		}
+  handleList &handles() { return handleCollection; }
 
-		uint32_t handle() const { 
-			return handleCollection[0];
-		}
+  uint32_t handle() const { return handleCollection[0]; }
 
-	protected:
-		oType otype;
-		proc* process;
-		std::string name;
+protected:
+  oType otype;
+  proc *process;
+  std::string name;
 
-	private:
-		handleList handleCollection;
-		std::atomic<int32_t> refCount;
-	};
+private:
+  handleList handleCollection;
+  std::atomic<int32_t> refCount;
+};
 
-	template <typename T>
-	utl::object_ref<T> retain_object(T* ptr) {
-		if (ptr) ptr->retain();
-		return utl::object_ref<T>(ptr);
-	}
+template <typename T> utl::object_ref<T> retain_object(T *ptr) {
+  if (ptr)
+    ptr->retain();
+  return utl::object_ref<T>(ptr);
+}
 }

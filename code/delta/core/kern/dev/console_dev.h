@@ -4,13 +4,11 @@
 
 #include "device.h"
 
-namespace krnl
-{
-	class consoleDevice : public device
-	{
-	public:
-		consoleDevice(proc*);
+namespace krnl {
+class consoleDevice : public device {
+public:
+  consoleDevice(proc *);
 
-		bool init(const char*, uint32_t, uint32_t) override;
-	};
+  bool init(const char *, uint32_t, uint32_t) override;
+};
 }

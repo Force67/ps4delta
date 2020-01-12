@@ -40,6 +40,7 @@ project "dcore"
         "premake5.lua",
         "_res/core.rc",
         "**.ui",
+		"**.inl",
         "**.h",
         "**.hpp",
         "**.cpp",

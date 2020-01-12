@@ -10,15 +10,13 @@
 
 #include "device.h"
 
-namespace krnl
-{
-	class proc;
+namespace krnl {
+class proc;
 
-	class dipswDevice : public device
-	{
-	public:
-		dipswDevice(proc*);
+class dipswDevice : public device {
+public:
+  dipswDevice(proc *);
 
-		int32_t ioctl(uint32_t command, void* args) override;
-	};
+  int32_t ioctl(uint32_t command, void *args) override;
+};
 }
