@@ -16,7 +16,11 @@ std::wstring make_abs_path(const std::wstring &rel) {
   static std::wstring filePath;
   if (filePath.empty()) {
     wchar_t buf[MAX_PATH]{};
+
     GetModuleFileNameW(nullptr, buf, MAX_PATH);
+    wchar_t *dirPtr = std::wcsrchr(buf, L'\\');
+    dirPtr[1] = L'\0';
+
     filePath = buf;
   }
 
@@ -33,7 +37,11 @@ std::string make_abs_path(const std::string &rel) {
   static std::string filePath;
   if (filePath.empty()) {
     char buf[MAX_PATH]{};
+
     GetModuleFileNameA(nullptr, buf, MAX_PATH);
+    char *dirPtr = std::strrchr(buf, '\\');
+    dirPtr[1] = '\0';
+
     filePath = buf;
   }
 

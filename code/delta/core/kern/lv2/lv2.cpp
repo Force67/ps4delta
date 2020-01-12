@@ -743,8 +743,8 @@ static uintptr_t emit_calltrace(const char *name, uint32_t sid,
 uintptr_t lv2_get(uint32_t sid) {
   for (auto &it : syscall_dpt) {
     if (sid == it.id) {
-      // return reinterpret_cast<uintptr_t>(it.ptr);
-      return emit_calltrace(syscall_getname(sid), sid, it.ptr);
+       return reinterpret_cast<uintptr_t>(it.ptr);
+      //return emit_calltrace(syscall_getname(sid), sid, it.ptr);
     }
   }
 
