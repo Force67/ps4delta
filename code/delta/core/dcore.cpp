@@ -4,6 +4,8 @@
 #include <cstdio>
 #include <thread>
 
+#include <QCommandLineParser>
+
 #include "dcore.h"
 #include <logger/logger.h>
 #include <utl/file.h>

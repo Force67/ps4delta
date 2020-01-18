@@ -47,7 +47,7 @@ public:
 
   PhysFile::~PhysFile() { Close(); }
 
-  void PhysFile::Close() {
+  void PhysFile::Close() override {
     if (fptr) {
       std::fclose(fptr);
       sizeTracker = 0;

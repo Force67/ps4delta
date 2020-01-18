@@ -18,20 +18,18 @@
 #include "qtgen/ui_mainwindow.h"
 
 #include "logger/logger.h"
+#include "dcore.h"
 
 mainWindow::mainWindow(deltaCore &core)
     : QMainWindow(nullptr), core(core), ui(new Ui::main_window()) {
   setWindowTitle(rsc_productname);
+  setAcceptDrops(true);
+  ui->setupUi(this);
 }
 
 mainWindow::~mainWindow() { delete ui; }
 
 void mainWindow::init() {
-  ui->setupUi(this);
-
-  setAcceptDrops(true);
-  // setWindowIcon()
-
   createConnects();
 
   rendView = new renderWindow;
@@ -94,3 +92,47 @@ void mainWindow::keyPressEvent(QKeyEvent *event) {
 }
 
 void mainWindow::keyReleaseEvent(QKeyEvent *event) {}
+
+static bool isValidFile(const QMimeData &md) {
+  auto list = md.urls();
+
+  //TODO: verify file type here 
+
+  // only allow one file
+  if (list.size() > 1 || !list.size())
+    return false;
+
+  auto &url = list[0];
+  const auto path = url.toLocalFile();
+  const QFileInfo info = path;
+
+  if (info.isDir())
+    return false;
+
+  return true;
+}
+
+void mainWindow::dragEnterEvent(QDragEnterEvent *event) {
+  if (isValidFile(*event->mimeData()))
+    event->accept();
+}
+
+void mainWindow::dragMoveEvent(QDragMoveEvent *event) {
+  if (isValidFile(*event->mimeData()))
+    event->accept();
+}
+
+void mainWindow::dragLeaveEvent(QDragLeaveEvent *event) { event->accept(); }
+
+void mainWindow::dropEvent(QDropEvent *event) {
+  auto &md = *event->mimeData();
+
+  if (isValidFile(md)) {
+    const auto path = md.urls()[0].toLocalFile();
+    auto bytes = path.toUtf8();
+
+    // this is kinda bad
+    std::string name(bytes.constData());
+    core.boot(name);
+  }
+}
