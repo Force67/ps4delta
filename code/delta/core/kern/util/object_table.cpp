@@ -132,6 +132,7 @@ bool objectTable::add(kObject *obj, uint32_t &handleOut) {
     // Retain so long as the object is in the table.
     obj->retain();
 
+    __debugbreak();
     handleOut = handle;
     return true;
   }
@@ -143,7 +144,9 @@ bool objectTable::add(kObject *obj, uint32_t &handleOut) {
 }
 
 bool objectTable::remove(uint32_t handle) {
-  std::lock_guard lock(omutex);
+  
+    //FOR NOW DANGEROUS
+  //std::lock_guard lock(omutex);
 
   auto *e = findEntry(handle);
   if (e && e->obj) {

@@ -59,4 +59,16 @@ int PS4ABI sys_open(const char *path, uint32_t flags, uint32_t mode) {
   __debugbreak();
   return 0;
 }
+
+int PS4ABI sys_close(uint32_t fd) {
+  auto *proc = proc::getActive();
+
+  if (proc && fd != -1) {
+    proc->getObjTable().release(fd);
+    return 0;
+  }
+
+  LOG_WARNING("failed to release handle {}", fd);
+  return -1;
+}
 } // namespace krnl

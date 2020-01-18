@@ -16,8 +16,6 @@ kObject::kObject(proc *process, oType type) : otype(type), process(process) {
 }
 
 void kObject::release() {
-  __debugbreak();
-
   if (--refCount == 0)
     delete this;
 }

@@ -80,6 +80,11 @@ uint8_t *PS4ABI sys_mmap(void *addr, size_t size, uint32_t prot, uint32_t flags,
   return static_cast<uint8_t *>(ptr);
 }
 
+int PS4ABI sys_mprotect(uint8_t *, size_t len, int prot) { 
+    //TODO
+    return 0;
+}
+
 int PS4ABI sys_mname(uint8_t *ptr, size_t len, const char *name, void *) {
   auto *proc = proc::getActive();
   if (!proc)

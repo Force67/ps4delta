@@ -22,8 +22,10 @@ smodule::smodule(proc *process) : process(process) {
 
 bool smodule::fromFile(const std::string &path) {
   utl::File file(path);
-  if (!file.IsOpen())
+  if (!file.IsOpen()) {
+    __debugbreak();
     return false;
+  }
 
   ELFHeader diskHeader{};
   file.Read(diskHeader);
@@ -36,7 +38,7 @@ bool smodule::fromFile(const std::string &path) {
     file.Read(data.get(), file.GetSize());
     return fromMem(std::move(data));
   }
-
+  __debugbreak();
   return false;
 }
 
@@ -49,6 +51,7 @@ bool smodule::fromMem(std::unique_ptr<uint8_t[]> data) {
 
   if (!mapImage()) {
     LOG_ERROR("smodule: Failed to map image");
+    __debugbreak();
     return false;
   }
 
@@ -75,7 +78,6 @@ bool smodule::fromMem(std::unique_ptr<uint8_t[]> data) {
     info.entry = getAddress<uint8_t>(elf->entry);
 
   for (auto &it : sharedObjects) {
-    if (it != "libSceGnmDriver_padebug")
       process->loadModule(it);
   }
 

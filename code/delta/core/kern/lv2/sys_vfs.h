@@ -16,4 +16,5 @@ enum fcFlags {
 };
 
 int PS4ABI sys_open(const char *path, uint32_t flags, uint32_t mode);
-}
+int PS4ABI sys_close(uint32_t fd);
+} // namespace krnl

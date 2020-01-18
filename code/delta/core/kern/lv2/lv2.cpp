@@ -13,6 +13,7 @@
 #include "sys_mem.h"
 #include "sys_thread.h"
 #include "sys_vfs.h"
+#include "sys_net.h"
 
 #include "kern/module.h"
 #include "kern/proc.h"
@@ -81,7 +82,7 @@ static const syscall_Reg syscall_dpt[] = {
     {3, (void *)&null_handler}, // sys_read
     {4, (void *)&sys_write},
     {5, (void *)&sys_open},
-    {6, (void *)&null_handler},  // sys_close
+    {6, (void *)&sys_close},
     {7, (void *)&null_handler},  // sys_wait4
     {8, (void *)&null_handler},  // sys_creat
     {9, (void *)&null_handler},  // sys_link
@@ -149,7 +150,7 @@ static const syscall_Reg syscall_dpt[] = {
     {71, (void *)&sys_mmap},
     {72, (void *)&null_handler},  // sys_ovadvise
     {73, (void *)&null_handler},  // sys_munmap
-    {74, (void *)&null_handler},  // sys_mprotect
+    {74, (void *)&sys_mprotect},
     {75, (void *)&null_handler},  // sys_madvise
     {76, (void *)&null_handler},  // sys_vhangup
     {77, (void *)&null_handler},  // sys_vlimit
@@ -174,7 +175,7 @@ static const syscall_Reg syscall_dpt[] = {
     {96, (void *)&null_handler},  // sys_setpriority
     {97, (void *)&null_handler},  // sys_socket
     {98, (void *)&null_handler},  // sys_connect
-    {99, (void *)&null_handler},  // sys_netcontrol
+    {99, (void *)&sys_netcontrol},
     {100, (void *)&null_handler}, // sys_getpriority
     {101, (void *)&null_handler}, // sys_netabort
     {102, (void *)&null_handler}, // sys_netgetsockinfo
@@ -188,7 +189,7 @@ static const syscall_Reg syscall_dpt[] = {
     {110, (void *)&null_handler}, // sys_sigsetmask
     {111, (void *)&null_handler}, // sys_sigsuspend
     {112, (void *)&null_handler}, // sys_sigstack
-    {113, (void *)&null_handler}, // sys_socketex
+    {113, (void *)&sys_socketex},
     {114, (void *)&null_handler}, // sys_socketclose
     {115, (void *)&null_handler}, // sys_vtrace
     {116, (void *)&null_handler}, // sys_gettimeofday

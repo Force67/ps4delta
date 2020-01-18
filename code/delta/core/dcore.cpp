@@ -29,7 +29,9 @@ bool deltaCore::init() {
   return true;
 }
 
-void deltaCore::boot(std::string &dir) {
+void deltaCore::boot(std::string &xdir) {
+  static std::string dir = xdir;
+
   // sanitize path
   std::replace(dir.begin(), dir.end(), '/', '\\');
 
