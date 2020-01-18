@@ -9,63 +9,59 @@
  */
 
 #include <memory>
-#include <vector>
 #include <string>
+#include <vector>
 
+#include "dev/device.h"
 #include "module.h"
 #include "object.h"
-#include "vm_manager.h"
-#include "dev/device.h"
 #include "util/object_table.h"
+#include "vm_manager.h"
 
-namespace krnl
-{
-	struct procInfo
-	{
-		uint32_t ripZoneSize = 5 * 1024;
-		uint8_t* userStack = nullptr;
-		size_t userStackSize = 20 * 1024 * 1024;
-		void* fsBase = nullptr;
-	};
+namespace krnl {
+struct procInfo {
+  uint32_t ripZoneSize = 5 * 1024;
+  uint8_t *userStack = nullptr;
+  size_t userStackSize = 20 * 1024 * 1024;
+  void *fsBase = nullptr;
+};
 
-	class smodule;
-	class kObject;
+class smodule;
+class kObject;
 
-	/*TODO: FIX MISUSE OF modulePtr*/
-	using modulePtr = utl::object_ref<smodule>;
+/*TODO: FIX MISUSE OF modulePtr*/
+using modulePtr = utl::object_ref<smodule>;
 
-	class proc
-	{
-		friend class smodule;
-	public:
-		using moduleList = std::vector<modulePtr>;
+class proc {
+  friend class smodule;
 
-		proc();
-		bool create(const std::string&);
-		void start();
+public:
+  using moduleList = std::vector<modulePtr>;
 
-		static proc* getActive();
+  proc();
+  bool create(const std::string &);
+  void start();
 
-		//inline modulePtr getMainModule() { return modules[0]; }
-		inline moduleList& getModuleList() { return modules; }
-		inline objectTable& getObjTable() { return objects; }
+  static proc *getActive();
 
-		modulePtr loadModule(std::string_view);
-		modulePtr getModule(std::string_view);
-		modulePtr getModule(uint32_t);
+  // inline modulePtr getMainModule() { return modules[0]; }
+  inline moduleList &getModuleList() { return modules; }
+  inline objectTable &getObjTable() { return objects; }
 
-		inline vmManager& getVma() { return vmem; }
-		inline procInfo& getEnv() { return env; }
+  modulePtr loadModule(std::string_view);
+  modulePtr getModule(std::string_view);
+  modulePtr getModule(uint32_t);
 
-	private:
-		vmManager vmem;
-		procInfo env;
-		moduleList modules;
-		objectTable objects;
-		uint32_t handleCounter = 1;
+  inline vmManager &getVma() { return vmem; }
+  inline procInfo &getEnv() { return env; }
 
-		uint32_t nextFreeTLS() {
-			return -1;
-		}
-	};
+private:
+  vmManager vmem;
+  procInfo env;
+  moduleList modules;
+  objectTable objects;
+  uint32_t handleCounter = 1;
+
+  uint32_t nextFreeTLS() { return -1; }
+};
 }

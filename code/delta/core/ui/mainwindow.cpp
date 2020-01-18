@@ -8,112 +8,137 @@
  */
 
 #include <QApplication>
+#include <QDesktopWidget>
+#include <QDockWidget>
+#include <QFileDialog>
 #include <QMenuBar>
 #include <QMessageBox>
-#include <QFileDialog>
-#include <QVBoxLayout>
-#include <QDockWidget>
-#include <QDesktopWidget>
 #include <QMimeData>
 #include <QScreen>
+#include <QVBoxLayout>
 
-#include "mainwindow.h"
 #include "logframe.h"
+#include "mainwindow.h"
 #include "renderwindow.h"
 
 #include "qtgen/ui_mainwindow.h"
 
 #include "logger/logger.h"
+#include "dcore.h"
 
-mainWindow::mainWindow(deltaCore &core) :
-	QMainWindow(nullptr),
-	core(core),
-	ui(new Ui::main_window())
-{
-	setWindowTitle(rsc_productname);
+mainWindow::mainWindow(deltaCore &core)
+    : QMainWindow(nullptr), core(core), ui(new Ui::main_window()) {
+  setWindowTitle(rsc_productname);
+  setAcceptDrops(true);
+  ui->setupUi(this);
 }
 
-mainWindow::~mainWindow()
-{
-	delete ui;
+mainWindow::~mainWindow() { delete ui; }
+
+void mainWindow::init() {
+  createConnects();
+
+  rendView = new renderWindow;
+  rendView->hide();
+
+  auto *log = new logFrame;
+  auto *dock = new QDockWidget(tr("Log"), this);
+  dock->setWidget(log);
+
+  addDockWidget(Qt::RightDockWidgetArea, dock);
+
+  show();
 }
 
-void mainWindow::init()
-{
-	ui->setupUi(this);
-
-	setAcceptDrops(true);
-	//setWindowIcon()
-
-	createConnects();
-
-	rendView = new renderWindow;
-	rendView->hide();
-
-	auto* log = new logFrame;
-	auto *dock = new QDockWidget(tr("Log"), this);
-	dock->setWidget(log);
-
-	addDockWidget(Qt::RightDockWidgetArea, dock);
-
-	show();
+void mainWindow::boot(const std::string &what) {
+  // show the render window
+  rendView->show();
 }
 
-void mainWindow::boot(const std::string& what)
-{
-	// show the render window
-	rendView->show();
+void mainWindow::onBootSelection() {
+  // TODO: pause system
+  QString filePath = QFileDialog::getOpenFileName(
+      this, tr("Select (S)ELF to boot"), "",
+      tr("(S)ELF files (*BOOT.BIN *.elf *.self);;"
+         "ELF files (BOOT.BIN *.elf);;"
+         "SELF files (EBOOT.BIN *.self);;"
+         "BOOT files (*BOOT.BIN);"
+         "BIN files (*.bin);;",
+         Q_NULLPTR, QFileDialog::DontResolveSymlinks));
+
+  if (filePath == nullptr) {
+    // resume system
+  }
+
+  auto qs = QFileInfo(filePath).canonicalFilePath();
+  auto *strData = qs.toUtf8().constData();
+  LOG_INFO("fileDialog: Booting {}", strData);
+
+  // todo: fix str conversion
+  boot(strData);
 }
 
-void mainWindow::onBootSelection()
-{
-	// TODO: pause system
-	QString filePath = QFileDialog::getOpenFileName(this, tr("Select (S)ELF to boot"), "", tr(
-		"(S)ELF files (*BOOT.BIN *.elf *.self);;"
-		"ELF files (BOOT.BIN *.elf);;"
-		"SELF files (EBOOT.BIN *.self);;"
-		"BOOT files (*BOOT.BIN);"
-		"BIN files (*.bin);;",
-		Q_NULLPTR, QFileDialog::DontResolveSymlinks));
+void mainWindow::onEnginePause() { LOG_INFO("Pause Requested"); }
 
-	if (filePath == nullptr) {
-		// resume system
-	}
+void mainWindow::onEngineStop() { LOG_INFO("Stop Requested"); }
 
-	auto qs = QFileInfo(filePath).canonicalFilePath();
-	auto* strData = qs.toUtf8().constData();
-	LOG_INFO("fileDialog: Booting {}", strData);
-
-	// todo: fix str conversion
-	boot(strData);
+void mainWindow::createConnects() {
+  connect(ui->bootAct, &QAction::triggered, this, &mainWindow::onBootSelection);
+  connect(ui->enginePauseAct, &QAction::triggered, this,
+          &mainWindow::onEnginePause);
+  connect(ui->engineStopAct, &QAction::triggered, this,
+          &mainWindow::onEnginePause);
 }
 
-void mainWindow::onEnginePause()
-{
-	LOG_INFO("Pause Requested");
+void mainWindow::keyPressEvent(QKeyEvent *event) {
+  if (event->key() == Qt::Key_F6) {
+    if (!isPaused)
+      onEnginePause();
+  }
 }
 
-void mainWindow::onEngineStop()
-{
-	LOG_INFO("Stop Requested");
+void mainWindow::keyReleaseEvent(QKeyEvent *event) {}
+
+static bool isValidFile(const QMimeData &md) {
+  auto list = md.urls();
+
+  //TODO: verify file type here 
+
+  // only allow one file
+  if (list.size() > 1 || !list.size())
+    return false;
+
+  auto &url = list[0];
+  const auto path = url.toLocalFile();
+  const QFileInfo info = path;
+
+  if (info.isDir())
+    return false;
+
+  return true;
 }
 
-void mainWindow::createConnects()
-{
-	connect(ui->bootAct, &QAction::triggered, this, &mainWindow::onBootSelection);
-	connect(ui->enginePauseAct, &QAction::triggered, this, &mainWindow::onEnginePause);
-	connect(ui->engineStopAct, &QAction::triggered, this, &mainWindow::onEnginePause);
+void mainWindow::dragEnterEvent(QDragEnterEvent *event) {
+  if (isValidFile(*event->mimeData()))
+    event->accept();
 }
 
-void mainWindow::keyPressEvent(QKeyEvent* event)
-{
-	if (event->key() == Qt::Key_F6) {
-		if (!isPaused)
-			onEnginePause();
-	}
+void mainWindow::dragMoveEvent(QDragMoveEvent *event) {
+  if (isValidFile(*event->mimeData()))
+    event->accept();
 }
 
-void mainWindow::keyReleaseEvent(QKeyEvent* event)
-{
+void mainWindow::dragLeaveEvent(QDragLeaveEvent *event) { event->accept(); }
 
+void mainWindow::dropEvent(QDropEvent *event) {
+  auto &md = *event->mimeData();
+
+  if (isValidFile(md)) {
+    const auto path = md.urls()[0].toLocalFile();
+    auto bytes = path.toUtf8();
+
+    // this is kinda bad
+    std::string name(bytes.constData());
+    core.boot(name);
+  }
 }

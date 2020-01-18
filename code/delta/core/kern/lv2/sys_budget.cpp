@@ -7,18 +7,16 @@
  * in the root of the source tree.
  */
 
-#include <logger/logger.h>
 #include <base.h>
+#include <logger/logger.h>
 
 #include <kern/proc.h>
 
-namespace krnl
-{
-	using namespace krnl;
+namespace krnl {
+using namespace krnl;
 
-	int PS4ABI sys_budget_get_ptype()
-	{
-		/*proc type, related to telemetry etc*/
-		return 1;
-	}
+int PS4ABI sys_budget_get_ptype() {
+  /*proc type, related to telemetry etc*/
+  return 1;
 }
+} // namespace krnl

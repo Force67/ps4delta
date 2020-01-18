@@ -7,16 +7,9 @@
  * in the root of the source tree.
  */
 
-#include <string>
 #include <base.h>
+#include <string>
 
 #include <intrin.h>
 
-namespace krnl
-{
-	int PS4ABI sys_mdbg_service(uint32_t op, void*, void*)
-	{
-		__debugbreak();
-		return 0;
-	}
-}
+namespace krnl {}

@@ -5,8 +5,8 @@
 /*fool intellisense*/
 #if defined(__clang__) || defined(__GNUC__)
 
-#define NAKED    __attribute__((naked))
-#define PACKED   __attribute__((packed))
+#define NAKED __attribute__((naked))
+#define PACKED __attribute__((packed))
 #define PS4ABI __attribute__((sysv_abi)) //, cdecl))
 #define NORETURN __attribute__((noreturn))
 #define F_INLINE __attribute__((inline_always))
@@ -33,11 +33,11 @@
 
 //#error Your compiler is not supported!
 
-#define NAKED		naked
-#define PACKED		
-#define PS4ABI	
-#define NORETURN	
-#define F_INLINE __forceinline 
+#define NAKED naked
+#define PACKED
+#define PS4ABI
+#define NORETURN
+#define F_INLINE __forceinline
 
 #define bswap16 _byteswap_ushort
 #define bswap32 _byteswap_ulong
@@ -55,7 +55,6 @@
 
 #define POW2_MASK (align - static_cast<T>(1))
 
-template<typename T> inline T align_up(const T addr, const T align)
-{
-	return (addr + POW2_MASK) & ~POW2_MASK;
+template <typename T> inline T align_up(const T addr, const T align) {
+  return (addr + POW2_MASK) & ~POW2_MASK;
 }

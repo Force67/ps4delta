@@ -21,10 +21,8 @@ workspace "PS4Delta"
 
     location "../build"
     os.mkdir"../build/symbols"
-    
-    targetprefix ""
-    buildoptions "/std:c++17"
     characterset "Unicode"
+	buildoptions "/std:c++17"
 
     -- multi threaded compilation
     flags "MultiProcessorCompile"

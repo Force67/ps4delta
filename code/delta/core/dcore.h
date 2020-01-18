@@ -8,9 +8,9 @@
  * in the root of the source tree.
  */
 
-#include <string>
-#include <memory>
 #include <kern/proc.h>
+#include <memory>
+#include <string>
 
 #include <QApplication>
 #include <QFontDatabase>
@@ -18,16 +18,19 @@
 
 #include "ui/mainwindow.h"
 
-class deltaCore : public QApplication
-{
-	Q_OBJECT
+class deltaCore : public QApplication {
+  Q_OBJECT
 public:
-	deltaCore(int&, char**);
+  using argvList = std::vector<std::string>;
 
-	bool init();
-	void boot(std::string& fromdir);
+  deltaCore(int &, char **);
+
+  bool init();
+  void boot(std::string &fromdir);
+
+  argvList argv;
 private:
-	bool headless{ false };
-	std::unique_ptr<mainWindow> window;
-	std::unique_ptr<krnl::proc> proc;
+  bool headless{false};
+  std::unique_ptr<mainWindow> window;
+  std::unique_ptr<krnl::proc> proc;
 };

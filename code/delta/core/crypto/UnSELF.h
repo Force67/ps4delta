@@ -8,11 +8,9 @@
  * in the root of the source tree.
  */
 
+#include <utl/file.h>
 
-#include <utl/File.h>
-
-namespace crypto
-{
+namespace crypto {
 #if 0
 
 	// convert SELF to elf and return new image in out
