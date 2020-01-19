@@ -31,6 +31,10 @@ bool proc::create(const std::string &path) {
 
   modules.emplace_back(first);
 
+  
+  loadModule("libc");
+
+
   if (!env.enableHLE) {
     /*pre-load required modules
     (the kernel does it, so do we)*/
@@ -91,7 +95,8 @@ modulePtr proc::loadModule(std::string_view name) {
 }
 
 void proc::start() {
-  LOG_ASSERT(modules[1]->getInfo().name == "libkernel");
+  if (!env.enableHLE)
+      LOG_ASSERT(modules[1]->getInfo().name == "libkernel");
 
   auto &info = modules[0]->getInfo();
   auto &kinfo = modules[1]->getInfo();
@@ -101,7 +106,17 @@ void proc::start() {
     return;
   }
 
-  auto func = (void *(PS4ABI *)(void *))kinfo.entry;
+  // if we are loading in HLE mode we must manually invoke REL
+  // (normally this would be done by sys_dynlib_process_needed_and_relocate)
+  if (env.enableHLE) {
+    if (!runtime::vprx_initmodules(*this)) {
+      LOG_ERROR("Unable to initialize native modules");
+      return;
+    }
+
+  }
+
+  auto func = (void *(PS4ABI *)(void *))(!env.enableHLE ? kinfo.entry : info.entry);
 
   union stack_entry {
     const void *ptr;

@@ -8,6 +8,10 @@
 
 #include <base.h>
 
+namespace krnl {
+class proc;
+}
+
 namespace runtime {
 struct funcInfo {
   uint64_t hashId;
@@ -21,6 +25,7 @@ struct modInfo {
 };
 
 void vprx_init();
+bool vprx_initmodules(krnl::proc&);
 void vprx_reg(const modInfo *);
 uintptr_t vprx_get(const char *lib, uint64_t hid);
 

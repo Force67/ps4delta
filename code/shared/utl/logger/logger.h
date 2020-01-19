@@ -94,4 +94,5 @@ inline void fmtLogMsg(logLevel lvl, uint32_t line, const char *func,
 
 #define LOG_UNIMPLEMENTED                                                      \
   ::utl::fmtLogMsg(::utl::logLevel::Error, __LINE__, __func__,                 \
-                   "Unimplemented function")
+                   "Unimplemented function")                 \
+

@@ -2,6 +2,8 @@
 // Copyright (C) Force67 2019
 
 #include "vprx.h"
+#include "kern/proc.h"
+
 #include <crypto/sha1.h>
 #include <vector>
 
@@ -36,7 +38,55 @@ uintptr_t vprx_get(const char *lib, uint64_t hid) {
   return 0;
 }
 
-const char base64Lookup[] =
+// if we are loading in HLE mode we must manually invoke REL
+// (normally this would be done by sys_dynlib_process_needed_and_relocate)
+bool vprx_initmodules(krnl::proc &proc) {
+  using mod_init_t = int PS4ABI (*)(size_t, const void *, void *);
+
+  for (auto &mod : proc.getModuleList()) {
+
+    // HACK
+    if (mod->getInfo().name.empty())
+      continue;
+
+    if (mod->getInfo().name == "libkernel")
+      continue;
+
+    if (!mod->resolveImports() || !mod->applyRelocations()) {
+      LOG_ERROR("failed to apply relocations for module {}",
+                mod->getInfo().name);
+      return false;
+    }
+  }
+
+  // manually init cxx in all real libs
+  for (auto &mod : proc.getModuleList()) {
+    auto &modName = mod->getInfo().name;
+
+    // HACK
+    if (modName.empty())
+      continue;
+
+    if (mod->getInfo().name == "libkernel")
+      continue;
+
+    /*module_start, mostly used for c# libs AFAIK*/
+    std::string longName = "BaOKcng8g88#" + modName + "#" + modName;
+    uintptr_t startAddr = 0;
+    if (!mod->resolveObfSymbol(longName.c_str(), startAddr)) {
+      startAddr = reinterpret_cast<uintptr_t>(mod->getInfo().entry);
+    }
+
+    if (startAddr) {
+      auto module_init = reinterpret_cast<mod_init_t>(startAddr);
+      module_init(0, nullptr, nullptr); /*argc, argv, retaddr*/
+    }
+  }
+
+  return true;
+}
+
+static const char base64Lookup[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
 
 // base64 fast lookup

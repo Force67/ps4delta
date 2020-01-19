@@ -24,7 +24,7 @@ smodule::smodule(proc *process) : process(process) {
 bool smodule::fromFile(const std::string &path) {
   utl::File file(path);
   if (!file.IsOpen()) {
-    __debugbreak();
+    //__debugbreak();
     return false;
   }
 
@@ -366,7 +366,8 @@ bool smodule::resolveObfSymbol(const char *name, uintptr_t &ptrOut) {
         runtime::decode_nid(name, 11, hid);
 
         ptrOut = runtime::vprx_get(mod.name, hid);
-        return true;
+        if (ptrOut)
+          return true;
       }
 
       auto xmod = process->getModule(mod.name);
