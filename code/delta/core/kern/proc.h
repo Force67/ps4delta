@@ -18,6 +18,7 @@ struct procInfo {
   uint8_t *userStack = nullptr;
   size_t userStackSize = 20 * 1024 * 1024;
   void *fsBase = nullptr;
+  bool enableHLE = true;
 };
 
 class smodule;

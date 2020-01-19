@@ -31,11 +31,13 @@ bool proc::create(const std::string &path) {
 
   modules.emplace_back(first);
 
-  /*pre-load required modules
-   (the kernel does it, so do we)*/
-  if (!loadModule("libkernel") || !loadModule("libSceLibcInternal")) {
-    LOG_ERROR("unable to preload sys modules");
-    return false;
+  if (!env.enableHLE) {
+    /*pre-load required modules
+    (the kernel does it, so do we)*/
+    if (!loadModule("libkernel") || !loadModule("libSceLibcInternal")) {
+      LOG_ERROR("unable to preload sys modules");
+      return false;
+    }
   }
 
   if (!first->fromFile(path)) {

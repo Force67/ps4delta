@@ -98,6 +98,16 @@ enum ElfSegType {
   PT_GNU_STACK = 0x6474E551,
 };
 
+enum ElfSegAlignment {
+    AL_NONE,
+    AL_BYTE,
+    AL_WORD,
+    AL_DWORD = 4,
+    AL_QWORD = 8,
+    AL_PARA = 16,
+    AL_4k = 0x4000,
+};
+
 enum ElfRelType { R_X86_64_JUMP_SLOT = 7 };
 
 enum ElfFlags { PF_X = 1, PF_W = 2, PF_R = 4, PF_MASKPROC = 0xF0000000 };

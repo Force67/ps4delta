@@ -113,7 +113,7 @@ static uintptr_t emitCallReporter(const char *name, uint32_t sid,
 }
 
 uintptr_t lv2_get(uint32_t sid) {
-  constexpr size_t memberCount = sizeof(syscall_dpt) / sizeof(syscall_Reg);
+  constexpr auto memberCount = sizeof(syscall_dpt) / sizeof(syscall_Reg);
 
   if (sid > memberCount)
     __debugbreak();

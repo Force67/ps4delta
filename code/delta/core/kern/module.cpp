@@ -3,6 +3,7 @@
 
 #include <utl/file.h>
 #include <utl/mem.h>
+#include <algorithm>
 
 #include "runtime/code_lift.h"
 #include "runtime/vprx/vprx.h"
@@ -78,7 +79,7 @@ bool smodule::fromMem(std::unique_ptr<uint8_t[]> data) {
     info.entry = getAddress<uint8_t>(elf->entry);
 
   for (auto &it : sharedObjects) {
-      process->loadModule(it);
+    process->loadModule(it);
   }
 
   return true;
@@ -204,21 +205,31 @@ void smodule::digestDynamic() {
 
 bool smodule::mapImage() {
   // calculate total aligned code size
+  uint32_t mapSize = 0;
   uint32_t codeSize = 0;
+
   for (uint16_t i = 0; i < elf->phnum; ++i) {
     const auto *p = &segments[i];
     if (p->type == PT_LOAD || p->type == PT_SCE_RELRO) {
-      codeSize += align_up(p->memsz, p->align);
-    }
+      constexpr auto ps4_page = 1024 * 16;
+
+      mapSize = std::max<uint32_t>(p->vaddr +
+          align_up<uint32_t>(p->memsz, ps4_page), mapSize);
+
+      if (p->type == PT_LOAD)
+        codeSize = mapSize;
+
+      //4F93547
+    } 
   }
 
   // could also check if INTERP exists
-  if (codeSize == 0)
+  if (mapSize == 0)
     return false;
 
   // reserve a region from xxxxxxxx00000000 - xxxxxxxxFFFFFFFF
-  constexpr size_t one_mb = 1024ull * 1024ull;
-  constexpr size_t eight_gb = 8ull * 1024ull * one_mb;
+  constexpr auto one_mb = 1024ull * 1024ull;
+  constexpr auto eight_gb = 8ull * 1024ull * one_mb;
 
   info.base = static_cast<uint8_t *>(utl::allocMem(
       nullptr, eight_gb, utl::pageProtection::w, utl::allocationType::reserve));
@@ -227,11 +238,11 @@ bool smodule::mapImage() {
     return false;
 
   // immediately take module memory + rip Zone memory
-  utl::allocMem(info.base, codeSize + info.ripZoneSize, utl::pageProtection::w,
+  utl::allocMem(info.base, mapSize + info.ripZoneSize, utl::pageProtection::w,
                 utl::allocationType::commit);
 
-  info.codeSize = codeSize;
-  info.ripZone = info.base + codeSize;
+  info.codeSize = codeSize; /*this is technically wrong...*/
+  info.ripZone = info.base + mapSize;
 
   std::memset(info.ripZone, 0xCC, info.ripZoneSize);
   utl::protectMem(info.ripZone, info.ripZoneSize, utl::pageProtection::rwx);
@@ -241,7 +252,8 @@ bool smodule::mapImage() {
     const auto *s = &segments[i];
     if (s->type == PT_LOAD || s->type == PT_SCE_RELRO) {
       void *target = elf->type == ET_SCE_EXEC
-                         ? reinterpret_cast<void *>(s->vaddr)
+                         ? /*reinterpret_cast<void *>(s->vaddr)*/
+                         getAddress<void>(s->vaddr)
                          : getAddress<void>(s->paddr);
 
       auto *seg = s->flags & PF_X ? &info.textSeg : &info.dataSeg;
@@ -265,7 +277,7 @@ bool smodule::mapImage() {
     }
   }
 
-#if 1
+#if 0
   // temp hack: raise 5.05 kernel debug msg level
   if (info.handle == 1) {
     *getAddress<uint32_t>(0x68264) = UINT32_MAX;
@@ -349,6 +361,14 @@ bool smodule::resolveObfSymbol(const char *name, uintptr_t &ptrOut) {
 
   for (auto &mod : impModules) {
     if (mod.id == static_cast<int32_t>(modid)) {
+      if (process->getEnv().enableHLE) {
+        uint64_t hid = 0;
+        runtime::decode_nid(name, 11, hid);
+
+        ptrOut = runtime::vprx_get(mod.name, hid);
+        return true;
+      }
+
       auto xmod = process->getModule(mod.name);
       if (!xmod) {
         LOG_ERROR("resolveObfSymbol: Unknown module {} ({}) requestd", mod.name,

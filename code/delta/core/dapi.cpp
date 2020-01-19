@@ -63,7 +63,7 @@ static bool verifyViablity() {
   CHECK_FEATURE(BMI1, "BM1");
 
   if (!missingFeatures.empty()) {
-    LOG_ERROR("Your cpu is missing the following instructions: {}");
+    LOG_ERROR("Your cpu is missing the following instructions: {}", missingFeatures);
     return false;
   }
 
