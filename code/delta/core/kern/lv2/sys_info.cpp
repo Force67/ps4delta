@@ -11,7 +11,7 @@
 namespace krnl {
 int sys_budget_get_ptype();
 
-moduleInfo *called_in(void *addr);
+moduleInfo *reportCallAddress(void *addr);
 
 int PS4ABI sys_is_in_sandbox() { return 0; }
 
@@ -128,8 +128,8 @@ int PS4ABI sys_sysctl(int *name, uint32_t namelen, void *oldp, size_t *oldlenp,
 
   /*for sceKernelGetLibkernelTextLocation*/
 
-  std::printf("sysctl referenced by %p\n", _ReturnAddress());
-  called_in(_ReturnAddress());
+  //std::printf("sysctl referenced by %p\n", _ReturnAddress());
+  reportCallAddress(_ReturnAddress());
   __debugbreak();
   return 0;
 }
