@@ -49,7 +49,7 @@ bool vprx_initmodules(krnl::proc &proc) {
     if (mod->getInfo().name.empty())
       continue;
 
-    if (mod->getInfo().name == "libkernel")
+    if (mod->getInfo().name == "libkernel" || mod->getInfo().handle == 0)
       continue;
 
     if (!mod->resolveImports() || !mod->applyRelocations()) {
@@ -67,7 +67,7 @@ bool vprx_initmodules(krnl::proc &proc) {
     if (modName.empty())
       continue;
 
-    if (mod->getInfo().name == "libkernel")
+    if (mod->getInfo().name == "libkernel" || mod->getInfo().handle == 0)
       continue;
 
     /*module_start, mostly used for c# libs AFAIK*/

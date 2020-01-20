@@ -12,13 +12,15 @@
 #include "util/object_table.h"
 #include "vm_manager.h"
 
+#include "dcore.h"
+
 namespace krnl {
 struct procInfo {
   uint32_t ripZoneSize = 5 * 1024;
   uint8_t *userStack = nullptr;
   size_t userStackSize = 20 * 1024 * 1024;
   void *fsBase = nullptr;
-  bool enableHLE = true;
+  bool enableHLE = false;
 };
 
 class smodule;
@@ -31,11 +33,12 @@ class proc {
   friend class smodule;
 
 public:
+  using argvList = std::vector<std::string>;
   using moduleList = std::vector<modulePtr>;
 
   proc();
   bool create(const std::string &);
-  void start();
+  void start(const argvList &);
 
   static proc *getActive();
 

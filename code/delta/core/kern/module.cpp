@@ -366,8 +366,9 @@ bool smodule::resolveObfSymbol(const char *name, uintptr_t &ptrOut) {
         runtime::decode_nid(name, 11, hid);
 
         ptrOut = runtime::vprx_get(mod.name, hid);
-        if (ptrOut)
+        if (ptrOut) {
           return true;
+        }
       }
 
       auto xmod = process->getModule(mod.name);

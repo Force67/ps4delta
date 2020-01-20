@@ -81,16 +81,25 @@ int PS4ABI sys_sysctl(int *name, uint32_t namelen, void *oldp, size_t *oldlenp,
     return 0;
   }
 
-  // answer kern.prot.ptc
-  else if (name[0] == 0x1337 && name[1] == 2 && namelen == 2) {
-    *reinterpret_cast<uint64_t *>(oldp) = 1357;
-    return 0;
-  }
+  if (name[0] == 0x1337) {
+    //response to kern.smp.cpus
+    if (name[1] == 1 && namelen == 2) {
+      *reinterpret_cast<uint32_t *>(oldp) = 1;
+      return 0;
+    }
 
-  // answer kern.sched.cpusize
-  else if (name[0] == 0x1337 && name[1] == 4 && namelen == 2) {
-    *reinterpret_cast<uint32_t *>(oldp) = 8;
-    return 0;
+    //kern.prot.ptc
+    if (name[1] == 2 && namelen == 2) {
+      *reinterpret_cast<uint64_t *>(oldp) = 1357;
+      return 0;
+    }
+
+    //kern.sched.cpusize
+    else if (name[1] == 4 && namelen == 2) {
+      *reinterpret_cast<uint32_t *>(oldp) = 8;
+      return 0;
+    }
+  
   }
 
   if (name[0] == 0 && name[1] == 3 && namelen == 2) {

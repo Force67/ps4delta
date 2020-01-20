@@ -40,7 +40,7 @@ void deltaCore::boot(std::string &xdir) {
     if (!proc->create(dir))
       return;
 
-    proc->start();
+    proc->start(argv);
   });
 
   ctx.detach();

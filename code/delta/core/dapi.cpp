@@ -11,6 +11,7 @@
 
 #ifdef _WIN32
 #include <VersionHelpers.h>
+#include <utl/mcrt_win.h>
 #endif
 
 #include "dcore.h"
@@ -63,7 +64,8 @@ static bool verifyViablity() {
   CHECK_FEATURE(BMI1, "BM1");
 
   if (!missingFeatures.empty()) {
-    LOG_ERROR("Your cpu is missing the following instructions: {}", missingFeatures);
+    LOG_ERROR("Your cpu is missing the following instructions: {}",
+              missingFeatures);
     return false;
   }
 
@@ -88,7 +90,7 @@ static void win32PostInit() {
 }
 #endif
 
-EXPORT int dcoreMain(int argc, char **argv) {
+int dcoreMain(int argc, char **argv) {
   utl::createLogger(true);
 
   if (!verifyViablity())
@@ -124,7 +126,6 @@ EXPORT int dcoreMain(int argc, char **argv) {
           for (int i = 1; i < args.length(); i++) {
             argv.emplace_back(args[i].toStdString());
           }
-
           appInstance->argv = std::move(argv);
         }
 
@@ -139,3 +140,15 @@ EXPORT int dcoreMain(int argc, char **argv) {
 
   return 0;
 }
+
+#ifdef _WIN32
+// manually create a command line
+// for QT
+
+EXPORT int coreMain() { 
+  int32_t nArgs = 0;
+  auto **args = utl::cmdl_to_argv(GetCommandLineA(), nArgs);
+
+  return dcoreMain(nArgs, args);
+}
+#endif

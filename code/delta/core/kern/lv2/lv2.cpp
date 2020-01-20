@@ -25,8 +25,8 @@ int sys_sigaction(int how, void (*cb)(void *, void *, void *));
 int sys_regmgr_call(uint32_t op, uint32_t id, void *result, void *value,
                     uint64_t type);
 
-int sys_namedobj_create(const char *name, void *arg2, uint32_t arg3);
-int sys_namedobj_delete();
+uint32_t sys_namedobj_create(const char *name, void *arg2, uint32_t arg3);
+int sys_namedobj_delete(uint32_t, uint32_t op);
 
 int sys_budget_get_ptype();
 
@@ -118,8 +118,8 @@ uintptr_t lv2_get(uint32_t sid) {
   if (sid > memberCount)
     __debugbreak();
 
-  //return reinterpret_cast<uintptr_t>(emitCallReporter(syscall_dpt[sid].name, sid, syscall_dpt[sid].ptr));
+  return reinterpret_cast<uintptr_t>(emitCallReporter(syscall_dpt[sid].name, sid, syscall_dpt[sid].ptr));
 
-  return reinterpret_cast<uintptr_t>(syscall_dpt[sid].ptr);
+  //return reinterpret_cast<uintptr_t>(syscall_dpt[sid].ptr);
 }
 } // namespace krnl

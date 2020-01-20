@@ -18,6 +18,7 @@ public:
   enum class oType {
     file,
     device,
+    namedobj,
   };
 
   explicit kObject(proc *, oType);
@@ -32,11 +33,12 @@ public:
   handleList &handles() { return handleCollection; }
 
   uint32_t handle() const { return handleCollection[0]; }
+  std::string &name() { return oname; }
 
 protected:
   oType otype;
   proc *process;
-  std::string name;
+  std::string oname;
 
 private:
   handleList handleCollection;

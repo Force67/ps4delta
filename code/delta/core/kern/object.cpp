@@ -12,7 +12,7 @@ kObject::kObject(proc *process, oType type) : otype(type), process(process) {
   uint32_t temp = 0;
   process->getObjTable().add(this, temp);
 
-  LOG_INFO("assigned handle {}", temp);
+  std::printf("-> NEW HANDLE %d", temp);
 }
 
 void kObject::release() {

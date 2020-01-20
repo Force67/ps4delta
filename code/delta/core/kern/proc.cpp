@@ -31,10 +31,6 @@ bool proc::create(const std::string &path) {
 
   modules.emplace_back(first);
 
-  
-  loadModule("libc");
-
-
   if (!env.enableHLE) {
     /*pre-load required modules
     (the kernel does it, so do we)*/
@@ -94,9 +90,13 @@ modulePtr proc::loadModule(std::string_view name) {
   return mod;
 }
 
-void proc::start() {
+static void PS4ABI shutdownHandler() {
+    __debugbreak();
+}
+
+void proc::start(const argvList &args) {
   if (!env.enableHLE)
-      LOG_ASSERT(modules[1]->getInfo().name == "libkernel");
+    LOG_ASSERT(modules[1]->getInfo().name == "libkernel");
 
   auto &info = modules[0]->getInfo();
   auto &kinfo = modules[1]->getInfo();
@@ -106,32 +106,45 @@ void proc::start() {
     return;
   }
 
-  // if we are loading in HLE mode we must manually invoke REL
-  // (normally this would be done by sys_dynlib_process_needed_and_relocate)
-  if (env.enableHLE) {
-    if (!runtime::vprx_initmodules(*this)) {
-      LOG_ERROR("Unable to initialize native modules");
-      return;
-    }
-
-  }
-
-  auto func = (void *(PS4ABI *)(void *))(!env.enableHLE ? kinfo.entry : info.entry);
-
   union stack_entry {
     const void *ptr;
     uint64_t val;
-  } stack[128];
+  };
 
-  stack[0].val = 1 + 0; // argc
+  auto stack = std::make_unique<stack_entry[]>(128);
+
   auto s = reinterpret_cast<stack_entry *>(&stack[1]);
   (*s++).ptr = info.name.c_str();
+
+  stack[0].val = 1 + args.size(); // argc
+  for (auto &it : args)
+    (*s++).ptr = it.c_str();
+
   (*s++).ptr = nullptr; // arg null terminator
   (*s++).ptr = nullptr; // env null terminator
   (*s++).val = 9ull;    // entrypoint type
   (*s++).ptr = (const void *)(info.entry);
   (*s++).ptr = nullptr; // aux null type
   (*s++).ptr = nullptr;
-  func(stack);
+
+  // if we are loading in HLE mode we must manually invoke REL
+  // (normally this would be done by sys_dynlib_process_needed_and_relocate)
+  if (env.enableHLE) {
+    using exit_func_t = PS4ABI void(*)(); //abi v is borked for function ptr
+    using main_init_t = PS4ABI void(*)(void *, exit_func_t);
+
+    if (!runtime::vprx_initmodules(*this)) {
+      LOG_ERROR("Unable to initialize native modules");
+      return;
+    }
+
+    auto func = reinterpret_cast<main_init_t>(info.entry);
+    return func(stack.get(), &shutdownHandler);
+  } else {
+    using main_init_t = PS4ABI void(*)(void *);
+
+    auto func = reinterpret_cast<main_init_t>(kinfo.entry);
+    return func(stack.get());
+  }
 }
 } // namespace krnl

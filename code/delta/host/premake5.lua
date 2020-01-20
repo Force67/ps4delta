@@ -5,7 +5,8 @@ project "host"
 	flags "NoManifest"
 	targetname "%{wks.name}"
 
-	linkoptions "/ENTRY:mainCRTStartup"
+	linkoptions "/ENTRY:hostEntry /NODEFAULTLIB /LARGEADDRESSAWARE"
+	buildoptions "/GS-"
 
 	-- win/project resource description
 	defines { "rsc_company=\"Dev-Force/Alpin-Dev\"",
@@ -17,15 +18,9 @@ project "host"
 			  "rsc_originalname=\"%{prj.name}%{prj.targetextension}\"",
 		      "rsc_description=\"Delta PS4 emulator\"" }
 
-	links
-	{
-		"shared"
-	}
-
     includedirs
     {
         ".",
-		"../../shared"
     }
 
     files

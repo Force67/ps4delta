@@ -15,6 +15,9 @@ using alt = utl::allocationType;
 
 uint8_t *PS4ABI sys_mmap(void *addr, size_t size, uint32_t prot, uint32_t flags,
                          uint32_t fd, size_t offset) {
+  if (addr)
+    __debugbreak();
+
   auto *proc = proc::getActive();
   if (!proc)
     return reinterpret_cast<uint8_t *>(-1);
@@ -70,7 +73,7 @@ uint8_t *PS4ABI sys_mmap(void *addr, size_t size, uint32_t prot, uint32_t flags,
   // now we apply target protection
   utl::protectMem(static_cast<void *>(ptr), size, tprot);
 
-  std::printf("mmap %p, %x, %p\n", addr, size, _ReturnAddress());
+  std::printf("mmap request %p -> action %p %x, %p\n", addr, ptr, size, _ReturnAddress());
   // LOG_WARNING("addr={}, len={}, requested by {}", fmt::ptr(addr), len,
   // fmt::ptr(_ReturnAddress()));
 

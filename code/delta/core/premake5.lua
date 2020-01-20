@@ -2,7 +2,7 @@
 project "dcore"
     language "C++"
     kind "SharedLib"
-    
+
     -- win/project resource description
     defines { "rsc_company=\"Dev-Force/Alpin-Dev\"",
               "rsc_copyright=\"© Force67 2019-2020. All rights reserved\"",

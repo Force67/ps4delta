@@ -158,6 +158,7 @@ int PS4ABI libc___cxa_allocate_exception()
 
 int PS4ABI libc___cxa_atexit()
 {
+  __debugbreak();
 	//TBD
 	//LOG_UNIMPLEMENTED;
 	return 0;
@@ -1851,6 +1852,7 @@ int PS4ABI libc__Inf()
 
 void PS4ABI libc__init_env()
 {
+  __debugbreak();
     /*does nothing*/
 }
 
@@ -11630,6 +11632,7 @@ int PS4ABI libc_atanl()
 
 int PS4ABI libc_atexit()
 {
+  __debugbreak();
 	//TODO:
 	//LOG_UNIMPLEMENTED;
 	return 0;

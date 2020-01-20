@@ -132,7 +132,6 @@ bool objectTable::add(kObject *obj, uint32_t &handleOut) {
     // Retain so long as the object is in the table.
     obj->retain();
 
-    __debugbreak();
     handleOut = handle;
     return true;
   }

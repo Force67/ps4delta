@@ -5,6 +5,8 @@
 #include <base.h>
 #include <logger/logger.h>
 
+#include <kern/proc.h>
+
 namespace krnl {
 int PS4ABI sys_exit() {
   __debugbreak();
@@ -28,16 +30,32 @@ int PS4ABI sys_sigaction(int how, void (*cb)(void *, void *, void *)) {
 }
 
 /*does not belong here*/
-int PS4ABI sys_namedobj_create(const char *name, void *arg2, uint32_t arg3) {
-  static int fakecounter = 0;
-  int value = fakecounter;
-  fakecounter++;
-  std::printf("creating named obj %s -> %d, named obj %p\n", name, fakecounter,
+uint32_t PS4ABI sys_namedobj_create(const char *name, void *arg2,
+                                    uint32_t arg3) {
+  auto *proc = proc::getActive();
+  if (!proc)
+    return -1;
+
+  auto *obj = new kObject(proc, kObject::oType::namedobj);
+  obj->name() = name;
+
+  uint32_t handle = -1;
+  proc->getObjTable().add(obj, handle);
+
+  std::printf("creating named obj %s -> %d, with arg 2 %p\n", name, handle,
               arg2);
-  return value;
+  return handle;
 }
 
-int PS4ABI sys_namedobj_delete() { return 0; }
+int PS4ABI sys_namedobj_delete(uint32_t fd, uint32_t op) {
+  auto *proc = proc::getActive();
+  if (!proc)
+    return SysError::eSRCH;
+  __debugbreak();
+
+  proc->getObjTable().release(fd);
+  return 0;
+}
 
 int PS4ABI sys_sysarch(int num, void *args) {
   // amd64_set_fsbase
@@ -46,7 +64,7 @@ int PS4ABI sys_sysarch(int num, void *args) {
     proc::getActive()->getEnv().fsBase = fsbase;
     return 0;
   }
-
+  __debugbreak();
   return -1;
 }
 
