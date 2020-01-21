@@ -10,45 +10,35 @@ premake.override(premake.vstudio.vc2010, 'platformToolset', function(base, cfg)
     premake.vstudio.vc2010.element("PlatformToolset", nil, "ClangCL")
 end)
 
-
 -- qt short alias 
 require('qt')
 qt = premake.extensions.qt
 
 workspace "PS4Delta"
     configurations { "Debug", "Release" }
-    platforms { "x64" }
+    architecture "x86_64"
 
     location "../build"
     os.mkdir"../build/symbols"
-    characterset "Unicode"
-	buildoptions "/std:c++17"
-
-    -- multi threaded compilation
-    flags "MultiProcessorCompile"
-
-    pic "On"
-    symbols "On"
-    startproject "host"
     targetdir '../bin/%{cfg.buildcfg}/'
     
+    -- multi threaded compilation
+    flags "MultiProcessorCompile"
+    buildoptions "/std:c++17"
+
+    symbols "On"
     
     defines { "FXNAME=\"%{wks.name}\"", 
               "FXNAME_WIDE=L\"%{wks.name}\""}
-
-    libdirs
-    {
-        "./shared/Lib",
-    }
     
-    filter "platforms:x64"
-         architecture "x86_64"
-
     filter "configurations:Debug"
         defines { "DELTA_DBG" }
 
     filter "configurations:Release"
         optimize "Speed"
+    
+    filter {"system:windows"}
+         characterset "Unicode"
 
     filter {"system:windows", "kind:not StaticLib"}
          linkoptions { "/PDB:\"$(SolutionDir)\\symbols\\$(ProjectName)_%{cfg.buildcfg}.pdb\"" }
@@ -71,14 +61,16 @@ workspace "PS4Delta"
             "_SCL_SECURE_NO_WARNINGS",
             "_SCL_SECURE_NO_DEPRECATE"
         }
+        
+    startproject "host"
 
-    group "core"
-    include "delta/host"
-    include "delta/core"
-    include "./shared"
-    
-    group "tools"
-    include "tools/sedit"
+    group "app"
+	include "./delta"
+	include "./delta_qt"
+    include "./host"
+    include "./core"
+    include "./common"
+    include "./video_core"
     
     group "vendor"
     include "vendor/3rdparty.lua"
