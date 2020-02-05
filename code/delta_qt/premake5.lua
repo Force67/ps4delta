@@ -5,7 +5,7 @@ project "delta-qt"
 
     -- win/project resource description
     defines { "rsc_company=\"Dev-Force/Alpin-Dev\"",
-              "rsc_copyright=\"© Force67 2019-2020. All rights reserved\"",
+              "rsc_copyright=\"(C) Force67 2019-2020. All rights reserved\"",
               "rsc_fileversion=\"1.0.0.0\"", 
               "rsc_productversion=\"1.0.0.0\"",
               "rsc_internalname=\"%{prj.name}\"",
@@ -18,6 +18,8 @@ project "delta-qt"
         "../common",
         "../common/utl",
         "../core",
+        "../core/orbis",
+        "../video_core",
 
         -- 3rd party
         "../vendor/fmtlib/include",
@@ -29,6 +31,7 @@ project "delta-qt"
     links {
         "common",
         "core",
+        "video_core",
 
         "capstone",
         "zlib",
@@ -57,22 +60,29 @@ project "delta-qt"
         "opengl"
     }
 
+    -- workaround for CI
+    local qtd = os.getenv("Qt5_Dir")
+    if qtd then
+        qtpath(qtd)
+    end
+
     filter "system:windows"
         qtmodules {
             "winextras",
             "qml"
         }
+		
+        local qtinclude, qtlib, qtbin = qt.getPaths(qt)
+
+        -- automatically deploy qt dlls
+		postbuildcommands(
+			qtbin .. "\\windeployqt --no-angle --no-opengl-sw --no-svg --no-translations --no-quick --plugindir \"$(TargetDir)qt\" \"$(TargetPath)\""
+		)
     filter {}
     
     qtprefix "Qt5"
     qtgenerateddir "qtgen"
 
-    -- for ci
-    local qtd = os.getenv("Qt5_Dir")
-    if qtd then
-        qtpath(qtd)
-    end
-    
     -- use debug versions of qt
     -- libs in debug builds
     configuration { "Debug" }

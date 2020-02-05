@@ -34,6 +34,9 @@ public:
     virtual ~fileBase() = default;
 
     virtual void Close(){};
+    virtual bool Open(std::string_view, fileMode) {
+        return true;
+    }
     virtual bool IsOpen() {
         return true;
     }
@@ -50,13 +53,17 @@ class File {
 
 public:
     File() = default;
-    File(const std::string&, fileMode mode = fileMode::read);
+    File(std::string_view path, fileMode mode = fileMode::read);
     File(const void*, size_t);
     File(std::unique_ptr<fileBase>&&);
     ~File();
 
     // move
     File(File& rhs) : file(rhs.GetBase()) {}
+
+    inline bool Open(std::string_view path, fileMode mode = fileMode::read) {
+        return file->Open(path, mode);
+    }
 
     void Close() {
         if (file)
@@ -77,7 +84,7 @@ public:
     inline uint64_t Write(const void* ptr, size_t size) {
         return file->Write(ptr, size);
     }
-    inline uint64_t Seek(uint64_t ofs, seekMode mods) {
+    inline uint64_t Seek(uint64_t ofs, seekMode mods = utl::seekMode::seek_set) {
         return file->Seek(ofs, mods);
     }
     inline uint64_t GetSize() {

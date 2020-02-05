@@ -5,8 +5,10 @@ project "core"
 
     includedirs {
         ".",
+		"./orbis",
         "../common",
         "../common/utl",
+        "../video_core",
 
         -- 3rd party
         "../vendor/fmtlib/include",

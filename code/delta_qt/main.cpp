@@ -10,11 +10,12 @@
 #include <base.h>
 #include <logger/logger.h>
 
-#include <QFileInfo>
 #include <QApplication>
 #include <QCommandLineParser>
+#include <QFileInfo>
+#include <utl/path.h>
 
-#include "mainwindow.h"
+#include "ui/mainwindow.h"
 
 #include <core.h>
 
@@ -36,8 +37,12 @@ private:
 bool deltaApp::init() {
     LOG_INFO("Initializing delta qt app " rsc_copyright);
 
+    auto& sys = core::System::get();
+    if (!sys.init())
+        return false;
+
     if (!headless)
-        window = std::make_unique<mainWindow>();
+        window = std::make_unique<mainWindow>(sys);
     else
         LOG_INFO("Starting in headless mode");
 
@@ -50,6 +55,7 @@ bool deltaApp::init() {
 #ifdef _WIN32
 
 #include <Windows.h>
+#include <memory.h>
 #include <utl/mcrt_win.h>
 
 static void applyQtFixups() {
@@ -74,8 +80,12 @@ static void applyQtFixups() {
 inline int deltaMain(int argc, char** argv) {
     utl::createLogger(true);
 
-    if (!core::canRunSystem())
-        return -1;
+    // search plugins in /qt/ dir so we don't bloat main dir
+    // *too* much
+    {
+        auto plugin_dir = utl::make_abs_path("qt");
+        QCoreApplication::addLibraryPath(QString::fromUtf8(plugin_dir.c_str()));
+    }
 
     QCoreApplication::setOrganizationName(rsc_company);
     QCoreApplication::setApplicationName(rsc_productname);
@@ -111,7 +121,7 @@ inline int deltaMain(int argc, char** argv) {
             }
 
             auto path = sstr(QFileInfo(args.at(0)).canonicalFilePath());
-            core::System::get().boot(path);
+            core::System::get().load(path);
         }
 
         return app->exec();
@@ -121,7 +131,10 @@ inline int deltaMain(int argc, char** argv) {
 }
 
 #ifdef _WIN32
-EXPORT int delta_main() {
+EXPORT int delta_main(memory::init_info& info) {
+    // pre init hook
+    memory::preinit(info);
+
     int32_t nArgs = 0;
     auto** args = utl::cmdl_to_argv(GetCommandLineA(), nArgs);
 

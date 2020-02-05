@@ -9,7 +9,7 @@
 
 #include <algorithm>
 #include <cstdio>
-#include "File.h"
+#include "file.h"
 
 namespace utl {
 namespace {
@@ -19,7 +19,15 @@ class PhysFile final : public fileBase {
     std::FILE* fptr;
 
 public:
-    PhysFile::PhysFile(const std::string& name, fileMode mode) : fptr(nullptr) {
+    PhysFile(std::string_view path, fileMode mode) : fptr(nullptr) {
+        Open(path, mode);
+    }
+
+    ~PhysFile() {
+        Close();
+    }
+
+    bool Open(std::string_view path, fileMode mode) override {
         // convert access mode
         const char* modeStr = "a+";
         if (mode == fileMode::read)
@@ -27,10 +35,11 @@ public:
         else if (mode == fileMode::write)
             modeStr = "wb";
 
-        fopen_s(&fptr, name.c_str(), modeStr);
+        fopen_s(&fptr, std::string(path).data(), modeStr);
+        if (!fptr) return false;
 
         // we can cache the size now
-        if (fptr && mode == fileMode::read) {
+        if (mode == fileMode::read) {
 
             // determine initial size
             std::fseek(fptr, 0, SEEK_END);
@@ -39,17 +48,13 @@ public:
             sizeTracker = 0;
         }
 
-        if (fptr) {
-            // ensure that we can always start from offset 0
-            std::fseek(fptr, 0, SEEK_SET);
-        }
+        // ensure that we can always start from offset 0
+        std::fseek(fptr, 0, SEEK_SET);
+
+        return true;
     }
 
-    PhysFile::~PhysFile() {
-        Close();
-    }
-
-    void PhysFile::Close() override {
+    void Close() override {
         if (fptr) {
             std::fclose(fptr);
             sizeTracker = 0;
@@ -183,8 +188,8 @@ public:
 };
 }
 
-File::File(const std::string& dir, fileMode mode /* = fileMode::read */)
-    : file(std::make_unique<PhysFile>(dir, mode)) {}
+File::File(std::string_view path, fileMode mode /* = fileMode::read */)
+    : file(std::make_unique<PhysFile>(path, mode)) {}
 
 File::File(const void* ptr, size_t size) : file(std::make_unique<MemStream>(ptr, size)) {}
 

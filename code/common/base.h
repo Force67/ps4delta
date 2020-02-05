@@ -8,6 +8,7 @@
  * in the root of the source tree.
  */
 
+#include <memory>
 #include <cstdint>
 
 /*short typedefs*/
@@ -20,6 +21,12 @@ using i8 = int8_t;
 using i16 = int16_t;
 using i32 = int32_t;
 using i64 = int64_t;
+
+template<class T>
+using SharedPtr = std::shared_ptr<T>;
+
+template<class T>
+using UniquePtr = std::unique_ptr<T>;
 
 /*fool intellisense*/
 #if defined(__clang__) || defined(__GNUC__)

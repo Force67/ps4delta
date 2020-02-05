@@ -13,75 +13,55 @@
 #include <logger/logger.h>
 #include "core.h"
 
-#include <xbyak_util.h>
-
-#ifdef _WIN32
-#include <VersionHelpers.h>
-#endif
+#include <utl/mem.h>
+#include "arch/arch.h"
 
 namespace core {
 System System::s_instance;
 
-void System::boot(std::string& xdir) {
-    static std::string dir = xdir;
-
-    // sanitize path
-    std::replace(dir.begin(), dir.end(), '/', '\\');
-
-    process = std::make_unique<krnl::proc>();
-
-    std::thread ctx([&]() {
-        if (!process->create(dir))
-            return;
-
-        process->start(argv);
-    });
-
-    ctx.detach();
+System::System() {
+    mem_mgr = std::make_unique<memory::vmManager>();
 }
 
-bool canRunSystem() {
-#ifdef _WIN32
-    if (!IsWindows8OrGreater()) {
-        LOG_ERROR("Your operating system is outdated. Please update to windows 8 "
-                  "or newer.");
+bool System::init() {
+    if (!arch::validateCpu())
         return false;
-    }
-#endif
 
-    constexpr size_t one_mb = 1024ull * 1024ull;
-    constexpr size_t eight_gb = 8ull * 1024ull * one_mb;
-
-    if (utl::getAvailableMem() < eight_gb) {
-        LOG_ERROR("Your system doesn't have enough physical memory to run " FXNAME);
+    // init the system memory manager
+    if (!mem_mgr->init()) {
+        LOG_ERROR("Failed to map/initialize system memory");
         return false;
     }
 
-    std::string missingFeatures;
-    Xbyak::util::Cpu cpu;
-
-#define CHECK_FEATURE(x, y)                                                                        \
-    if (!cpu.has(Xbyak::util::Cpu::t##x)) {                                                        \
-        missingFeatures += std::string(y) + ";";                                                   \
-    }
-
-    CHECK_FEATURE(SSE, "SSE");
-    CHECK_FEATURE(SSE2, "SSE2");
-    CHECK_FEATURE(SSE3, "SSE3");
-    CHECK_FEATURE(SSSE3, "SSSE3");
-    CHECK_FEATURE(SSE41, "SSE4.1");
-    CHECK_FEATURE(SSE42, "SSE4.2");
-    CHECK_FEATURE(AESNI, "AES");
-    CHECK_FEATURE(AVX, "AVX");
-    CHECK_FEATURE(PCLMULQDQ, "CLMUL");
-    CHECK_FEATURE(F16C, "F16C");
-    CHECK_FEATURE(BMI1, "BM1");
-
-    if (!missingFeatures.empty()) {
-        LOG_ERROR("Your cpu is missing the following instructions: {}", missingFeatures);
+    file_sys = fs::fileSystem::create();
+    if (!file_sys) {
+        LOG_ERROR("Failed to mount virtual file system paths");
         return false;
     }
 
+    // null, till we implement a real one
+    constexpr auto target = video_core::renderBackend::null;
+    renderer = video_core::createRenderer(target);
+    if (!renderer) {
+        LOG_ERROR("Unable to create the renderer");
+        return false;
+    }
+
+    LOG_INFO("System init OK");
     return true;
 }
+
+void System::load(std::string& dir) {
+    main_proc = kern::process::create(*this, "main");
+    if (!main_proc) return;
+
+    if (!main_proc->load(dir)) {
+        LOG_ERROR("System load FAILED");
+        return;
+    }
+    
+    LOG_INFO("System load OK");
+    main_proc->run();
 }
+
+} // namespace core

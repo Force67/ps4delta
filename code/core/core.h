@@ -8,28 +8,45 @@
  * in the root of the source tree.
  */
 
-#include <memory>
+#include <base.h>
+
 #include <string>
-#include <kern/proc.h>
+#include <vector>
+
+#include "memory.h"
+#include "video_core.h"
+#include "file_sys/file_sys.h"
+
+#include "kern/process.h"
 
 namespace core {
-bool canRunSystem();
+using argvList = std::vector<std::string>;
+
+enum class backend {
+    native,
+};
 
 class System {
 public:
-    using argvList = std::vector<std::string>;
+    static System& get() { return s_instance; }
 
-    static System& get() {
-        return s_instance;
-    }
+    System();
 
-    void boot(std::string& fromdir);
+    bool init();
+    void load(std::string& fromdir);
+
+    inline memory::vmManager& mem() { return *mem_mgr; }
+    inline fs::fileSystem& file_system() { return *file_sys; }
 
 public:
     argvList argv;
 
 private:
     static System s_instance;
-    std::unique_ptr<krnl::proc> process;
+
+    UniquePtr<memory::vmManager> mem_mgr;
+    UniquePtr<video_core::renderInterface> renderer;
+    UniquePtr<fs::fileSystem> file_sys;
+    UniquePtr<kern::process> main_proc;
 };
 }

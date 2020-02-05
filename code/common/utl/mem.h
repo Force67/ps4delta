@@ -12,33 +12,34 @@
 #include <type_traits>
 
 namespace utl {
-enum class allocationType { reserve, commit, reservecommit };
+enum class allocType { reserve, commit, reservecommit };
 
-enum class pageProtection : uint32_t {
-    priv = 0,
-    r = 1,
-    w = 1 << 1,
-    x = 1 << 2,
-    rx = r | x,
-    rwx = r | w | x,
+enum page_protection : uint32_t {
+    page_private = 0,
+    page_read = 1 << 0,
+    page_read_write = 1 << 1,
+    page_execute = 1 << 2,
+    page_execute_read_write = page_read_write | page_execute,
 };
 
-inline bool operator&(pageProtection lhs, pageProtection rhs) {
+inline bool operator&(page_protection lhs, page_protection rhs) {
     return (static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs));
 }
 
-inline pageProtection operator|(pageProtection lhs, pageProtection rhs) {
-    return static_cast<pageProtection>(static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs));
+inline page_protection operator|(page_protection lhs, page_protection rhs) {
+    return static_cast<page_protection>(static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs));
 }
 
-inline pageProtection& operator|=(pageProtection& lhs, pageProtection rhs) {
+inline page_protection& operator|=(page_protection& lhs, page_protection rhs) {
     lhs = lhs | rhs;
     return lhs;
 }
 
-void* allocMem(void* preferredAddr, size_t len, pageProtection, allocationType);
-void freeMem(void* addr);
-bool protectMem(void* addr, size_t len, pageProtection);
+using page_protection = page_protection;
+
+void* allocMem(void* preferredAddr, size_t len, page_protection, allocType);
+void freeMem(void* addr, bool free = true);
+bool protectMem(void* addr, size_t len, page_protection);
 
 size_t getAvailableMem();
 }

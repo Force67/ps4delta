@@ -81,13 +81,6 @@ struct SCESpecial {
     char shaSum[0x20];
 };
 
-// similar to MS PDB_CODEVIEW
-struct SCEComment {
-    uint32_t magic; // "PATH"
-    uint32_t unk;
-    uint32_t pathLength; // length of the following path
-};
-
 static_assert(sizeof(SELFHeader) == 32, "header size mismatch");
 static_assert(sizeof(SELFSegmentTable) == 32, "segment table size mismatch");
 
