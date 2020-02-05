@@ -71,10 +71,15 @@ project "delta-qt"
             "winextras",
             "qml"
         }
-		
+
         local qtinclude, qtlib, qtbin = qt.getPaths(qt)
 
-        -- automatically deploy qt dlls
+        -- yet another CI workaround
+		if qtd then
+            qtbin = qtd .. "\\bin"
+        end
+            
+        -- auto-deploy qt dlls
 		postbuildcommands(
 			qtbin .. "\\windeployqt --no-angle --no-opengl-sw --no-svg --no-translations --no-quick --plugindir \"$(TargetDir)qt\" \"$(TargetPath)\""
 		)
