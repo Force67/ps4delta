@@ -53,6 +53,25 @@ struct module_param {
     uint32_t unk;
 };
 
+struct lib_info {
+    const char* name;
+    int32_t id;
+    bool exported;
+};
+
+struct mod_info {
+    const char* name;
+    int32_t id;
+};
+
+// hacky hack
+struct tls_info {
+    uint32_t vaddr;
+    uint32_t memsz;
+    uint32_t filesz;
+    uint32_t align;
+};
+
 static_assert(sizeof(process_param) == 80);
 static_assert(sizeof(module_param) == 24);
 
@@ -95,7 +114,21 @@ public:
     // sce module name
     std::string name;
 
+    // sce segments
+    segment_info segments[4]{};
+
+    std::unique_ptr<tls_info> tlsInfo;
+
+    uint8_t* initAddr = nullptr;
+    uint8_t* finiAddr = nullptr;
+
+    uint8_t* ehFrameheaderAddr;
+    uint8_t* ehFrameAddr;
+    uint32_t ehFrameheaderSize;
+    uint32_t ehFrameSize;
+
     bool loadNeededPrx();
+    void installExceptionhandler(formats::elfObject&);
 
 protected:
     bool digestDynamic(formats::elfObject&);
@@ -114,18 +147,6 @@ protected:
     std::pair<char*, size_t> strTab;
 
     std::vector<std::string> sharedObjects;
-
-    struct lib_info {
-        const char* name;
-        int32_t id;
-        bool exported;
-    };
-
-    struct mod_info {
-        const char* name;
-        int32_t id;
-    };
-
     std::vector<lib_info> libs;
     std::vector<mod_info> mods;
 };

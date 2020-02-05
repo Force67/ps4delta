@@ -8,6 +8,8 @@
  * in the root of the source tree.
  */
 
+#include <vector>
+
 #include <capstone/capstone.h>
 
 // code analysis:
@@ -27,4 +29,16 @@ private:
     csh handle = 0;
     cs_insn* insn = nullptr;
     uint8_t*& ripPointer;
+
+    struct tls_entry {
+        uint8_t* codePtr;
+        int32_t insn;
+        uint32_t disp;
+
+        tls_entry(uint8_t* p, int32_t i, uint32_t d)
+            : codePtr(p), insn(i), disp(d) 
+        {}
+    };
+
+    std::vector<tls_entry> tlsCache;
 };

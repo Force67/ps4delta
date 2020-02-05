@@ -137,7 +137,8 @@ bool codeLift::transform(uint8_t* data, size_t size, uint64_t base) {
 
             if (isTls && insn->id == X86_INS_MOV) {
                 emit_fsbase(getOps(0));
-            }
+            } else if (isTls)
+                __debugbreak();
         }
     }
 
@@ -176,18 +177,28 @@ void codeLift::emit_fsbase(uint8_t* base) {
         __debugbreak();
     }
 
-    if (operands[0].size != 8 && operands[0].size != 4) {
-        __debugbreak();
+    //translate register
+    auto reg = Xbyak::Reg64(capstone_to_xbyak(operands[0].reg));
+
+    // disposition to add on the TLS offset
+    uint32_t dispOff = insn->size > 5 ? *(uint32_t*)(base + 5) : 0;
+
+    // lookup code cache, to avoid having unnessessary duplicates
+    auto iter = std::find_if(tlsCache.begin(), tlsCache.end(), [&reg, dispOff](const auto& e) {
+        return reg.getIdx() == e.insn && e.disp == dispOff;
+    });
+
+    if (iter != tlsCache.end()) {
+        base[0] = 0xE8;
+        auto disp = static_cast<uint32_t>(iter->codePtr - &base[5]);
+        *reinterpret_cast<uint32_t*>(&base[1]) = disp;
         return;
     }
-
-    /*translate the register that we set*/
-    auto reg = Xbyak::Reg64(capstone_to_xbyak(operands[0].reg));
 
     /*jit assemble a register setter*/
     struct fsGen : Xbyak::CodeGenerator {
         /*note: this is sys-v abi*/
-        fsGen(Xbyak::Reg64 reg, uint32_t disp, uint8_t size, uintptr_t dest) {
+        fsGen(Xbyak::Reg64 reg, uint32_t disp, uint8_t size) {
             int idx = reg.getIdx();
 
             mov(rax, reinterpret_cast<uintptr_t>(&getFsBase));
@@ -206,41 +217,28 @@ void codeLift::emit_fsbase(uint8_t* base) {
             else
                 mov(reg, ptr[reg]);
 
-            push(rdi);
-            mov(rdi, dest);
-            jmp(rdi);
-
-            // ret();
-            // db(0xE9);
-            // dw(0xCCCCCCCC);
+            ret();
         }
     };
 
-    uint32_t dispOff = insn->size > 5 ? *(uint32_t*)(base + 5) : 0;
-    fsGen gen(reg, dispOff, operands[0].size, (uintptr_t)&base[insn->size]);
+    fsGen gen(reg, dispOff, operands[0].size);
 
     /*call directly in rip zone*/
-    base[0] = 0xE9;
+    base[0] = 0xE8;
     auto disp = static_cast<uint32_t>(ripPointer - &base[5]);
     *reinterpret_cast<uint32_t*>(&base[1]) = disp;
 
     /*pad out any remaining code*/
     if (insn->size > 5)
-        std::memset(&base[5], 0xCC, insn->size - 5);
-
-    *reinterpret_cast<uint8_t*>(&base[5]) = 0x5f; /*pop rdi*/
+        std::memset(&base[5], 0x90, insn->size - 5);
 
     /*align the block and pad out the rest*/
     const auto alignedSize = align_up<size_t>(gen.getSize(), 8);
     if (gen.getSize() < alignedSize)
         std::memset(ripPointer + gen.getSize(), 0xCC, alignedSize - gen.getSize());
 
+    tlsCache.emplace_back(ripPointer, reg.getIdx(), dispOff);
+
     std::memcpy(ripPointer, gen.getCode(), gen.getSize());
-
-    /*set disp of jit code*/
-    /*disp = static_cast<uint32_t>(&base[5] - (ripPointer + gen.getSize() - 5));
-    *reinterpret_cast<uint8_t *>(&ripPointer[gen.getSize() - 5]) = 0xE9;
-    *reinterpret_cast<uint32_t *>(&ripPointer[gen.getSize() - 4]) = disp;*/
-
     ripPointer += alignedSize;
 }

@@ -18,6 +18,7 @@
 namespace kern {
 uint8_t* PS4ABI sys_mmap(void* addr, size_t size, uint32_t prot, uint32_t flags, uint32_t fd,
                          size_t offset) {
+    __debugbreak();
     auto* proc = process::getActive();
     if (!proc)
         return reinterpret_cast<uint8_t*>(-1);

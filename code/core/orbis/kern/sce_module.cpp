@@ -282,6 +282,81 @@ bool sce_module::doRelocations() {
     return true;
 }
 
+void sce_module::installExceptionhandler(formats::elfObject& elf) {
+    auto* p = elf.get_seg(ElfSegType::PT_GNU_EH_FRAME);
+
+    ehFrameAddr = getAddress<uint8_t*>(p->vaddr);
+    ehFrameSize = p->memsz;
+
+    // custom struct for eh_frame_hdr
+    struct GnuExceptionInfo {
+        uint8_t version;
+        uint8_t encoding;
+        uint8_t fdeCount;
+        uint8_t encodingTable;
+        uint8_t first;
+    };
+
+    auto* exinfo = elf.at<GnuExceptionInfo>(p->offset);
+
+    if (exinfo->version != 1)
+        return;
+
+    uint8_t* data_buffer = nullptr;
+    uint8_t* current = &exinfo->first;
+
+    if (exinfo->encoding == 0x03) // relative to base address
+    {
+        auto offset = *reinterpret_cast<uint32_t*>(current);
+        current += 4;
+
+        data_buffer = (uint8_t*)&base[offset];
+    } else if (exinfo->encoding == 0x1B) // relative to eh_frame
+    {
+        auto offset = *reinterpret_cast<int32_t*>(current);
+        current += 4;
+        data_buffer = &current[offset];
+    } else {
+        return;
+    }
+
+    if (!data_buffer) {
+        return;
+    }
+
+    uint8_t* data_buffer_end = data_buffer;
+    while (true) {
+        size_t size = *reinterpret_cast<int32_t*>(data_buffer_end);
+        if (size == 0) {
+            data_buffer_end = &data_buffer_end[4];
+            break;
+        }
+        if (size == -1) {
+            size = 12 + *reinterpret_cast<size_t*>(&data_buffer_end[4]);
+        } else {
+            size = 4 + size;
+        }
+        data_buffer_end = &data_buffer_end[size];
+    }
+
+    size_t fde_count;
+    if (exinfo->fdeCount == 0x03) // absolute
+    {
+        fde_count = *reinterpret_cast<uint32_t*>(current);
+        current += 4;
+    } else {
+        return;
+    }
+
+    if (exinfo->encodingTable != 0x3B) // relative to eh_frame
+    {
+        return;
+    }
+
+    ehFrameheaderAddr = data_buffer;
+    ehFrameheaderSize = data_buffer_end - data_buffer;
+}
+
 bool sce_module::digestDynamic(formats::elfObject& elf) {
     auto* dynSeg = elf.get_seg(ElfSegType::PT_DYNAMIC);
     auto* dynDat = elf.get_seg(ElfSegType::PT_SCE_DYNLIBDATA);
@@ -345,6 +420,12 @@ bool sce_module::digestDynamic(formats::elfObject& elf) {
         case DT_SCE_RELASZ:
             relaTab.second = d->un.value / sizeof(ElfRel);
             break;
+        case DT_INIT:
+            initAddr = base + d->un.ptr;
+            break;
+        case DT_FINI:
+            finiAddr = base + d->un.ptr;
+            break;
         case DT_NEEDED: {
             auto name = reinterpret_cast<const char*>(strTab.first + (d->un.value & 0xFFFFFFFF));
             if (name) {
@@ -353,8 +434,7 @@ bool sce_module::digestDynamic(formats::elfObject& elf) {
                 std::string xname = name;
                 auto pos = xname.find_last_of('.');
                 if (pos != -1) {
-                    if ((pos = xname.find(".prx", pos)) || 
-                        (pos = xname.find(".sprx", pos))) {
+                    if ((pos = xname.find(".prx", pos)) || (pos = xname.find(".sprx", pos))) {
                         sharedObjects.push_back(xname.substr(0, pos));
                     }
                 }
@@ -402,7 +482,6 @@ static loadError patch_module(elfObject& elf, sce_module& mod) {
             codeLift lift(rip);
             LOG_ASSERT(lift.init());
 
-            /*TODO: we should really introduce a cache here*/
             if (!lift.transform(mod.base + p.vaddr, p.memsz))
                 return loadError::cant_lift;
         }
@@ -429,14 +508,46 @@ static loadError patch_module(elfObject& elf, sce_module& mod) {
         utl::protectMem(mod.base + s.vaddr, s.filesz, trans_perm(perm));
     }
 #endif
+    return loadError::ok;
+}
 
-    // belongs somewhere else, really
+static void set_module_info(elfObject& elf, sce_module& mod) {
     std::memcpy(&mod.header, &elf.header, sizeof(ELFHeader));
 
     for (auto& p : elf.programs)
         mod.programs.push_back(p);
 
-    return loadError::ok;
+    for (auto& p : elf.programs) {
+        auto set_info = [&](formats::elf_pg& pg, int idx) {
+            auto& s = mod.segments[idx];
+            s.addr = reinterpret_cast<uintptr_t>(mod.base + p.vaddr);
+            s.flags = p.flags;
+            s.size = ::align_up(p.memsz, p.align);
+        };
+
+        switch (p.type) {
+        case PT_LOAD:
+            set_info(p, 0);
+            break;
+        case PT_SCE_RELRO:
+            set_info(p, 1);
+            break;
+        case PT_TLS: {
+            auto t = std::make_unique<tls_info>();
+            t->vaddr = p.vaddr;
+            t->align = p.align;
+            t->filesz = p.filesz;
+            t->memsz = p.memsz;
+
+            mod.tlsInfo = std::move(t);
+            break;
+        }
+        default:
+            continue;
+        }
+    }
+
+    mod.installExceptionhandler(elf);
 }
 
 static loadError load_exec(elfObject& elf, exec_module& exec) {
@@ -517,6 +628,7 @@ static loadError load_exec(elfObject& elf, exec_module& exec) {
     if (patch_result != loadError::ok)
         return patch_result;
 
+    set_module_info(elf, exec);
     return loadError::ok;
 }
 
@@ -578,12 +690,13 @@ static loadError load_prx(elfObject& elf, prx_module& prx) {
         hash[5 + i * 2] = pal[prx.sha1[i] & 15];
     }
 
-    LOG_INFO("PRX module hash {}", hash);
+    LOG_INFO("PRX module hash {}, loaded at {}", hash, fmt::ptr(prx.base));
 
     const auto patch_result = patch_module(elf, prx);
     if (patch_result != loadError::ok)
         return patch_result;
 
+    set_module_info(elf, prx);
     return loadError::ok;
 }
 

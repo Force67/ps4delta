@@ -29,29 +29,18 @@ int PS4ABI sys_dynlib_get_info(uint32_t handle, dynlib_info* dyn_info) {
         __debugbreak();
         return SysError::eINVAL;
     }
-    __debugbreak();
+
     auto mod = process::getActive()->getPrx(handle);
     if (!mod)
         return SysError::eSRCH;
 
-    #if 0
     std::memset(dyn_info, 0, sizeof(dynlib_info));
+
     std::strncpy(dyn_info->name, mod->name.c_str(), 256);
-
-    auto& text = dyn_info->segs[0];
-    text.addr = reinterpret_cast<uintptr_t>(info.textSeg.addr);
-    text.size = info.textSeg.size;
-    text.flags = 1 | 4;
-
-    auto& data = dyn_info->segs[1];
-    data.addr = reinterpret_cast<uintptr_t>(info.dataSeg.addr);
-    data.size = info.dataSeg.size;
-    data.flags = 1 | 2;
-
+    std::memcpy(dyn_info->fingerprint, mod->fingerprint, 20);
+    std::memcpy(dyn_info->segs, mod->segments, sizeof(mod->segments));
     dyn_info->seg_count = 2;
 
-    std::memcpy(dyn_info->fingerprint, mod->fingerprint, 20);
-    #endif
     return 0;
 }
 
@@ -61,8 +50,7 @@ int PS4ABI sys_dynlib_get_info_ex(uint32_t handle, int32_t ukn /*always 1*/,
         __debugbreak();
         return SysError::eINVAL;
     }
-    __debugbreak();
-    #if 0
+
     auto mod = process::getActive()->getPrx(handle);
     if (!mod)
         return SysError::eSRCH;
@@ -72,34 +60,26 @@ int PS4ABI sys_dynlib_get_info_ex(uint32_t handle, int32_t ukn /*always 1*/,
     dyn_info->size = sizeof(dynlib_info_ex);
     dyn_info->handle = mod->handle();
     std::strncpy(dyn_info->name, mod->name.c_str(), 256);
-
-    dyn_info->tls_index = info.tlsSlot;
-    dyn_info->tls_align = info.tlsalign;
-    dyn_info->tls_init_size = info.tlsSizeFile;
-    dyn_info->tls_size = info.tlsSizeMem;
-    dyn_info->tls_init_addr = reinterpret_cast<uintptr_t>(info.tlsAddr);
-
-    dyn_info->init_proc_addr = reinterpret_cast<uintptr_t>(info.initAddr);
-    dyn_info->fini_proc_addr = reinterpret_cast<uintptr_t>(info.finiAddr);
-
-    dyn_info->eh_frame_addr = reinterpret_cast<uintptr_t>(info.ehFrameAddr);
-    dyn_info->eh_frame_hdr_addr = reinterpret_cast<uintptr_t>(info.ehFrameheaderAddr);
-    dyn_info->eh_frame_size = info.ehFrameSize;
-    dyn_info->eh_frame_hdr_size = info.ehFrameheaderSize;
-
-    auto& text = dyn_info->segs[0];
-    text.addr = reinterpret_cast<uintptr_t>(info.textSeg.addr);
-    text.size = info.textSeg.size;
-    text.flags = 1 | 4;
-
-    auto& data = dyn_info->segs[1];
-    data.addr = reinterpret_cast<uintptr_t>(info.dataSeg.addr);
-    data.size = info.dataSeg.size;
-    data.flags = 1 | 2;
+    std::memcpy(dyn_info->segs, mod->segments, sizeof(mod->segments));
 
     dyn_info->seg_count = 2;
     dyn_info->ref_count = 1;
-    #endif
+
+    if (mod->tlsInfo) {
+        dyn_info->tls_index = 0xFF; // BUG
+        dyn_info->tls_align = mod->tlsInfo->align;
+        dyn_info->tls_init_size = mod->tlsInfo->filesz;
+        dyn_info->tls_size = mod->tlsInfo->memsz;
+        dyn_info->tls_init_addr = static_cast<uintptr_t>(mod->tlsInfo->vaddr);
+    }
+
+    dyn_info->init_proc_addr = reinterpret_cast<uintptr_t>(mod->initAddr);
+    dyn_info->fini_proc_addr = reinterpret_cast<uintptr_t>(mod->finiAddr);
+
+    dyn_info->eh_frame_addr = reinterpret_cast<uintptr_t>(mod->ehFrameAddr);
+    dyn_info->eh_frame_hdr_addr = reinterpret_cast<uintptr_t>(mod->ehFrameheaderAddr);
+    dyn_info->eh_frame_size = mod->ehFrameSize;
+    dyn_info->eh_frame_hdr_size = mod->ehFrameheaderSize;
     return 0;
 }
 
@@ -136,17 +116,22 @@ int PS4ABI sys_dynlib_get_obj_member(uint32_t handle, uint8_t index, void** valu
         return -1;
 
     __debugbreak();
-    //TBD
-        //*value = mod->getInfo().initAddr;
-        return 0;
+    // TBD
+    //*value = mod->getInfo().initAddr;
+    return 0;
 }
 
 int PS4ABI sys_dynlib_get_proc_param(void** data, size_t* size) {
     auto& mod = process::getActive()->main_exec();
+    if (mod.param) {
+        *data = reinterpret_cast<void*>(mod.param);
+        *size = mod.param->size;
+        return 0;
+    }
 
-    *data = reinterpret_cast<void*>(mod.param);
-    *size = mod.param->size;
-    return 0;
+    *data = nullptr;
+    *size = 0;
+    return -1;
 }
 
 int PS4ABI sys_dynlib_get_list(uint32_t* handles, size_t maxCount, size_t* count) {
@@ -163,17 +148,7 @@ int PS4ABI sys_dynlib_get_list(uint32_t* handles, size_t maxCount, size_t* count
 }
 
 int PS4ABI sys_dynlib_process_needed_and_relocate() {
-#if 0
-    auto& list = proc::getActive()->getModuleList();
-    for (auto& mod : list) {
-        LOG_ASSERT(mod);
-
-        if (!mod->resolveImports() || !mod->applyRelocations()) {
-            LOG_ERROR("failed to apply relocations for module {}", mod->getInfo().name);
-            return -1;
-        }
-    }
-#endif
+    // now done in init_modules
     return 0;
 }
 } // namespace kern
