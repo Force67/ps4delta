@@ -32,6 +32,7 @@ project "delta"
     links {
         "common",
         "core",
+        "video_core",
 
         "glfw",
         "capstone",

@@ -63,13 +63,23 @@ project "glfw"
         "glfw/include",
         "glfw/src"
     }
-	
-	defines "_GLFW_WIN32"
+    
+    defines "_GLFW_WIN32"
+    
+    files
+    {   
+        "glfw/include/*.h",
+        "glfw/src/context.c",
+        "glfw/src/init.c",
+        "glfw/src/input.c",
+        "glfw/src/monitor.c",
+        "glfw/src/vulkan.c",
+        "glfw/src/window.c"
+    }
     
     filter "system:windows"
             files
             {
-                "glfw/include/*.h",
                 "glfw/src/win32_platform.h",
                 "glfw/src/win32_joystick.h",
                 "glfw/src/wgl_context.h",
