@@ -16,6 +16,8 @@
 #include <utl/mem.h>
 #include "arch/arch.h"
 
+#include <config.h>
+
 namespace core {
 System System::s_instance;
 
@@ -27,7 +29,8 @@ bool System::init() {
     if (!arch::validateCpu())
         return false;
 
-    // init the system memory manager
+    config::load();
+
     if (!mem_mgr->init()) {
         LOG_ERROR("Failed to map/initialize system memory");
         return false;
@@ -53,13 +56,14 @@ bool System::init() {
 
 void System::load(std::string& dir) {
     main_proc = kern::process::create(*this, "main");
-    if (!main_proc) return;
+    if (!main_proc)
+        return;
 
     if (!main_proc->load(dir)) {
         LOG_ERROR("System load FAILED");
         return;
     }
-    
+
     LOG_INFO("System load OK");
     main_proc->run();
 }

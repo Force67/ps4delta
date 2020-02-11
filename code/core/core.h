@@ -17,7 +17,7 @@
 #include "video_core.h"
 #include "file_sys/file_sys.h"
 
-#include "kern/process.h"
+#include "kernel/process.h"
 
 namespace core {
 using argvList = std::vector<std::string>;
@@ -28,7 +28,7 @@ enum class backend {
 
 class System {
 public:
-    static System& get() { return s_instance; }
+    inline static System& get() { return s_instance; }
 
     System();
 

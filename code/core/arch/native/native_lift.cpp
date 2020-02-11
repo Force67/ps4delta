@@ -14,7 +14,7 @@
 #include <logger/logger.h>
 #include "native_lift.h"
 
-#include "kern/process.h"
+#include "kernel/process.h"
 
 namespace kern {
 uintptr_t lv1_get(uint32_t);
@@ -82,13 +82,16 @@ bool codeLift::init() {
     return true;
 }
 
-static bool is_bmi1_instruction(int op) {
+static bool is_bm1_ins(int op) {
     return op == X86_INS_ANDN || op == X86_INS_BEXTR || op == X86_INS_BLSI ||
            op == X86_INS_BLSMSK || op == X86_INS_BLSR || op == X86_INS_TZCNT;
 };
 
 bool codeLift::transform(uint8_t* data, size_t size, uint64_t base) {
     insn = cs_malloc(handle);
+
+    __int64 *rdx;
+    auto value  = 1 * (((unsigned __int64)*(unsigned int *)(rdx + 1) << 16) | *rdx) + (unsigned __int16)rdx;
 
     const uint8_t* codePtr = data; // iterator
     while (cs_disasm_iter(handle, &codePtr, &size, &base, insn)) {
@@ -103,6 +106,10 @@ bool codeLift::transform(uint8_t* data, size_t size, uint64_t base) {
             emit_syscall(getOps(-10), *(uint32_t*)(getOps(-7)));
         }
 
+       // if (is_bm1_ins(insn->id)) {
+       //     __debugbreak();
+       // }
+
         if (insn->id == X86_INS_INVALID)
             __debugbreak();
 
@@ -111,10 +118,6 @@ bool codeLift::transform(uint8_t* data, size_t size, uint64_t base) {
             uint8_t* tgt = getOps(0);
             *(uint16_t*)(tgt) = 0xCCCC;
         }
-
-        /*else if (is_bmi1_instruction(insn->id)) {
-                std::printf("encountered bm1 instruction %p\n", getOps(0));
-        }*/
 
         /*fs base (tls) access*/
         else {
@@ -137,8 +140,8 @@ bool codeLift::transform(uint8_t* data, size_t size, uint64_t base) {
 
             if (isTls && insn->id == X86_INS_MOV) {
                 emit_fsbase(getOps(0));
-            } else if (isTls)
-                __debugbreak();
+            } //else if (isTls)
+              //  __debugbreak();
         }
     }
 

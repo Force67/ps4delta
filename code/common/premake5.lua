@@ -7,7 +7,8 @@ project "common"
     {
         ".",
 		"./utl",
-        "../vendor/fmtlib/include"
+        "../vendor/fmtlib/include",
+        "../vendor/tinytoml/include"
     }
 
     files {
