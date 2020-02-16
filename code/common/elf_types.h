@@ -195,23 +195,6 @@ struct ElfSym {
 static_assert(sizeof(ELFPgHeader) == 56, "Elf program header size mismatch");
 static_assert(sizeof(ELFHeader) == 64, "Elf header size mismatch");
 
-inline const char* ElfTypeToString(uint32_t type) {
-    switch (type) {
-    case ET_SCE_EXEC:
-        return "Executable";
-    case ET_SCE_DYNEXEC:
-        return "Main module";
-    case ET_SCE_RELEXEC:
-        return "Relocatable PRX";
-    case ET_SCE_STUBLIB:
-        return "Stub library";
-    case ET_SCE_DYNAMIC:
-        return "Dynamic PRX";
-    default:
-        return "Unknown";
-    }
-}
-
 inline const char* SegTypeToString(uint32_t type) {
 #define AS_STR(idx)                                                                                \
     if (type == idx)                                                                               \

@@ -11,7 +11,7 @@
 #include <logger/logger.h>
 
 #include "kernel/process.h"
-#include "kernel/loader/sce_util.h"
+#include "kernel/loader/elf_util.h"
 
 #include "error_table.h"
 #include "sys_dynlib.h"
@@ -33,10 +33,12 @@ int PS4ABI sys_dynlib_get_info(uint32_t handle, dynlib_info* dyn_info) {
     if (!mod)
         return SysError::eSRCH;
 
+    __debugbreak();
     std::memset(dyn_info, 0, sizeof(dynlib_info));
 
     std::strncpy(dyn_info->name, mod->name.c_str(), 256);
     std::memcpy(dyn_info->fingerprint, mod->fingerprint, 20);
+
     std::memcpy(dyn_info->segs, mod->segments, sizeof(mod->segments));
     dyn_info->seg_count = 2;
 
@@ -90,7 +92,7 @@ int PS4ABI sys_dynlib_dlsym(uint32_t handle, const char* symName, void** sym) {
     std::printf("DLSYM %s!%s\n", mod->name.c_str(), symName);
 
     char nameenc[12]{};
-    loader::encode_nid(symName, reinterpret_cast<uint8_t*>(&nameenc));
+    encode_nid(symName, reinterpret_cast<uint8_t*>(&nameenc));
 
     auto& modName = mod->name;
     std::string longName = std::string(nameenc) + "#" + modName + "#" + modName;

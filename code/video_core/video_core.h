@@ -11,7 +11,7 @@
 #include <memory>
 
 namespace video_core {
-enum class renderBackend {
+enum renderBackend : uint32_t {
     null,
     vulkan,
     opengl

@@ -13,7 +13,7 @@
 #include <vector>
 
 #include "dev/device.h"
-#include "sce_module.h"
+#include "module.h"
 #include "object.h"
 #include "id_manager.h"
 
@@ -69,5 +69,5 @@ private:
 };
 
 // currently executed process
-inline process* activeProc();
+process* activeProc();
 }

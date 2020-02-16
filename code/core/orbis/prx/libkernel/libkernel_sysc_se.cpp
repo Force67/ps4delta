@@ -10,7 +10,7 @@
 // This file was generated on 05/02/2020
 
 #include <base.h>
-#include "kernel/sce_module.h"
+#include "kernel/module.h"
 
 int PS4ABI lk_sysc_e00()
 {

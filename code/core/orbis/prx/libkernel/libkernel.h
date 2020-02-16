@@ -10,7 +10,7 @@
 
 // This file was generated on 05/02/2020
 
-#include "kernel/sce_module.h"
+#include "kernel/module.h"
 
 #pragma warning(push, 0)
 

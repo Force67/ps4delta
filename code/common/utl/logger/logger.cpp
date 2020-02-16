@@ -75,7 +75,7 @@ public:
         backend_thread.join();
     }
 
-    void AddEntry(logLevel lvl, uint32_t line, const char* func, std::string msg) {
+    inline void AddEntry(logLevel lvl, uint32_t line, const char* func, std::string msg) {
 
         using std::chrono::duration_cast;
         using std::chrono::steady_clock;
@@ -91,7 +91,7 @@ public:
         pending.Push(entry);
     }
 
-    logBase* AddSink(std::unique_ptr<logBase> sink) {
+    inline logBase* AddSink(std::unique_ptr<logBase> sink) {
         std::lock_guard lock{writing_lock};
         auto* poop = sink.get();
 
@@ -99,14 +99,14 @@ public:
         return poop;
     }
 
-    void RemoveSink(std::string_view name) {
+    inline void RemoveSink(std::string_view name) {
         std::lock_guard lock{writing_lock};
         const auto it = std::remove_if(sinks.begin(), sinks.end(),
                                        [&name](const auto& i) { return name == i->getName(); });
         sinks.erase(it, sinks.end());
     }
 
-    logBase* GetSink(std::string_view name) {
+    inline logBase* GetSink(std::string_view name) {
         const auto it = std::find_if(sinks.begin(), sinks.end(),
                                      [&name](const auto& i) { return name == i->getName(); });
         if (it == sinks.end())

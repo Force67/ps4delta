@@ -6,6 +6,8 @@
 #include <VersionHelpers.h>
 #include <memory.h>
 
+#include <utl/cpu_features.h>
+
 // request to be run on the dedicated gpu
 extern "C" {
 __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
@@ -104,6 +106,26 @@ static bool validate_platform() {
         raise_err(L"Your system doesn't have enough physical memory");
         return false;
     }
+
+    utl::cpu cpu;
+
+#define CHECK_FEATURE(x, y)                     \
+    if (!cpu.has(utl::cpu::t##x)) {     \
+        raise_err(L"Your cpu is missing the " y L" instruction set."); \
+        return false; \
+    }
+
+    CHECK_FEATURE(SSE, "SSE");
+    CHECK_FEATURE(SSE2, "SSE2");
+    CHECK_FEATURE(SSE3, "SSE3");
+    CHECK_FEATURE(SSSE3, "SSSE3");
+    CHECK_FEATURE(SSE41, "SSE4.1");
+    CHECK_FEATURE(SSE42, "SSE4.2");
+    CHECK_FEATURE(AESNI, "AES");
+    CHECK_FEATURE(AVX, "AVX");
+    CHECK_FEATURE(PCLMULQDQ, "CLMUL");
+    CHECK_FEATURE(F16C, "F16C");
+    CHECK_FEATURE(BMI1, "BM1");
 
     return true;
 }

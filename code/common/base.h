@@ -81,3 +81,5 @@ template <typename T>
 inline T align_up(const T addr, const T align) {
     return (addr + POW2_MASK) & ~POW2_MASK;
 }
+
+#define BUGCHECK dbg_break

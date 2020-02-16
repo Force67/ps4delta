@@ -1,5 +1,4 @@
 
-
 /*
  * PS4Delta : PS4 emulation and research project
  *
@@ -8,12 +7,12 @@
  * in the root of the source tree.
  */
 
-#include "sce_util.h"
+#include "elf_util.h"
 
 #include <cstring>
 #include <crypto/sha1.h>
 
-namespace kern::loader {
+namespace kern {
 static const char base64Lookup[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
 

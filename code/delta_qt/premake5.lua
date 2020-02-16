@@ -25,7 +25,8 @@ project "delta-qt"
         "../vendor/fmtlib/include",
         "../vendor/capstone/include",
         "../vendor/zlib",
-        "../vendor/xbyak/xbyak"
+        "../vendor/xbyak/xbyak",
+        "../vendor/tinytoml/include"
     }
 
     links {

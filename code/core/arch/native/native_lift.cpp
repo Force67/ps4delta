@@ -90,9 +90,6 @@ static bool is_bm1_ins(int op) {
 bool codeLift::transform(uint8_t* data, size_t size, uint64_t base) {
     insn = cs_malloc(handle);
 
-    __int64 *rdx;
-    auto value  = 1 * (((unsigned __int64)*(unsigned int *)(rdx + 1) << 16) | *rdx) + (unsigned __int16)rdx;
-
     const uint8_t* codePtr = data; // iterator
     while (cs_disasm_iter(handle, &codePtr, &size, &base, insn)) {
 

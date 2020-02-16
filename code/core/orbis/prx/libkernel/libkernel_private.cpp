@@ -1320,7 +1320,7 @@ BIND_FUNC(0x14DE2068F9AE155F,lk_write1)
 BIND_FUNC(0x67668A771CD2E0A1,lk_writev1)
 };
 
-#include "kernel/sce_module.h"
+#include "kernel/module.h"
 
 kern::static_module kern::prx_static_modules::orbis_libkernel(
     "libkernel", (kern::static_func*)&functions,

@@ -26,7 +26,8 @@ project "delta"
         "../vendor/capstone/include",
         "../vendor/zlib",
         "../vendor/xbyak/xbyak",
-        "../vendor/glfw/include"
+        "../vendor/glfw/include",
+        "../vendor/tinytoml/include"
     }
 
     links {

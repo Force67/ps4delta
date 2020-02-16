@@ -10,7 +10,7 @@
 
 #include <cstdint>
 
-namespace kern::loader {
+namespace kern {
 // symbol util
 void encode_nid(const char* symName, uint8_t* out);
 bool decode_nid(const char* subset, size_t len, uint64_t&);

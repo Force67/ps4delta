@@ -17,6 +17,7 @@
 
 #include "ui/mainwindow.h"
 
+#include <config.h>
 #include <core.h>
 
 inline std::string sstr(const QString& _in) {
@@ -78,7 +79,11 @@ static void applyQtFixups() {
 #endif
 
 inline int deltaMain(int argc, char** argv) {
+    // create log sinks
     utl::createLogger(true);
+
+    // create opts
+    config::load();
 
     // search plugins in /qt/ dir so we don't bloat main dir
     // *too* much
@@ -109,15 +114,15 @@ inline int deltaMain(int argc, char** argv) {
         // propagate command line arguments
         auto args = parser.positionalArguments();
         if (args.length() > 0) {
-            std::vector<std::string> argv;
+            std::vector<std::string> xargv;
 
             if (args.length() > 1) {
-                argv.emplace_back();
+                xargv.emplace_back();
 
                 for (int i = 1; i < args.length(); i++) {
-                    argv.emplace_back(args[i].toStdString());
+                    xargv.emplace_back(args[i].toStdString());
                 }
-                core::System::get().argv = std::move(argv);
+                core::System::get().argv = std::move(xargv);
             }
 
             auto path = sstr(QFileInfo(args.at(0)).canonicalFilePath());

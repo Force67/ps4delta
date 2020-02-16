@@ -13,19 +13,28 @@
 
 #ifdef _WIN32
 #include <Windows.h>
-#include <utl/mcrt_win.h>
 #include <memory.h>
+#include <utl/mcrt_win.h>
 
 #define EXPORT __declspec(dllexport)
 #endif
 
+#include <config.h>
 #include <core.h>
 #include <logger/logger.h>
 
 #include <GLFW/glfw3.h>
 
+class glfwApp {
+
+};
+
 int deltaMain(int argc, char** argv) {
+    // create log sinks
     utl::createLogger(true);
+
+    // load opts
+    config::load();
 
     glfwSetErrorCallback(
         [](int errc, const char* desc) { LOG_ERROR("glfw error ({}) : {}", errc, desc); });
@@ -47,6 +56,8 @@ int deltaMain(int argc, char** argv) {
             xargv.emplace_back(argv[i]);
 
         sys.argv = std::move(xargv);
+
+        // not blocking
         sys.load(sys.argv[0]);
     }
 

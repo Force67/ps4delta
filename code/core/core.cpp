@@ -26,11 +26,6 @@ System::System() {
 }
 
 bool System::init() {
-    if (!arch::validateCpu())
-        return false;
-
-    config::load();
-
     if (!mem_mgr->init()) {
         LOG_ERROR("Failed to map/initialize system memory");
         return false;

@@ -25,7 +25,7 @@ namespace kern {
 class process;
 
 struct static_func {
-    uint64_t hashId;
+    u64 hashId;
     const void* address;
 };
 
@@ -41,37 +41,37 @@ struct static_module {
 
 struct process_param {
     size_t size;
-    uint32_t magic;
-    uint32_t version;
-    uint32_t sdk_version;
+    u32 magic;
+    u32 version;
+    u32 sdk_version;
     char pad[60];
 };
 
 struct module_param {
     size_t size;
-    uint32_t magic;
-    uint32_t version;
-    uint32_t sdk_version;
-    uint32_t unk;
+    u32 magic;
+    u32 version;
+    u32 sdk_version;
+    u32 unk;
 };
 
 struct lib_info {
     const char* name;
-    int32_t id;
+    i32 id;
     bool exported;
 };
 
 struct mod_info {
     const char* name;
-    int32_t id;
+    i32 id;
 };
 
 // hacky hack
 struct tls_info {
-    uint32_t vaddr;
-    uint32_t memsz;
-    uint32_t filesz;
-    uint32_t align;
+    u32 vaddr;
+    u32 memsz;
+    u32 filesz;
+    u32 align;
 };
 
 static_assert(sizeof(process_param) == 80);
@@ -97,21 +97,21 @@ public:
     std::atomic<bool> started = false;
 
     // module base address
-    uint8_t* base = nullptr;
+    u8* base = nullptr;
 
     // module entry point
-    uint8_t* entry = 0;
-    uint32_t mappedSize = 0;
+    u8* entry = 0;
+    u32 mappedSize = 0;
 
     // elf data
     ELFHeader header;
     std::vector<ELFPgHeader> programs;
 
     // unique module identifier
-    uint8_t sha1[20]{};
+    u8 sha1[20]{};
 
     // sce module fingerprint
-    uint8_t fingerprint[20]{};
+    u8 fingerprint[20]{};
 
     // sce module name
     std::string name;
@@ -121,31 +121,31 @@ public:
 
     std::unique_ptr<tls_info> tlsInfo;
 
-    uint8_t* initAddr = nullptr;
-    uint8_t* finiAddr = nullptr;
+    u8* initAddr = nullptr;
+    u8* finiAddr = nullptr;
 
-    uint8_t* ehFrameheaderAddr;
-    uint8_t* ehFrameAddr;
-    uint32_t ehFrameheaderSize;
-    uint32_t ehFrameSize;
+    u8* ehFrameheaderAddr;
+    u8* ehFrameAddr;
+    u32 ehFrameheaderSize;
+    u32 ehFrameSize;
 
     bool loadNeededPrx();
     void installExceptionhandler(formats::elfObject&);
-
-protected:
     bool digestDynamic(formats::elfObject&);
 
-    uint8_t* dynData = nullptr;
+protected:
+
+    u8* dynData = nullptr;
 
     template<typename T>
-    T* getDynPtr(uint32_t disp) {
+    T* getDynPtr(u32 disp) {
         return reinterpret_cast<T*>(dynData + disp);
     }
 
     std::pair<ElfSym*, size_t> symTab;
     std::pair<ElfRel*, size_t> jumpTab;
     std::pair<ElfRel*, size_t> relaTab;
-    std::pair<uint8_t*, size_t> hashTab;
+    std::pair<u8*, size_t> hashTab;
     std::pair<char*, size_t> strTab;
 
     std::vector<std::string> sharedObjects;

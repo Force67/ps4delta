@@ -22,7 +22,7 @@
 #include <logger/logger.h>
 
 namespace kern {
-config::opt<bool> hleKernel("kern.useHLE", "HLE the kernel module", true);
+config::opt<bool> hleKernel{"kern.useHLE", "HLE the kernel module", true};
 
 // currently executed process
 static process* current_proc{nullptr};
@@ -48,15 +48,8 @@ process::process(core::System& s) : sys(s) {}
 SharedPtr<prx_module> process::loadPrx(std::string_view name) {
     auto prx = getPrx(name);
     if (!prx) {
-        auto& fs = sys.file_system();
-
-        // this is temporary uglyness
-        //TODO: choose path
-        // SHOULD BE MOVED INTO LDR
-        auto pathX = fs.get("/system/common/lib/" + std::string(name) + ".sprx");
-
         // TODO: this is a _bit_ ugly
-        prx = prx_module::load(*this, pathX);
+        prx = prx_module::load(*this, name);
         if (!prx) {
             __debugbreak();
             return nullptr;
@@ -105,13 +98,10 @@ bool process::load(std::string_view path) {
     }
 
     // load the eboot
-    main_module = exec_module::load(*this, path);
-    if (!main_module) {
-        LOG_ERROR("Failed to load eboot");
-        return false;
-    }
+    if ((main_module = exec_module::load(*this, path)))
+        return true;
 
-    return true;
+    return false;
 }
 
 static void PS4ABI shutdownHandler() {
