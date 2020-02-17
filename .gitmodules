@@ -13,6 +13,6 @@
 [submodule "code/vendor/glfw"]
 	path = code/vendor/glfw
 	url = https://github.com/glfw/glfw.git
-[submodule "code/vendor/tinytoml"]
-	path = code/vendor/tinytoml
-	url = https://github.com/mayah/tinytoml
+[submodule "code/vendor/yaml-cpp"]
+	path = code/vendor/yaml-cpp
+	url = https://github.com/DevForce-dev/yaml-cpp

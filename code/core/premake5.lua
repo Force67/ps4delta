@@ -15,7 +15,7 @@ project "core"
         "../vendor/capstone/include",
         "../vendor/zlib",
         "../vendor/xbyak/xbyak",
-        "../vendor/tinytoml/include"
+        "../vendor/yaml-cpp/include"
     }
 
     links {

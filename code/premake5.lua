@@ -14,6 +14,17 @@ end)
 require('qt')
 qt = premake.extensions.qt
 
+local branch = "unknown_branch"
+local commit = "unknown_commit"
+
+-- a bit ugly
+local f = io.popen('git symbolic-ref --short -q HEAD', 'r')
+branch = f:read("*a")
+f:close()
+f = io.popen('git rev-parse --short HEAD', 'r')
+commit = f:read("*a")
+f:close()
+
 workspace "PS4Delta"
     configurations { "Debug", "Release" }
     architecture "x86_64"
@@ -25,11 +36,12 @@ workspace "PS4Delta"
     -- multi threaded compilation
     flags "MultiProcessorCompile"
     buildoptions "/std:c++17"
-
     symbols "On"
-    
+
     defines { "FXNAME=\"%{wks.name}\"", 
-              "FXNAME_WIDE=L\"%{wks.name}\""}
+              "FXNAME_WIDE=L\"%{wks.name}\"",
+			  ('DELTA_BRANCH="' .. string.gsub(branch, '\n$', '') .. '"'),
+			  ('DELTA_COMMITHASH="' .. string.gsub(commit, '\n$', '') .. '"')}
     
     filter "configurations:Debug"
         defines { "DELTA_DBG" }

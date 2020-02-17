@@ -9,7 +9,7 @@
  */
 
 #include <type_traits>
-#include <toml/toml.h>
+#include <yaml-cpp/yaml.h>
 
 namespace config {
 struct optBase {
@@ -18,8 +18,8 @@ struct optBase {
         root() = this;
     }
 
-    virtual void parse(const toml::Value&) = 0;
-    virtual void dump(toml::Value&) = 0;
+    virtual void parseNode(const YAML::Node&) = 0;
+    virtual void dumpNode(YAML::Node&) = 0;
 
     static inline optBase*& root() noexcept {
         static optBase* s_root{nullptr};
@@ -58,14 +58,13 @@ public:
     }
 
     // convert to
-    void parse(const toml::Value& v) override {
-        if (v.is<DataType>())
-            data = v.as<DataType>();
+    void parseNode(const YAML::Node& v) override {
+         data = v.as<DataType>(data);
     }
 
     // convert at
-    void dump(toml::Value& v) override {
-         v = toml::Value(data);
+    void dumpNode(YAML::Node& v) override {
+         v = YAML::Node(data);
     }
 
 private:

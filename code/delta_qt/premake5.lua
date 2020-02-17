@@ -21,12 +21,8 @@ project "delta-qt"
         "../core/orbis",
         "../video_core",
 
-        -- 3rd party
         "../vendor/fmtlib/include",
-        "../vendor/capstone/include",
-        "../vendor/zlib",
-        "../vendor/xbyak/xbyak",
-        "../vendor/tinytoml/include"
+        "../vendor/yaml-cpp/include"
     }
 
     links {
@@ -36,7 +32,8 @@ project "delta-qt"
 
         "capstone",
         "zlib",
-		"fmtlib"
+		"fmtlib",
+        "yaml-cpp"
     }
 
     files {

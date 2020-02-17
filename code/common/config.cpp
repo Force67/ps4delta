@@ -16,35 +16,47 @@
 
 namespace config {
 bool load() {
-    auto path = utl::make_app_path(utl::data_dir, "delta.cfg");
+    auto path = utl::make_app_path(utl::data_dir, "delta.yml");
 
     // no config? write one
     if (!utl::exists(path))
         return save();
 
     try {
-        const auto parse_result = toml::parseFile(path);
-        if (!parse_result.valid()) {
-            LOG_ERROR("Failed to parse config : {}", parse_result.errorReason);
-            return false;
-        }
-
-        const toml::Value& doc = parse_result.value;
+        auto doc = YAML::LoadFile(path);
 
         // initialize the static opts
         for (optBase* i = optBase::root(); i; i = i->next) {
             if (i->name) {
-                const auto* node = doc.find(i->name);
-                if (node)
-                    i->parse(*node);
-                else
-                    LOG_WARNING("Unable to initialize opt {}", i->name);
+                std::string xstr = i->name;
+
+                // 'namespace'
+                const auto pos = xstr.find_first_of('.');
+                if (pos != -1) {
+                    auto family = xstr.substr(0, pos);
+                    auto familyNode = doc[family];
+                    if (familyNode) {
+                        auto child = xstr.substr(pos + 1, xstr.length() - (pos - 1));
+                        auto childNode = familyNode[child];
+                        if (childNode)
+                            i->parseNode(childNode);
+                        else
+                            LOG_WARNING("Unable to initialize family opt {}", i->name);
+                    } else
+                        LOG_WARNING("Unable to find family node for {}", family);
+                } else {
+                    auto node = doc[xstr];
+                    if (node)
+                        i->parseNode(node);
+                    else 
+                        LOG_WARNING("Unable to initialize global opt {}", i->name);
+                }
             } else
                 LOG_WARNING("Encountered an empty opt");
         }
-    } catch (const std::runtime_error& ex) {
+
+    } catch (std::exception& ex) {
         LOG_WARNING("Exception while parsing config: {}", ex.what());
-        return false;
     }
 
     // optBase::root() = nullptr;
@@ -52,42 +64,38 @@ bool load() {
 }
 
 bool save() {
-    auto path = utl::make_app_path(utl::data_dir, "delta.cfg");
+    auto path = utl::make_app_path(utl::data_dir, "delta.yml");
 
     try {
         utl::File out(path, utl::fileMode::write);
-        if (!out.IsOpen()) return false;
+        if (!out.IsOpen())
+            return false;
 
-        toml::Value root((toml::Table()));
+        YAML::Node doc;
         for (optBase* i = optBase::root(); i; i = i->next) {
             if (i->name) {
-                std::string xname = i->name;
+                std::string xstr = i->name;
 
                 // convert type to value
-                toml::Value val;
-                i->dump(val);
+                YAML::Node val;
+                i->dumpNode(val);
 
-                // special behavior for tables
-                const auto pos = xname.find_last_of('.');
+                // is it a 'namespace' member
+                const auto pos = xstr.find_first_of('.');
                 if (pos != -1) {
-                    auto tabName = xname.substr(0, pos);
-
-                    auto* child = root.findChild(tabName);
-                    if (!child) child = root.setChild(tabName, toml::Table());
-
-                    auto shortName = xname.substr(pos + 1, xname.length() - (pos - 1));
-                    (*child)[shortName] = val;
+                    auto family = xstr.substr(0, pos);
+                    auto child = xstr.substr(pos + 1, xstr.length() - (pos - 1));
+                    doc[family][child] = val;
                 } else
-                    root[xname] = val;
+                    doc[xstr] = val;
             } else
                 LOG_WARNING("Encountered an empty opt. Can't serialize it!");
         }
 
-        std::ostringstream os;
-        root.write(&os);
+        YAML::Emitter emit;
+        emit << doc;
 
-        auto str = os.str();
-        out.Write(str.c_str(), str.length());
+        out.Write(emit.c_str(), emit.size());
     } catch (const std::runtime_error& ex) {
         LOG_WARNING("Exception while writing config: {}", ex.what());
         return false;

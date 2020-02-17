@@ -98,5 +98,19 @@ project "glfw"
             }
     filter{}
     
+project "yaml-cpp"
+    language "C++"
+    kind "StaticLib"
     
+    includedirs
+    {
+        "yaml-cpp/include",
+        "yaml-cpp/src"
+    }
+    
+    files
+    {   
+        "yaml-cpp/src/**.cpp",
+        "yaml-cpp/include/**.h",
+    }
     

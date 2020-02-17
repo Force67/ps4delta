@@ -19,10 +19,11 @@
 #include "kernel/id_manager.h"
 #include "kernel/dev/device.h"
 
+#include "memory.h"
+
 namespace kern {
 uint8_t* PS4ABI sys_mmap(void* addr, size_t size, uint32_t prot, uint32_t flags, uint32_t fd,
                          size_t offset) {
-    __debugbreak();
     if (flags & mFlags::stack || flags & mFlags::noextend)
         flags |= mFlags::anon;
 
@@ -33,9 +34,6 @@ uint8_t* PS4ABI sys_mmap(void* addr, size_t size, uint32_t prot, uint32_t flags,
         addr = reinterpret_cast<void*>(0x200000000);
     }
 
-    /*align the page*/
-    size = (size + 0x3FFF) & 0xFFFFFFFFFFFFC000LL;
-
     if (fd != -1) {
         auto* obj = utl::fxm<idManager>::get().get(fd);
 
@@ -45,6 +43,10 @@ uint8_t* PS4ABI sys_mmap(void* addr, size_t size, uint32_t prot, uint32_t flags,
         }
     }
 
+    void* ptr = memory::falloc(static_cast<u8*>(addr), size, memory::user);
+    __debugbreak();
+
+    #if 0
     void* ptr = utl::allocMem(addr, size, utl::page_read_write, utl::allocType::reservecommit);
     if (!ptr) {
         // maybe a previously reserved page?
@@ -56,6 +58,7 @@ uint8_t* PS4ABI sys_mmap(void* addr, size_t size, uint32_t prot, uint32_t flags,
             }
         }
     }
+    #endif
 
 #if 0
 		/*auto tprot = ppt::r;

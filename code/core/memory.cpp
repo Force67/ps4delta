@@ -73,10 +73,11 @@ uint8_t* block::xalloc(uint8_t* desired_addr, size_t size, uint32_t flags, page_
     if (block_size > AMD64_PAGE_SIZE)
         page_count = block_size / AMD64_PAGE_SIZE;
 
-    for (size_t i = addr / AMD64_PAGE_SIZE; i < addr / AMD64_PAGE_SIZE + block_size; i++) {
+    __debugbreak();
+    for (size_t i = 0; i < addr / AMD64_PAGE_SIZE + block_size / AMD64_PAGE_SIZE; i++) {
         auto& pinfo = pages[i];
 
-        if (!pinfo) {
+        if (pinfo) {
             /*attempts to map at fixed address failed*/
             __debugbreak();
             return nullptr;

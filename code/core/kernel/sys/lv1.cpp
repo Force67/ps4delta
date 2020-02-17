@@ -123,9 +123,9 @@ uintptr_t lv1_get(uint32_t sid) {
     if (sid > memberCount)
         __debugbreak();
 
-    return reinterpret_cast<uintptr_t>(
-        emitCallReporter(syscall_dpt[sid].name, sid, syscall_dpt[sid].ptr));
+   // return reinterpret_cast<uintptr_t>(
+   //     emitCallReporter(syscall_dpt[sid].name, sid, syscall_dpt[sid].ptr));
 
-    // return reinterpret_cast<uintptr_t>(syscall_dpt[sid].ptr);
+   return reinterpret_cast<uintptr_t>(syscall_dpt[sid].ptr);
 }
 } // namespace kern

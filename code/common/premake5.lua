@@ -8,7 +8,7 @@ project "common"
         ".",
 		"./utl",
         "../vendor/fmtlib/include",
-        "../vendor/tinytoml/include"
+        "../vendor/yaml-cpp/include"
     }
 
     files {

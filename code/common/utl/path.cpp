@@ -44,7 +44,8 @@ std::string make_abs_path(std::string_view rel) {
 
 static std::string get_home_dir() {
     PWSTR localPath = nullptr;
-    SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &localPath);
+    if (FAILED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &localPath)))
+        __debugbreak();
     auto newPath = utl::utf16_to_utf8(localPath);
     CoTaskMemFree(localPath);
     return newPath;

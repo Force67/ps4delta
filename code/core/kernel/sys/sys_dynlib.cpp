@@ -127,7 +127,6 @@ int PS4ABI sys_dynlib_get_proc_param(void** data, size_t* size) {
     if (mod.param) {
         *data = reinterpret_cast<void*>(mod.param);
         *size = mod.param->size;
-        __debugbreak();
         return 0;
     }
     __debugbreak();

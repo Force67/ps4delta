@@ -23,11 +23,8 @@ project "delta"
 
         -- 3rd party
         "../vendor/fmtlib/include",
-        "../vendor/capstone/include",
-        "../vendor/zlib",
-        "../vendor/xbyak/xbyak",
         "../vendor/glfw/include",
-        "../vendor/tinytoml/include"
+        "../vendor/yaml-cpp/include"
     }
 
     links {
@@ -38,7 +35,8 @@ project "delta"
         "glfw",
         "capstone",
         "zlib",
-		"fmtlib"
+		"fmtlib",
+        "yaml-cpp"
     }
 
     files {

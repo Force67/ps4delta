@@ -10,6 +10,8 @@
 #include <base.h>
 #include <logger/logger.h>
 
+#include <QDir>
+#include <QTimer>
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QFileInfo>
@@ -36,7 +38,7 @@ private:
 };
 
 bool deltaApp::init() {
-    LOG_INFO("Initializing delta qt app " rsc_copyright);
+    LOG_INFO("Initializing delta qt app " rsc_copyright " at " DELTA_BRANCH "-" DELTA_COMMITHASH);
 
     auto& sys = core::System::get();
     if (!sys.init())
@@ -85,11 +87,10 @@ inline int deltaMain(int argc, char** argv) {
     // create opts
     config::load();
 
-    // search plugins in /qt/ dir so we don't bloat main dir
-    // *too* much
+    // search plug ins in /qt/ dir
     {
-        auto plugin_dir = utl::make_abs_path("qt");
-        QCoreApplication::addLibraryPath(QString::fromUtf8(plugin_dir.c_str()));
+        static auto x = QString::fromUtf8(utl::make_abs_path("qt").c_str());
+        QCoreApplication::addLibraryPath(x);
     }
 
     QCoreApplication::setOrganizationName(rsc_company);
@@ -119,14 +120,16 @@ inline int deltaMain(int argc, char** argv) {
             if (args.length() > 1) {
                 xargv.emplace_back();
 
-                for (int i = 1; i < args.length(); i++) {
+                for (int i = 1; i < args.length(); i++)
                     xargv.emplace_back(args[i].toStdString());
-                }
-                core::System::get().argv = std::move(xargv);
             }
 
-            auto path = sstr(QFileInfo(args.at(0)).canonicalFilePath());
-            core::System::get().load(path);
+            // Ugly workaround
+            QTimer::singleShot(2, [path = sstr(QFileInfo(args.at(0)).canonicalFilePath()),
+                                   xargv = std::move(xargv)]() mutable {
+                core::System::get().argv = std::move(xargv);
+                core::System::get().load(path);
+            });
         }
 
         return app->exec();
