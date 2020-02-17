@@ -88,8 +88,8 @@ public:
         case logLevel::Critical: // Bright magenta
             color = FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
             break;
-            // case LogLevel::Count:
-            //	UNREACHABLE();
+        default:
+            break;
         }
 
         SetConsoleTextAttribute(console_handle, color);

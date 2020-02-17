@@ -15,8 +15,6 @@
 #include <Windows.h>
 #include <memory.h>
 #include <utl/mcrt_win.h>
-
-#define EXPORT __declspec(dllexport)
 #endif
 
 #include <config.h>

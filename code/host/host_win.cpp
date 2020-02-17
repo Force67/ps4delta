@@ -28,11 +28,30 @@ void* memset(void* dest, int val, size_t len) {
     return dest;
 }
 
+wchar_t* mx_wcsstr(const wchar_t* s, const wchar_t* b) {
+    auto* x = (wchar_t*)s;
+    while (*x) {
+        if (*x == *b) {
+            auto* y = x;
+            auto* c = (wchar_t*)b;
+            while (*y && *c && *y == *c) {
+                c++;
+                y++;
+            }
+            if (!*c)
+                return x;
+        }
+        x++;
+    }
+    return nullptr;
+}
+
 static memory::init_info g_mem{};
 
 using dMain = int (*)(const memory::init_info&);
 
-static uint8_t* reserve_block(memory::mem_area &info, uint8_t* desiredAddr, size_t size = 0x100000000) {
+static uint8_t* reserve_block(memory::mem_area& info, uint8_t* desiredAddr,
+                              size_t size = 0x100000000) {
     for (uintptr_t cursor = reinterpret_cast<uintptr_t>(desiredAddr);; cursor += 0x100000000) {
         if (VirtualAlloc(reinterpret_cast<void*>(cursor), size, MEM_RESERVE, PAGE_NOACCESS)) {
             uint8_t* ptr = reinterpret_cast<uint8_t*>(cursor);
@@ -47,9 +66,7 @@ static uint8_t* reserve_block(memory::mem_area &info, uint8_t* desiredAddr, size
 }
 
 static void release_blocks() {
-    auto free_block = [](memory::mem_area& info) { 
-        VirtualFree(info.ptr, info.size, MEM_RELEASE);
-    };
+    auto free_block = [](memory::mem_area& info) { VirtualFree(info.ptr, info.size, MEM_RELEASE); };
 
     free_block(g_mem.proc);
     free_block(g_mem.procMirror);
@@ -72,7 +89,7 @@ static void raise_err(const wchar_t* msg) {
 
 static bool reserve_blocks() {
     const wchar_t* errMsg = nullptr;
-    //if (!reserveArea(0xFE0000000, 0x10000)) /*TODO: gnm chunk?*/
+    // if (!reserveArea(0xFE0000000, 0x10000)) /*TODO: gnm chunk?*/
     //                 0xC0000000
 
     /*virtual memory for the process*/
@@ -109,10 +126,10 @@ static bool validate_platform() {
 
     utl::cpu cpu;
 
-#define CHECK_FEATURE(x, y)                     \
-    if (!cpu.has(utl::cpu::t##x)) {     \
-        raise_err(L"Your cpu is missing the " y L" instruction set."); \
-        return false; \
+#define CHECK_FEATURE(x, y)                                                                        \
+    if (!cpu.has(utl::cpu::t##x)) {                                                                \
+        raise_err(L"Your cpu is missing the " y L" instruction set.");                             \
+        return false;                                                                              \
     }
 
     CHECK_FEATURE(SSE, "SSE");
@@ -139,8 +156,12 @@ int start() {
     if (!reserve_blocks())
         return -2;
 
-    // TODO: handle different cores
-    auto* hlib = LoadLibraryW(L"delta-qt.dll");
+    HINSTANCE hlib;
+    if (mx_wcsstr(GetCommandLineW(), L"-qtcore"))
+        hlib = LoadLibraryW(L"delta-qt.dll");
+    else
+        hlib = LoadLibraryW(L"delta.dll");
+  
     if (!hlib) {
         raise_err(L"Unable to load core");
         return -3;
@@ -149,7 +170,8 @@ int start() {
     auto corMain = (dMain)GetProcAddress(hlib, "delta_main");
     if (corMain) {
         result = corMain(g_mem);
-    }
+    } else
+        raise_err(L"Unable to locate main export in core");
 
     release_blocks();
     return result;
