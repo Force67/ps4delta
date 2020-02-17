@@ -22,77 +22,55 @@
 #include "memory.h"
 
 namespace kern {
-uint8_t* PS4ABI sys_mmap(void* addr, size_t size, uint32_t prot, uint32_t flags, uint32_t fd,
-                         size_t offset) {
-    if (flags & mFlags::stack || flags & mFlags::noextend)
-        flags |= mFlags::anon;
-
-    if (flags & mFlags::fixed) {
-        __debugbreak();
-    } else if (!addr) {
+u8* PS4ABI sys_mmap(void* addr, size_t size, u32 prot, u32 flags, u32 fd, size_t offset) {
+    // stop
+    if (!addr) {
         __debugbreak();
         addr = reinterpret_cast<void*>(0x200000000);
     }
 
-    if (fd != -1) {
-        auto* obj = utl::fxm<idManager>::get().get(fd);
-
-        if (obj) {
-            /*TODO: mmap in device!!*/
-            static_cast<device*>(obj)->map(addr, size, prot, flags, offset);
-        }
+    // FOR NOW we only select user block
+    auto block = memory::manager()->getBlock(static_cast<u8*>(addr), memory::user);
+    if (!block) {
+        LOG_ERROR("SYS: Unable to select proper memory block");
+        return reinterpret_cast<u8*>(-1); // TODO: some sort of autocastable macro?
     }
 
-    void* ptr = memory::falloc(static_cast<u8*>(addr), size, memory::user);
-    __debugbreak();
+    // FIXME, use real ppt
+    const u32 hack = memory::page_executable | memory::page_writable | memory::page_readable;
 
-    #if 0
-    void* ptr = utl::allocMem(addr, size, utl::page_read_write, utl::allocType::reservecommit);
+    // do the actual allocation
+    void* ptr =
+        block->xalloc(static_cast<u8*>(addr), size, flags, (memory::page_flags)hack, 0x1000);
+
     if (!ptr) {
-        // maybe a previously reserved page?
-        ptr = utl::allocMem(addr, size, utl::page_read_write, utl::allocType::commit);
-        if (!ptr && !(flags & 0x10)) {
-            ptr = utl::allocMem(nullptr, size, utl::page_read_write, utl::allocType::reservecommit);
-            if (!ptr) {
-                return reinterpret_cast<uint8_t*>(-1);
-            }
+        LOG_ERROR("SYS: Unable to alloc at address {} in user pool", ptr);
+        return reinterpret_cast<u8*>(-1); // TODO: some sort of autocastable macro?
+    }
+
+    if (fd != -1) {
+        if (auto* dev = utl::fxm<idManager>::get().get(fd)) {
+
+            // notify device of memory allocation
+            static_cast<device*>(dev)->map(addr, size, prot, flags, offset);
         }
     }
-    #endif
-
-#if 0
-		/*auto tprot = ppt::r;
-		if (prot & mprotFlags::write)
-			tprot = ppt::w; /*intentional*/
-		if (prot & mprotFlags::exec)
-			tprot = ppt::rx; */
-#endif
-    // FIXME: apply real protections
-    auto tprot = utl::page_execute_read_write;
-
-    if (flags & mFlags::anon)
-        std::memset(ptr, 0, size);
-
-    // now we apply target protection
-    utl::protectMem(static_cast<void*>(ptr), size, tprot);
 
     std::printf("mmap request %p -> action %p %x, %p\n", addr, ptr, size, _ReturnAddress());
-    // LOG_WARNING("addr={}, len={}, requested by {}", fmt::ptr(addr), len,
-    // fmt::ptr(_ReturnAddress()));
 
     if (flags & mFlags::stack)
-        return &static_cast<uint8_t*>(ptr)[size];
+        return &static_cast<u8*>(ptr)[size];
 
-    return static_cast<uint8_t*>(ptr);
+    return static_cast<u8*>(ptr);
 }
 
-int PS4ABI sys_mprotect(uint8_t*, size_t len, int prot) {
+int PS4ABI sys_mprotect(u8*, size_t len, int prot) {
     // TODO
     return 0;
 }
 
-int PS4ABI sys_mname(uint8_t* ptr, size_t len, const char* name, void*) {
-    __debugbreak();
+int PS4ABI sys_mname(u8* ptr, size_t len, const char* name, void*) {
+    //__debugbreak();
     #if 0
     auto* info = proc->getVma().get(ptr);
     if (!info) {
@@ -118,7 +96,7 @@ struct mdbg_property {
 
 static_assert(sizeof(mdbg_property) == 72);
 
-int PS4ABI sys_mdbg_service(uint32_t op, void* arg1, void* arg2, void* a3) {
+int PS4ABI sys_mdbg_service(u32 op, void* arg1, void* arg2, void* a3) {
     switch (op) {
     case 1: {
         auto* info = static_cast<mdbg_property*>(arg1);
@@ -133,7 +111,7 @@ int PS4ABI sys_mdbg_service(uint32_t op, void* arg1, void* arg2, void* a3) {
     return 0;
 }
 
-int PS4ABI sys_dmem_container(uint32_t op) {
+int PS4ABI sys_dmem_container(u32 op) {
     if (op == -1)
         return 0;
 

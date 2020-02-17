@@ -31,11 +31,11 @@ struct init_info {
 };
 
 enum memory_location : int {
-    any,
     user,
     app,
     exec,
-    debug
+    debug,
+    any = 0xFFFFFF
 };
 
 // co relate to free-bsd
@@ -100,9 +100,11 @@ private:
     std::vector<SharedPtr<block>> blocks;
 };
 
+// easy access wrappers
 uint8_t* alloc(size_t size, memory_location = memory_location::any, uint32_t align = 0x1000);
 uint8_t* falloc(uint8_t* base, size_t size, memory_location = memory_location::any, uint32_t align = 0x1000);
 
-void preinit(const init_info&);
+vmManager* manager();
 
+void preinit(const init_info&);
 } // namespace vm

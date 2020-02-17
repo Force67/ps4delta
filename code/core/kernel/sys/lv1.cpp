@@ -12,6 +12,8 @@
 #include <intrin.h>
 #include <xbyak.h>
 
+#include <logger/logger.h>
+
 #include "sys_debug.h"
 #include "sys_dynlib.h"
 #include "sys_generic.h"
@@ -119,13 +121,11 @@ static uintptr_t emitCallReporter(const char* name, uint32_t sid, const void* de
 
 uintptr_t lv1_get(uint32_t sid) {
     constexpr auto memberCount = sizeof(syscall_dpt) / sizeof(syscall_Reg);
+    LOG_ASSERT(sid < memberCount);
 
-    if (sid > memberCount)
-        __debugbreak();
+    return reinterpret_cast<uintptr_t>(
+        emitCallReporter(syscall_dpt[sid].name, sid, syscall_dpt[sid].ptr));
 
-   // return reinterpret_cast<uintptr_t>(
-   //     emitCallReporter(syscall_dpt[sid].name, sid, syscall_dpt[sid].ptr));
-
-   return reinterpret_cast<uintptr_t>(syscall_dpt[sid].ptr);
+   //return reinterpret_cast<uintptr_t>(syscall_dpt[sid].ptr);
 }
 } // namespace kern

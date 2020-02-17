@@ -31,15 +31,15 @@ void preinit(const init_info& info) {
 
 static vmManager* s_instance = nullptr;
 
-inline static void commit(uint8_t* addr, size_t size) {
+inline static void commit(u8* addr, size_t size) {
     utl::allocMem(static_cast<void*>(addr), size, utl::page_read_write, utl::allocType::commit);
 }
 
-inline static void protect(uint8_t* addr, size_t len, utl::page_protection pt) {
+inline static void protect(u8* addr, size_t len, utl::page_protection pt) {
     utl::protectMem(static_cast<void*>(addr), len, pt);
 }
 
-inline static void decommit(uint8_t* addr) {
+inline static void decommit(u8* addr) {
     utl::freeMem(static_cast<void*>(addr), false);
 }
 
@@ -51,10 +51,10 @@ block::~block() {
         decommit(a.first);
 }
 
-uint8_t* block::xalloc(uint8_t* desired_addr, size_t size, uint32_t flags, page_flags prot,
-                       uint32_t align) {
+u8* block::xalloc(u8* targetAddress, size_t size, u32 flags, page_flags prot,
+                       u32 align) {
 
-    const uintptr_t addr = reinterpret_cast<uintptr_t>(desired_addr);
+    const uintptr_t addr = reinterpret_cast<uintptr_t>(targetAddress);
     if (!size || prot & page_allocated || (size | addr) % PS4_PAGE_SIZE)
         return nullptr;
 
@@ -73,12 +73,13 @@ uint8_t* block::xalloc(uint8_t* desired_addr, size_t size, uint32_t flags, page_
     if (block_size > AMD64_PAGE_SIZE)
         page_count = block_size / AMD64_PAGE_SIZE;
 
-    __debugbreak();
-    for (size_t i = 0; i < addr / AMD64_PAGE_SIZE + block_size / AMD64_PAGE_SIZE; i++) {
+    const u32 disp = targetAddress - base;
+
+    for (size_t i = disp / AMD64_PAGE_SIZE; i < disp / AMD64_PAGE_SIZE + block_size / AMD64_PAGE_SIZE; i++) {
         auto& pinfo = pages[i];
 
         if (pinfo) {
-            /*attempts to map at fixed address failed*/
+            // attempting to map at owned memory?
             __debugbreak();
             return nullptr;
         }
@@ -100,13 +101,13 @@ uint8_t* block::xalloc(uint8_t* desired_addr, size_t size, uint32_t flags, page_
         for (size_t k = i; k < (i + page_count); k++)
             pages[k].store(prot);
 
-        commit(desired_addr, block_size);
+        commit(targetAddress, block_size);
         break;
     }
 
     // clear out private memory
     if (flags & anon)
-        std::memset(desired_addr, 0, block_size);
+        std::memset(targetAddress, 0, block_size);
 
     page_protection tp = utl::page_read;
     if (prot & page_writable)
@@ -115,14 +116,14 @@ uint8_t* block::xalloc(uint8_t* desired_addr, size_t size, uint32_t flags, page_
         tp |= utl::page_execute;
 
     // apply native page protection
-    protect(desired_addr, block_size, tp);
+    protect(targetAddress, block_size, tp);
 
     // register with alloc store
-    allocations.insert({desired_addr, page_count});
-    return desired_addr;
+    allocations.insert({targetAddress, page_count});
+    return targetAddress;
 }
 
-uint8_t* block::alloc(size_t size, uint32_t flags, page_flags prot, uint32_t align) {
+u8* block::alloc(size_t size, u32 flags, page_flags prot, u32 align) {
     if (!size || prot & page_allocated)
         return nullptr;
 
@@ -141,7 +142,7 @@ uint8_t* block::alloc(size_t size, uint32_t flags, page_flags prot, uint32_t ali
     if (block_size > AMD64_PAGE_SIZE)
         page_count = block_size / AMD64_PAGE_SIZE;
 
-    uint8_t* allocation = nullptr;
+    u8* allocation = nullptr;
 
     // now allocate it
     for (size_t i = 0; i < pages.size(); i++) {
@@ -170,7 +171,7 @@ uint8_t* block::alloc(size_t size, uint32_t flags, page_flags prot, uint32_t ali
             pages[k].store(prot);
 
         // and reserve the real memory
-        allocation = (uint8_t*)(this->base + (i * AMD64_PAGE_SIZE));
+        allocation = (u8*)(this->base + (i * AMD64_PAGE_SIZE));
         commit(allocation, block_size);
         break;
     }
@@ -197,7 +198,7 @@ uint8_t* block::alloc(size_t size, uint32_t flags, page_flags prot, uint32_t ali
     return allocation;
 }
 
-void block::free(uint8_t* ptr) {
+void block::free(u8* ptr) {
     std::lock_guard lock(writer_lock);
 
     auto it = allocations.find(ptr);
@@ -240,7 +241,7 @@ bool vmManager::init() {
 }
 
 // ref counted so the block can't get dealloc'd while referenced
-SharedPtr<block> vmManager::getBlock(uint8_t* addr, memory_location loc) {
+SharedPtr<block> vmManager::getBlock(u8* addr, memory_location loc) {
 
     // by pool index
     if (loc != memory_location::any && loc < blocks.size()) {
@@ -263,13 +264,13 @@ SharedPtr<block> vmManager::getBlock(uint8_t* addr, memory_location loc) {
     return nullptr;
 }
 
-uint8_t* vmManager::alloc(uint8_t* desired, size_t size, memory_location location, uint32_t align) {
+u8* vmManager::alloc(u8* desired, size_t size, memory_location location, u32 align) {
     auto block = getBlock(desired, location);
 
     if (!block)
         __debugbreak();
 
-    const uint32_t hack = page_executable | page_writable | page_readable;
+    const u32 hack = page_executable | page_writable | page_readable;
 
     if (!desired /*TODO: check for fixed*/)
         return block->alloc(size, 0, (page_flags)hack, align);
@@ -277,12 +278,16 @@ uint8_t* vmManager::alloc(uint8_t* desired, size_t size, memory_location locatio
         return block->xalloc(desired, size, 0, (page_flags)hack, align);
 }
 
-uint8_t* alloc(size_t size, memory_location where, uint32_t align) {
+u8* alloc(size_t size, memory_location where, u32 align) {
     return s_instance->alloc(nullptr, size, where, align);
 }
 
-uint8_t* falloc(uint8_t* base, size_t size, memory_location where, uint32_t align) {
+u8* falloc(u8* base, size_t size, memory_location where, u32 align) {
     return s_instance->alloc(base, size, where, align);
+}
+
+vmManager* manager() {
+    return s_instance;
 }
 
 } // namespace memory
