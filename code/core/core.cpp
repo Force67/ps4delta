@@ -49,7 +49,7 @@ bool System::init() {
     return true;
 }
 
-void System::load(std::string& dir) {
+void System::load(const std::string& dir) {
     main_proc = kern::process::create(*this, "main");
     if (!main_proc)
         return;

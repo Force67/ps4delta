@@ -113,6 +113,9 @@ public:
     // sce module fingerprint
     u8 fingerprint[20]{};
 
+    // delta module fingerprint
+    std::string moduleHash;
+
     // sce module name
     std::string name;
 

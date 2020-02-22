@@ -123,9 +123,11 @@ uintptr_t lv1_get(uint32_t sid) {
     constexpr auto memberCount = sizeof(syscall_dpt) / sizeof(syscall_Reg);
     LOG_ASSERT(sid < memberCount);
 
+#if 0
     return reinterpret_cast<uintptr_t>(
         emitCallReporter(syscall_dpt[sid].name, sid, syscall_dpt[sid].ptr));
-
-   //return reinterpret_cast<uintptr_t>(syscall_dpt[sid].ptr);
+#else
+    return reinterpret_cast<uintptr_t>(syscall_dpt[sid].ptr);
+#endif
 }
 } // namespace kern

@@ -47,7 +47,8 @@ int PS4ABI sys_get_proc_type_info(void* oinfo) {
 
 int PS4ABI sys_sysctl(int* name, uint32_t namelen, void* oldp, size_t* oldlenp, const void* newp,
                       size_t newlen) {
-    // for sceKernelGetAppInfo
+    
+    // implements: sysctl_kern_proc_appinfo
     if (name[0] == 1 && name[1] == 14 && name[2] == 35 && namelen == 4) {
         std::memset(oldp, 0, 72);
         return 0;

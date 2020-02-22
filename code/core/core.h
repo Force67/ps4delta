@@ -33,7 +33,7 @@ public:
     System();
 
     bool init();
-    void load(std::string& fromdir);
+    void load(const std::string& fromdir);
 
     inline memory::vmManager& mem() { return *mem_mgr; }
     inline fs::fileSystem& file_system() { return *file_sys; }

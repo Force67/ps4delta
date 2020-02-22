@@ -119,7 +119,7 @@ static bool validate_platform() {
 
     MEMORYSTATUSEX statex{};
     statex.dwLength = sizeof(statex);
-    if (!GlobalMemoryStatusEx(&statex) || statex.ullTotalPhys < 0x200000000 /*eight gb*/) {
+    if (!GlobalMemoryStatusEx(&statex) || statex.ullTotalPhys < 0x100000000 /*for now, 4 gib*/) {
         raise_err(L"Your system doesn't have enough physical memory");
         return false;
     }

@@ -55,12 +55,11 @@ SharedPtr<prx_module> process::loadPrx(std::string_view name) {
             return nullptr;
         }
 
-        LOG_INFO("process::loadPrx {}", name);
-
         // add it to our collection
         prx->started = true;
         modules.push_back(prx);
 
+        // load dependencies
         prx->loadNeededPrx();
     }
     return prx;
@@ -86,7 +85,7 @@ SharedPtr<prx_module> process::getPrx(uint32_t handle) {
     return nullptr;
 }
 
-bool process::load(std::string_view path) {
+bool process::load(const std::string &path) {
     if (!hleKernel) {
         // in non HLE kernel mode we need to pre-load
         // the system libs

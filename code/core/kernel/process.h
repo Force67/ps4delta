@@ -36,7 +36,7 @@ public:
     process(core::System&);
 
     // load executable and prx files
-    bool load(std::string_view);
+    bool load(const std::string&);
 
     // run the process indefinitely
     void run();

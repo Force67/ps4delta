@@ -56,6 +56,13 @@ static loadStatus patch_module(elfObject& elf, sce_module& mod) {
     }
 #endif
 
+    // builtin hack: enable debug messages on 5.05
+    if (mod.moduleHash == "PRX-f1d3ebb39f0e011286a43ceb1ef87d462b87b86f") {
+        *(uint32_t*)(mod.base + 0x68264) = UINT32_MAX;
+    } else if (mod.moduleHash == "PRX-dfb5aa182bee65859d19d16792940fd282489384") {
+        *(uint8_t*)(mod.base + 0x23A20) = 0xCC;
+    }
+
     return loadStatus::Success;
 }
 
@@ -133,6 +140,8 @@ static loadStatus load_exec(elfObject& elf, exec_module& exec) {
 
     LOG_INFO("EXEC module hash {}", hash);
 
+    exec.moduleHash = std::move(hash);
+
     const auto patch_result = patch_module(elf, exec);
     if (patch_result != loadStatus::Success)
         return patch_result;
@@ -199,6 +208,8 @@ static loadStatus load_prx(elfObject& elf, prx_module& prx) {
     }
 
     LOG_INFO("PRX module hash {}, loaded at {}", hash, fmt::ptr(prx.base));
+
+    prx.moduleHash = std::move(hash);
 
     const auto patch_result = patch_module(elf, prx);
     if (patch_result != loadStatus::Success)
@@ -315,8 +326,6 @@ bool loadElf(sce_module& elf, std::string_view path) {
     loadStatus err = isPrx ? load_prx(elfObj, reinterpret_cast<prx_module&>(elf))
                            : load_exec(elfObj, reinterpret_cast<exec_module&>(elf));
 
-    LOG_INFO("Loaded {} as {} at {}", path, elf_to_string(elfObj.header.type), fmt::ptr(elf.base)); 
-
     switch (err) {
     case loadStatus::ErrorBadMap:
         LOG_ERROR("Failed to load obj: unable to map file");
@@ -353,6 +362,8 @@ bool loadElf(sce_module& elf, std::string_view path) {
     } else
         elf.entry = elf.getAddress<u8*>(elf.header.entry);
 
+    LOG_INFO("Loaded {} as {} at {}", elf.name, elf_to_string(elfObj.header.type),
+             fmt::ptr(elf.base));
     return true;
 }
 } // namespace kern
