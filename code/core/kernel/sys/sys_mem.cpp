@@ -43,7 +43,7 @@ u8* PS4ABI sys_mmap(u8* addr, size_t size, u32 prot, u32 flags, u32 fd, size_t o
     const u32 hack = memory::page_executable | memory::page_writable | memory::page_readable;
 
     // do the actual allocation
-    u8* ptr = block->xalloc(addr, size, flags, (memory::page_flags)hack, 0x1000);
+    u8* ptr = block->xalloc(addr, size, flags, (memory::page_flags)hack, 0x1000 * 4 /*PS4 PAGE is 16 kib*/);
 
     if (!ptr) {
         LOG_ERROR("SYS: Unable to alloc at address {} in user pool", ptr);

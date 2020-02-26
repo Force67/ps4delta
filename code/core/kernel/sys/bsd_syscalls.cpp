@@ -10,6 +10,7 @@
 #include <base.h>
 #include <logger/logger.h>
 
+#include "kernel/id_manager.h"
 #include "kernel/process.h"
 
 namespace kern {
@@ -38,31 +39,20 @@ int PS4ABI sys_sigaction(int how, void (*cb)(void*, void*, void*)) {
 
 /*does not belong here*/
 uint32_t PS4ABI sys_namedobj_create(const char* name, void* arg2, uint32_t arg3) {
-    #if 0
-    auto* proc = proc::getActive();
-    if (!proc)
-        return -1;
+    // object is refcounted
+    auto* obj = new object(object::kind::namedobj);
+    obj->name = name;
 
-    auto* obj = new kObject(proc, kObject::oType::namedobj);
-    obj->name() = name;
-
-    uint32_t handle = -1;
-    proc->getObjTable().add(obj, handle);
-    #endif
-    uint32_t handle = -1;
+    uint32_t handle = obj->handle();
     std::printf("creating named obj %s -> %d, with arg 2 %p\n", name, handle, arg2);
     return handle;
 }
 
 int PS4ABI sys_namedobj_delete(uint32_t fd, uint32_t op) {
-    #if 0
-    auto* proc = proc::getActive();
-    if (!proc)
+    // delete the mutex
+    if (!utl::fxm<idManager>::get().release(fd))
         return SysError::eSRCH;
-    #endif
-    __debugbreak();
 
-    //proc->getObjTable().release(fd);
     return 0;
 }
 
@@ -71,7 +61,7 @@ int PS4ABI sys_sysarch(int num, void* args) {
     if (num == 129) {
         auto fsbase = *static_cast<void**>(args);
         __debugbreak();
-       // proc::getActive()->getEnv().fsBase = fsbase;
+        // proc::getActive()->getEnv().fsBase = fsbase;
         return 0;
     }
     __debugbreak();
@@ -129,4 +119,4 @@ int PS4ABI sys_write(uint32_t fd, const void* buf, size_t nbytes) {
 
     return -1;
 }
-} // namespace krnl
+} // namespace kern
