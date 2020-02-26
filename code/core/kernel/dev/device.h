@@ -11,17 +11,20 @@
 #include "kernel/sys/error_table.h"
 #include "../object.h"
 
+#include <base.h>
+
 namespace kern {
 class proc;
 
-class device : public s_object {
+class device : public object {
 public:
-    inline device(process* p) : s_object(p, s_object::oType::device) {}
+    inline device(process* p) :
+        object(object::kind::device), parentProc(p) {}
 
     virtual bool init(const char*, uint32_t, uint32_t) {
         return true;
     }
-    virtual uint8_t* map(void*, size_t, uint32_t, uint32_t, size_t) {
+    virtual uint8_t* map(u8*, size_t, uint32_t, uint32_t, size_t) {
         __debugbreak();
         return nullptr;
     }
@@ -29,5 +32,8 @@ public:
         __debugbreak();
         return -1;
     }
+
+protected:
+    process* parentProc = nullptr;
 };
 }

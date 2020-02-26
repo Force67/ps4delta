@@ -1,5 +1,5 @@
 
-project "host"
+project "launcher"
     language "C++"
     kind "WindowedApp"
 	flags "NoManifest"
@@ -22,14 +22,13 @@ project "host"
     includedirs
     {
         ".",
-		"../core",
-		"../common"
+		"../../common",
+		"../../core"
     }
 
     files
     {
         "premake5.lua",
-		"_res/host.rc",
-        "**.h",
-        "**.cpp"
+		"_res/launcher.rc",
+		"launcher.cpp"
     }

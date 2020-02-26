@@ -12,47 +12,47 @@
 
 namespace kern {
 struct proc_param {
-    uint64_t length;
-    uint32_t magic;
-    uint32_t unk;
-    uint32_t kvers;
+    u64 length;
+    u32 magic;
+    u32 unk;
+    u32 kvers;
 };
 
 struct segment_info {
     uintptr_t addr;
-    uint32_t size;
-    uint32_t flags;
+    u32 size;
+    u32 flags;
 };
 
 struct dynlib_info_ex {
     size_t size;
     char name[256];
-    int32_t handle;
-    uint16_t tls_index;
-    uint16_t pad0;
-    uintptr_t tls_init_addr;
-    uint32_t tls_init_size;
-    uint32_t tls_size;
-    uint32_t tls_offset;
-    uint32_t tls_align;
-    uintptr_t init_proc_addr;
-    uintptr_t fini_proc_addr;
-    uint64_t reserved1;
-    uint64_t reserved2;
-    uintptr_t eh_frame_hdr_addr;
-    uintptr_t eh_frame_addr;
-    uint32_t eh_frame_hdr_size;
-    uint32_t eh_frame_size;
+    i32 handle;
+    u16 tls_index;
+    u16 pad0;
+    u8* tls_init_addr;
+    u32 tls_init_size;
+    u32 tls_size;
+    u32 tls_offset;
+    u32 tls_align;
+    u8* init_proc_addr;
+    u8* fini_proc_addr;
+    u64 reserved1;
+    u64 reserved2;
+    u8* eh_frame_hdr_addr;
+    u8* eh_frame_addr;
+    u32 eh_frame_hdr_size;
+    u32 eh_frame_size;
     segment_info segs[4];
-    uint32_t seg_count;
-    uint32_t ref_count;
+    u32 seg_count;
+    u32 ref_count;
 };
 
 struct dynlib_info {
     size_t size;
     char name[256];
     segment_info segs[4];
-    uint32_t seg_count;
+    u32 seg_count;
     uint8_t fingerprint[20];
 };
 
@@ -60,12 +60,12 @@ static_assert(sizeof(dynlib_info_ex) == 424);
 static_assert(sizeof(dynlib_info) == 352);
 
 int PS4ABI sys_dynlib_dlopen(const char*);
-int PS4ABI sys_dynlib_get_info(uint32_t handle, dynlib_info*);
-int PS4ABI sys_dynlib_get_info_ex(uint32_t handle, int32_t ukn /*always 1*/,
+int PS4ABI sys_dynlib_get_info(u32 handle, dynlib_info*);
+int PS4ABI sys_dynlib_get_info_ex(u32 handle, i32 ukn /*always 1*/,
                                   dynlib_info_ex* dyn_info);
 int PS4ABI sys_dynlib_get_proc_param(void** data, size_t* size);
-int PS4ABI sys_dynlib_get_list(uint32_t* handles, size_t maxCount, size_t* count);
-int PS4ABI sys_dynlib_dlsym(uint32_t handle, const char* cname, void** sym);
-int PS4ABI sys_dynlib_get_obj_member(uint32_t handle, uint8_t index, void** value);
+int PS4ABI sys_dynlib_get_list(u32* handles, size_t maxCount, size_t* count);
+int PS4ABI sys_dynlib_dlsym(u32 handle, const char* cname, void** sym);
+int PS4ABI sys_dynlib_get_obj_member(u32 handle, uint8_t index, void** value);
 int PS4ABI sys_dynlib_process_needed_and_relocate();
 }

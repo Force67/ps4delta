@@ -22,15 +22,18 @@
 #include "memory.h"
 
 namespace kern {
-u8* PS4ABI sys_mmap(void* addr, size_t size, u32 prot, u32 flags, u32 fd, size_t offset) {
-    // stop
-    if (!addr) {
+u8* PS4ABI sys_mmap(u8* addr, size_t size, u32 prot, u32 flags, u32 fd, size_t offset) {
+
+    if (!addr && !(flags & mFlags::fixed))
+        addr = reinterpret_cast<u8*>(0x2'0000'0000);
+
+    // bad behaviour caused by return address check in
+    // sceKernelMapNamedSystemFlexibleMemory
+    if (addr == reinterpret_cast<u8*>(0x8'8000'0000))
         __debugbreak();
-        addr = reinterpret_cast<void*>(0x200000000);
-    }
 
     // FOR NOW we only select user block
-    auto block = memory::manager()->getBlock(static_cast<u8*>(addr), memory::user);
+    auto block = memory::manager()->getBlock(addr, memory::user);
     if (!block) {
         LOG_ERROR("SYS: Unable to select proper memory block");
         return reinterpret_cast<u8*>(-1); // TODO: some sort of autocastable macro?
@@ -40,28 +43,27 @@ u8* PS4ABI sys_mmap(void* addr, size_t size, u32 prot, u32 flags, u32 fd, size_t
     const u32 hack = memory::page_executable | memory::page_writable | memory::page_readable;
 
     // do the actual allocation
-    void* ptr =
-        block->xalloc(static_cast<u8*>(addr), size, flags, (memory::page_flags)hack, 0x1000);
+    u8* ptr = block->xalloc(addr, size, flags, (memory::page_flags)hack, 0x1000);
 
     if (!ptr) {
         LOG_ERROR("SYS: Unable to alloc at address {} in user pool", ptr);
         return reinterpret_cast<u8*>(-1); // TODO: some sort of autocastable macro?
     }
 
+    // stack grows from top to bottom
+    if (flags & mFlags::stack)
+        ptr = &ptr[size];
+
     if (fd != -1) {
         if (auto* dev = utl::fxm<idManager>::get().get(fd)) {
 
             // notify device of memory allocation
-            static_cast<device*>(dev)->map(addr, size, prot, flags, offset);
+            static_cast<device*>(dev)->map(ptr, size, prot, flags, offset);
         }
     }
 
-    std::printf("mmap request %p -> action %p %x, %p\n", addr, ptr, size, _ReturnAddress());
-
-    if (flags & mFlags::stack)
-        return &static_cast<u8*>(ptr)[size];
-
-    return static_cast<u8*>(ptr);
+    std::printf("mmap req %p -> dest %p|%x|%p\n", addr, ptr, size, _ReturnAddress());
+    return ptr;
 }
 
 int PS4ABI sys_mprotect(u8*, size_t len, int prot) {

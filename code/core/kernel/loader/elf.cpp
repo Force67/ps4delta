@@ -13,6 +13,8 @@
 #include "arch/native/native_lift.h"
 #include "formats/elf_object.h"
 
+#include "kernel/process.h"
+
 #include <crypto/sha1.h>
 
 namespace kern {
@@ -56,12 +58,12 @@ static loadStatus patch_module(elfObject& elf, sce_module& mod) {
     }
 #endif
 
-    // builtin hack: enable debug messages on 5.05
+    // built in hack: enable rtld debug messages on 5.05
     if (mod.moduleHash == "PRX-f1d3ebb39f0e011286a43ceb1ef87d462b87b86f") {
         *(uint32_t*)(mod.base + 0x68264) = UINT32_MAX;
-    } else if (mod.moduleHash == "PRX-dfb5aa182bee65859d19d16792940fd282489384") {
-        *(uint8_t*)(mod.base + 0x23A20) = 0xCC;
-    }
+    } /* else if (mod.moduleHash == "PRX-dfb5aa182bee65859d19d16792940fd282489384") {
+         *(uint8_t*)(mod.base + 0x23A20) = 0xCC;
+     }*/
 
     return loadStatus::Success;
 }
@@ -112,7 +114,6 @@ static loadStatus load_exec(elfObject& elf, exec_module& exec) {
             break;
         }
         case PT_SCE_PROCPARAM: {
-
             auto* info = reinterpret_cast<process_param*>(exec.base + p.vaddr);
             if (info->size < 64)
                 LOG_WARNING("Bad process_param size {},{}", info->size, sizeof(proc_param));
@@ -125,6 +126,32 @@ static loadStatus load_exec(elfObject& elf, exec_module& exec) {
             exec.param = info;
             break;
         }
+#if 0
+        case PT_SCE_LIBVERSION: {
+            u8* data = const_cast<u8*>(p.bin.data());
+
+            for (i32 i = 0; i < p.filesz;) {
+                u8 len = data[i];
+                i++;
+
+                for (i32 j = i; j < (i + len); j++) {
+                    if (data[j] == 0x3A) {
+                        size_t namelen = j - i;
+
+                        std::string name;
+                        name.resize(namelen);
+                        memcpy(name.data(), &data[i], namelen);
+
+                        u32 version = *reinterpret_cast<u32*>(&data[i + 1]);
+                        LOG_INFO("** dependency {}, version: {0:x}", name, version);
+                        break;
+                    }
+                }
+
+                i += len;
+            }
+        }
+#endif
         }
     }
 
@@ -218,45 +245,6 @@ static loadStatus load_prx(elfObject& elf, prx_module& prx) {
     return loadStatus::Success;
 }
 
-static void set_module_info(elfObject& elf, sce_module& mod) {
-    std::memcpy(&mod.header, &elf.header, sizeof(ELFHeader));
-
-    for (auto& p : elf.programs)
-        mod.programs.push_back(p);
-
-    for (auto& p : elf.programs) {
-        auto set_info = [&](formats::elf_pg& pg, int idx) {
-            auto& s = mod.segments[idx];
-            s.addr = reinterpret_cast<uintptr_t>(mod.base + p.vaddr);
-            s.flags = p.flags;
-            s.size = ::align_up(p.memsz, p.align);
-        };
-
-        switch (p.type) {
-        case PT_LOAD:
-            set_info(p, 0);
-            break;
-        case PT_SCE_RELRO:
-            set_info(p, 1);
-            break;
-        case PT_TLS: {
-            auto t = std::make_unique<tls_info>();
-            t->vaddr = p.vaddr;
-            t->align = p.align;
-            t->filesz = p.filesz;
-            t->memsz = p.memsz;
-
-            mod.tlsInfo = std::move(t);
-            break;
-        }
-        default:
-            continue;
-        }
-    }
-
-    mod.installExceptionhandler(elf);
-}
-
 inline const char* elf_to_string(u32 type) {
     switch (type) {
     case ET_SCE_EXEC:
@@ -343,16 +331,54 @@ bool loadElf(sce_module& elf, std::string_view path) {
         break;
     }
 
+    for (auto& p : elfObj.programs) {
+        auto set_info = [&](formats::elf_pg& pg, int idx) {
+            auto& s = elf.segments[idx];
+            s.addr = reinterpret_cast<uintptr_t>(elf.base + p.vaddr);
+            s.flags = p.flags;
+            s.size = ::align_up(p.memsz, p.align);
+        };
+
+        switch (p.type) {
+        case PT_LOAD:
+            set_info(p, 0);
+            break;
+        case PT_SCE_RELRO:
+            set_info(p, 1);
+            break;
+        case PT_TLS: {
+            // take a tls slot
+            auto& slot = elf.parent()->getNextTls();
+
+            elf.tlsSlot = slot;
+            elf.tlsAddr = elf.base + p.vaddr;
+            elf.tlsfSize = p.filesz;
+            elf.tlsSize = p.memsz;
+            elf.tlsAlign = p.align;
+
+            // this is really bad, and you should seriously consider
+            // doing it the right way (keeping a list of free indices
+            // and reusing them once they are free'd)
+            slot++;
+
+            break;
+        }
+        default:
+            continue;
+        }
+    }
+
     // digest file info
+    // FIXME: pray that this does not fail; it will break tls indices
     if (!elf.digestDynamic(elfObj)) {
         LOG_ERROR("Unable to digest elf {}", path);
         return false;
     }
 
-    // set elf information
-    set_module_info(elfObj, elf);
+    // calculate eh frame
+    elf.installExceptionhandler(elfObj);
 
-    if (elf.header.entry == 0) {
+    if (elfObj.header.entry == 0) {
         if (!isPrx) {
             LOG_ERROR("No entry point in exec");
             return false;
@@ -360,10 +386,55 @@ bool loadElf(sce_module& elf, std::string_view path) {
 
         elf.entry = nullptr;
     } else
-        elf.entry = elf.getAddress<u8*>(elf.header.entry);
+        elf.entry = elf.getAddress<u8*>(elfObj.header.entry);
 
     LOG_INFO("Loaded {} as {} at {}", elf.name, elf_to_string(elfObj.header.type),
              fmt::ptr(elf.base));
+    return true;
+}
+
+// sys_dynlib_process_needed_and_relocate
+
+// FIXME: unfuck this
+bool initModules(process& proc, bool phase2) {
+    using mod_init_t = int PS4ABI (*)(size_t, const void*, void*);
+    auto& main_mod = proc.main_exec();
+    main_mod.loadNeededPrx();
+
+    for (auto& mod : proc.prx_list()) {
+        if (!mod->started)
+            continue;
+
+        if (!mod->resolveImports() || !mod->doRelocations()) {
+            LOG_ERROR("failed to finalize module {}", mod->name);
+            return false;
+        }
+    }
+
+    if (!main_mod.resolveImports() || !main_mod.doRelocations()) {
+        LOG_ERROR("failed to finalize main module!!! {}", main_mod.name);
+        return false;
+    }
+
+    if (phase2) {
+        for (auto& mod : proc.prx_list()) {
+            if (!mod->started)
+                continue;
+
+            std::string longName = "BaOKcng8g88#" + mod->name + "#" + mod->name;
+
+            uintptr_t start_address = 0;
+            if (!mod->resolveObfSymbol(longName.c_str(), start_address)) {
+                start_address = reinterpret_cast<uintptr_t>(mod->entry);
+            }
+
+            if (start_address) {
+                auto module_init = reinterpret_cast<mod_init_t>(start_address);
+                module_init(0, nullptr, nullptr); /*argc, argv, retaddr*/
+            }
+        }
+    }
+
     return true;
 }
 } // namespace kern

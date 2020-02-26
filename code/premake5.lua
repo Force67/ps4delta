@@ -5,7 +5,7 @@ require('vstudio')
 premake.path = premake.path .. ";build"
 package.path = package.path .. ";../tools/premake/premake-qt/?.lua"
 
--- use clang instead of msvc on windows
+-- premake does not support latest clangCL- therefore we manually overwrite the toolset
 premake.override(premake.vstudio.vc2010, 'platformToolset', function(base, cfg)
     premake.vstudio.vc2010.element("PlatformToolset", nil, "ClangCL")
 end)
@@ -14,21 +14,29 @@ end)
 require('qt')
 qt = premake.extensions.qt
 
-local branch = "unknown_branch"
-local commit = "unknown_commit"
+local function get_git_info()
+    branch_name = "unknown_branch"
+    commit_hash = "unknowm_commit"
 
--- a bit ugly
-local f = io.popen('git symbolic-ref --short -q HEAD', 'r')
-branch = f:read("*a")
-f:close()
-f = io.popen('git rev-parse --short HEAD', 'r')
-commit = f:read("*a")
-f:close()
+    local f = io.popen('git symbolic-ref --short -q HEAD', 'r')
+    local temp = f:read("*a")
+    f:close()
+
+    -- sanitize
+    branch_name = string.gsub(temp, '\n$', '')
+
+    f = io.popen('git rev-parse --short HEAD', 'r')
+    temp = f:read("*a")
+    f:close()
+
+    commit_hash = string.gsub(temp, '\n$', '')
+end
 
 workspace "PS4Delta"
     configurations { "Debug", "Release" }
     architecture "x86_64"
 
+    -- build output directories
     location "../build"
     os.mkdir"../build/symbols"
     targetdir '../bin/%{cfg.buildcfg}/'
@@ -38,10 +46,12 @@ workspace "PS4Delta"
     buildoptions "/std:c++17"
     symbols "On"
 
+    get_git_info()
     defines { "FXNAME=\"%{wks.name}\"", 
               "FXNAME_WIDE=L\"%{wks.name}\"",
-			  ('DELTA_BRANCH="' .. string.gsub(branch, '\n$', '') .. '"'),
-			  ('DELTA_COMMITHASH="' .. string.gsub(commit, '\n$', '') .. '"')}
+              ('DELTA_BRANCH="' .. branch_name .. '"'),
+              ('DELTA_COMMITHASH="' .. commit_hash .. '"'),
+              ('DELTA_CANARY=') .. (branch_name == "master" and 0 or 1)}
     
     filter "configurations:Debug"
         defines { "DELTA_DBG" }
@@ -74,15 +84,17 @@ workspace "PS4Delta"
             "_SCL_SECURE_NO_DEPRECATE"
         }
         
-    startproject "host"
+    startproject "launcher"
 
     group "app"
-	include "./delta"
-	include "./delta_qt"
-    include "./host"
+    include "./delta"
+    include "./delta_qt"
     include "./core"
     include "./common"
     include "./video_core"
+
+    filter {"system:windows"}
+        include "platform/launcher_win"
     
     group "vendor"
     include "vendor/3rdparty.lua"

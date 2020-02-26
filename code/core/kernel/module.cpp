@@ -23,7 +23,7 @@ namespace kern {
 extern config::opt<bool> hleKernel;
 
 static const static_module* staticModules[] = {
-    &prx_static_modules::orbis_libkernel
+    &prx_static_modules::prx_libkernel
 };
 
 using namespace formats;
@@ -94,11 +94,12 @@ uintptr_t sce_module::getSymbol(const char* fullName) {
     return 0;
 }
 
-static bool decodeNid(const char* name, u64& lid, u64& mid) {
-    /*nid's are always 16 bytes long so we should get away
-     with hard coding the access offset*/
+static bool splitNid(const char* name, u64 &fid, u64& lid, u64& mid) {
+    LOG_ASSERT(std::strlen(name) < 16);
 
     bool decodeSuccess = true;
+    if (!decode_nid(name, 11, fid))
+        decodeSuccess = false;
     if (!decode_nid(&name[12], 1, lid))
         decodeSuccess = false;
     if (!decode_nid(&name[14], 1, mid))
@@ -111,42 +112,39 @@ static bool decodeNid(const char* name, u64& lid, u64& mid) {
 }
 
 bool sce_module::resolveObfSymbol(const char* name, uintptr_t& ptrOut) {
-    u64 libid = 0, modid = 0;
-    if (!decodeNid(name, libid, modid))
+    u64 fid = 0, libid = 0, modid = 0;
+    if (!splitNid(name, fid, libid, modid)) {
         __debugbreak();
+        return false;
+    }
 
-    auto lib_it =
-        std::find_if(libs.begin(), libs.end(), [&libid](const auto& e) { return e.id == libid; });
+    auto lib = std::find_if(libs.begin(), libs.end(), 
+                            [&libid](const auto& e) { return e.id == libid; });
 
-    if (lib_it == libs.end())
+    auto mod = std::find_if(mods.begin(), mods.end(),
+                            [&modid](const auto& e) { return e.id == modid; });
+
+    if (lib == libs.end() || mod == mods.end())
         return false;
 
-    auto mod_it =
-        std::find_if(mods.begin(), mods.end(), [&modid](const auto& e) { return e.id == modid; });
-
-    if (mod_it == mods.end())
-        return false;
-
-    u64 hid = 0;
-    decode_nid(name, 11, hid);
-
+    // was the func overriden?
     if (hleKernel) {
-        ptrOut = get_static_func((*mod_it).name, hid);
+        ptrOut = get_static_func((*mod).name, fid);
         if (ptrOut)
             return true;
     }
 
-    auto prx = proc->getPrx((*mod_it).name);
+    auto prx = parentProc->getPrx((*mod).name);
     if (!prx) {
-        LOG_ERROR("resolveObfSymbol: Unknown module {} ({}) requestd", (*mod_it).name,
-                  (*mod_it).id);
+        LOG_ERROR("resolveObfSymbol: Unknown module {} ({}) requestd", (*mod).name,
+                  (*mod).id);
         return false;
     }
 
     char nameenc[12]{}; // name + null terminator
     std::strncpy(nameenc, name, 11);
 
-    std::string longName = std::string(nameenc) + "#" + (*lib_it).name + "#" + (*mod_it).name;
+    std::string longName = std::string(nameenc) + "#" + (*lib).name + "#" + (*mod).name;
     ptrOut = prx->getSymbol(longName.c_str());
     return true;
 }
@@ -232,31 +230,37 @@ bool sce_module::doRelocations() {
         }
 
         switch (type) {
-        case R_X86_64_64:
-            *getAddress<u64*>(r->offset) = symVal + r->addend;
+        case R_X86_64_NONE:
+            // relocation against discarded section
             break;
         case R_X86_64_RELATIVE:
             *getAddress<int64_t*>(r->offset) = getAddress<int64_t>(r->addend);
             break;
+        case R_X86_64_JUMP_SLOT:
         case R_X86_64_GLOB_DAT:
-            *getAddress<u64*>(r->offset) = symVal;
+        case R_X86_64_64:
+            *getAddress<u64*>(r->offset) = symVal + r->addend;
             break;
         case R_X86_64_PC32:
+            __debugbreak(),
             *getAddress<u32*>(r->offset) =
                 static_cast<u32>(symVal + r->addend - getAddress<u64>(r->offset));
             break;
-        case R_X86_64_DTPMOD64:
-            *getAddress<u64*>(r->offset) += 0xF00D; // BUG BUG BUG FIX FIX
-            break;
         case R_X86_64_DTPOFF32:
+            __debugbreak();
             *getAddress<u32*>(r->offset) += static_cast<u32>(symVal + r->addend);
+            break;
+        case R_X86_64_DTPMOD64:
+            // TODO: verify if this is correct behavior
+            *getAddress<u64*>(r->offset) = tlsSlot;
             break;
         case R_X86_64_DTPOFF64:
             *getAddress<u64*>(r->offset) += symVal + r->addend;
             break;
-        case R_X86_64_NONE:
-            break;
+        //case R_X86_64_TPOFF64:
+        //    *getAddress<u64*>(r->offset) = tlsInfo->v
         default:
+            __debugbreak();
             continue;
         }
     }
@@ -445,15 +449,17 @@ bool sce_module::digestDynamic(formats::elfObject& elf) {
 
 bool sce_module::loadNeededPrx() {
     for (auto& it : sharedObjects) {
-        proc->loadPrx(it);
+        parentProc->loadPrx(it);
     }
 
     return true;
 }
 
+//https://github.com/robgjansen/elf-loader/blob/dd9d4ca18a8513782cef1b49a746931ab6417a94/vdl-file.h
+
 #if 0
 			case PT_SCE_LIBVERSION:
-			{
+			{*
 				u8* sec = getOffset<u8>(s->offset);
 
 				// count entries
@@ -489,7 +495,9 @@ bool sce_module::loadNeededPrx() {
 				break;
 #endif
 
-sce_module::sce_module(process& proc) : s_object(&proc, s_object::oType::dynlib) {}
+sce_module::sce_module(process& proc) :
+    object(object::kind::dynlib), parentProc(&proc) 
+{}
 
 SharedPtr<exec_module> exec_module::load(process& proc, std::string_view path) {
     // direct path
@@ -507,49 +515,5 @@ SharedPtr<prx_module> prx_module::load(process& proc, std::string_view path) {
 
     auto prx = std::make_shared<prx_module>(proc);
     return loadElf(*prx, pathX) ? prx : nullptr;
-}
-
-// sys_dynlib_process_needed_and_relocate
-bool init_modules(process& proc, bool phase2) {
-    using mod_init_t = int PS4ABI (*)(size_t, const void*, void*);
-    auto& main_mod = proc.main_exec();
-    main_mod.loadNeededPrx();
-
-    for (auto& mod : proc.prx_list()) {
-        if (!mod->started)
-            continue;
-
-        if (!mod->resolveImports() || !mod->doRelocations()) {
-            LOG_ERROR("failed to finalize module {}", mod->name);
-            return false;
-        }
-    }
-
-    if (!main_mod.resolveImports() || !main_mod.doRelocations()) {
-        LOG_ERROR("failed to finalize main module!!! {}", main_mod.name);
-        return false;
-    }
-
-    if (!phase2)
-        return true;
-
-    for (auto& mod : proc.prx_list()) {
-        if (!mod->started)
-            continue;
-
-        std::string longName = "BaOKcng8g88#" + mod->name + "#" + mod->name;
-
-        uintptr_t start_address = 0;
-        if (!mod->resolveObfSymbol(longName.c_str(), start_address)) {
-            start_address = reinterpret_cast<uintptr_t>(mod->entry);
-        }
-
-        if (start_address) {
-            auto module_init = reinterpret_cast<mod_init_t>(start_address);
-            module_init(0, nullptr, nullptr); /*argc, argv, retaddr*/
-        }
-    }
-
-    return true;
 }
 } // namespace kern

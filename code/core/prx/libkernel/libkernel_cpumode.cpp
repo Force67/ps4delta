@@ -7,14 +7,26 @@
  * in the root of the source tree.
  */
 
-// This file was generated on 05/02/2020
+// This file was generated on 26/02/2020
 
 #include <base.h>
 #include "kernel/module.h"
 
-int PS4ABI lk_sceKernelEnableDmemAliasing1()
+namespace {
+
+int PS4ABI sceKernelGetCpumode1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
+int PS4ABI sceKernelSetFsstParam1()
+{
+	LOG_UNIMPLEMENTED;
+	return 0;
+}
+
+}
+
+IMP_FUNC(sceKernelGetCpumode1)
+IMP_FUNC(sceKernelSetFsstParam1)

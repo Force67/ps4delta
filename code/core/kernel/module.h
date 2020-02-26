@@ -77,7 +77,7 @@ struct tls_info {
 static_assert(sizeof(process_param) == 80);
 static_assert(sizeof(module_param) == 24);
 
-class sce_module : public s_object {
+class sce_module : public object {
 public:
     sce_module(process&);
 
@@ -96,21 +96,17 @@ public:
     // is the module being executed?
     std::atomic<bool> started = false;
 
-    // module base address
+    // module load bse
     u8* base = nullptr;
 
     // module entry point
-    u8* entry = 0;
+    u8* entry = nullptr;
     u32 mappedSize = 0;
 
-    // elf data
-    ELFHeader header;
-    std::vector<ELFPgHeader> programs;
-
-    // unique module identifier
+    // loader fingerprint
     u8 sha1[20]{};
 
-    // sce module fingerprint
+    // sce fingerprint
     u8 fingerprint[20]{};
 
     // delta module fingerprint
@@ -122,8 +118,6 @@ public:
     // sce segments
     segment_info segments[4]{};
 
-    std::unique_ptr<tls_info> tlsInfo;
-
     u8* initAddr = nullptr;
     u8* finiAddr = nullptr;
 
@@ -132,11 +126,21 @@ public:
     u32 ehFrameheaderSize;
     u32 ehFrameSize;
 
+    u8* tlsAddr = nullptr;
+    u32 tlsSize;
+    u32 tlsfSize;
+    u32 tlsAlign;
+    u16 tlsSlot;
+
     bool loadNeededPrx();
     void installExceptionhandler(formats::elfObject&);
     bool digestDynamic(formats::elfObject&);
 
+    inline process* parent() const { return parentProc; }
+
 protected:
+    // process owning the module
+    process* parentProc = nullptr;
 
     u8* dynData = nullptr;
 
@@ -145,16 +149,20 @@ protected:
         return reinterpret_cast<T*>(dynData + disp);
     }
 
-    std::pair<ElfSym*, size_t> symTab;
-    std::pair<ElfRel*, size_t> jumpTab;
-    std::pair<ElfRel*, size_t> relaTab;
-    std::pair<u8*, size_t> hashTab;
-    std::pair<char*, size_t> strTab;
+    std::pair<ElfSym*, u32> symTab;
+    std::pair<ElfRel*, u32> jumpTab;
+    std::pair<ElfRel*, u32> relaTab;
+    std::pair<u8*, u32> hashTab;
+    std::pair<char*, u32> strTab;
 
     std::vector<std::string> sharedObjects;
     std::vector<lib_info> libs;
     std::vector<mod_info> mods;
 };
+
+constexpr auto y = sizeof(std::pair<u8*, u32>);
+
+constexpr auto x = sizeof(sce_module);
 
 class exec_module final : public sce_module {
 public:
@@ -178,12 +186,17 @@ public:
     dynlib_info_ex info;
 };
 
-bool init_modules(process&, bool phase2 = true);
-
 struct prx_static_modules {
-    static static_module orbis_libkernel;
+    static static_module prx_libkernel;
 };
 } // namespace kern
 
 #define BIND_FUNC(nid, func) \
-{nid, (const void*)&func},
+{nid, (const void*)&ptr_##func},
+
+#define IMP_FUNC(x) const void* ptr_##x = (const void*)&x;
+#define DECL_FUNC(x) extern const void* ptr_##x;
+
+#define MODULE_INIT(x) kern::static_module kern::prx_static_modules::prx_##x( \
+    #x, (kern::static_func*)&functions,\
+    (sizeof(functions) / sizeof(kern::static_func)));

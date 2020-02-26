@@ -32,4 +32,5 @@ enum class libLoadType {
 constexpr u32 default_rip_size = 2 * 1024;
 
 bool loadElf(sce_module &elf, std::string_view path);
+bool initModules(process& proc, bool phase2);
 }

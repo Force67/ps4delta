@@ -7,10 +7,12 @@
  * in the root of the source tree.
  */
 
-// This file was generated on 05/02/2020
+// This file was generated on 26/02/2020
 
 #include <base.h>
 #include "kernel/module.h"
+
+namespace {
 
 int PS4ABI lk_ioctl3()
 {
@@ -18,31 +20,31 @@ int PS4ABI lk_ioctl3()
 	return 0;
 }
 
-int PS4ABI lk_sceKernelIccGetErrLog1()
+int PS4ABI sceKernelIccGetErrLog1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int PS4ABI lk_sceKernelGetSocPowerConsumption1()
+int PS4ABI sceKernelGetSocPowerConsumption1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int PS4ABI lk_sceKernelIccGetHwInfo1()
+int PS4ABI sceKernelIccGetHwInfo1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int PS4ABI lk_sceKernelIccGetSysEventLog1()
+int PS4ABI sceKernelIccGetSysEventLog1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int PS4ABI lk_sceKernelIccGetCountTime1()
+int PS4ABI sceKernelIccGetCountTime1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
@@ -60,3 +62,13 @@ int PS4ABI lk_unk_uV_YilcHqAs1()
 	return 0;
 }
 
+}
+
+IMP_FUNC(lk_ioctl3)
+IMP_FUNC(sceKernelIccGetErrLog1)
+IMP_FUNC(sceKernelGetSocPowerConsumption1)
+IMP_FUNC(sceKernelIccGetHwInfo1)
+IMP_FUNC(sceKernelIccGetSysEventLog1)
+IMP_FUNC(sceKernelIccGetCountTime1)
+IMP_FUNC(lk_unk_gpgi_GwE2Is1)
+IMP_FUNC(lk_unk_uV_YilcHqAs1)

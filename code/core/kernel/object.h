@@ -17,27 +17,23 @@
 namespace kern {
 class process;
 
-class s_object {
+class object {
 public:
     using handleList = std::vector<uint32_t>;
 
-    enum class oType {
+    enum class kind {
         file,
         device,
         namedobj,
         dynlib
     };
 
-    explicit s_object(process*, oType);
+    explicit object(kind);
 
     void retain();
     void release();
     void retainHandle();
     void releaseHandle();
-
-    oType type() const {
-        return otype;
-    }
 
     handleList& handles() {
         return handleCollection;
@@ -46,14 +42,10 @@ public:
     uint32_t handle() const {
         return handleCollection[0];
     }
-    std::string& name() {
-        return oname;
-    }
 
-protected:
-    oType otype;
-    process* proc;
-    std::string oname;
+public:
+    kind type;
+    std::string name;
 
 private:
     handleList handleCollection;

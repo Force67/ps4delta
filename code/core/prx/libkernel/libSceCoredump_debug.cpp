@@ -7,20 +7,26 @@
  * in the root of the source tree.
  */
 
-// This file was generated on 05/02/2020
+// This file was generated on 26/02/2020
 
 #include <base.h>
 #include "kernel/module.h"
 
-int PS4ABI lk_sceKernelGetModuleInfo2()
+namespace {
+
+int PS4ABI sceCoredumpDebugTriggerCoredump()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int PS4ABI lk_sceKernelGetModuleList2()
+int PS4ABI sceCoredumpDebugForceCoredumpOnAppClose()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
+}
+
+IMP_FUNC(sceCoredumpDebugTriggerCoredump)
+IMP_FUNC(sceCoredumpDebugForceCoredumpOnAppClose)

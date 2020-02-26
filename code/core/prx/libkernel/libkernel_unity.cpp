@@ -7,38 +7,33 @@
  * in the root of the source tree.
  */
 
-// This file was generated on 05/02/2020
+// This file was generated on 26/02/2020
 
 #include <base.h>
 #include "kernel/module.h"
 
-int PS4ABI lk_sceKernelJitCreateAliasOfSharedMemory2()
+namespace {
+
+int PS4ABI sceKernelRemoveExceptionHandler2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int PS4ABI lk_sceKernelJitCreateSharedMemory2()
+int PS4ABI sceKernelInstallExceptionHandler2()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int PS4ABI lk_sceKernelJitGetSharedMemoryInfo2()
+int PS4ABI sceKernelRaiseException1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int PS4ABI lk_sceKernelJitMapSharedMemory2()
-{
-	LOG_UNIMPLEMENTED;
-	return 0;
 }
 
-int PS4ABI lk_socketpair2()
-{
-	LOG_UNIMPLEMENTED;
-	return 0;
-}
-
+IMP_FUNC(sceKernelRemoveExceptionHandler2)
+IMP_FUNC(sceKernelInstallExceptionHandler2)
+IMP_FUNC(sceKernelRaiseException1)

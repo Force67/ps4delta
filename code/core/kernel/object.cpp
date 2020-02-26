@@ -7,32 +7,31 @@
  * in the root of the source tree.
  */
 
-#include "process.h"
 #include "object.h"
 #include "id_manager.h"
 
-#include <logger/logger.h>
-
 namespace kern {
-s_object::s_object(process* proc, oType type) : otype(type), proc(proc) {
+object::object(kind type) : 
+    type(type) 
+{
     uint32_t temp = 0;
     utl::fxm<idManager>::get().add(this, temp);
 }
 
-void s_object::release() {
+void object::release() {
     if (--refCount == 0)
         delete this;
 }
 
-void s_object::retain() {
+void object::retain() {
     refCount++;
 }
 
-void s_object::retainHandle() {
+void object::retainHandle() {
     utl::fxm<idManager>::get().keep(handleCollection[0]);
 }
 
-void s_object::releaseHandle() {
+void object::releaseHandle() {
     utl::fxm<idManager>::get().release(handleCollection[0]);
 }
 } // namespace krnl

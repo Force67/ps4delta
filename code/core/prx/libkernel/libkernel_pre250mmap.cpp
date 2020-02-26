@@ -7,26 +7,33 @@
  * in the root of the source tree.
  */
 
-// This file was generated on 05/02/2020
+// This file was generated on 26/02/2020
 
 #include <base.h>
 #include "kernel/module.h"
 
-int PS4ABI lk_sceKernelRemoveExceptionHandler2()
+namespace {
+
+int PS4ABI sceKernelBatchMap1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int PS4ABI lk_sceKernelInstallExceptionHandler2()
+int PS4ABI sceKernelMapDirectMemory1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int PS4ABI lk_sceKernelRaiseException1()
+int PS4ABI sceKernelMapNamedDirectMemory1()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
+}
+
+IMP_FUNC(sceKernelBatchMap1)
+IMP_FUNC(sceKernelMapDirectMemory1)
+IMP_FUNC(sceKernelMapNamedDirectMemory1)

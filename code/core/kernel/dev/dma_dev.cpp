@@ -26,7 +26,7 @@ int32_t dmaDevice::ioctl(uint32_t cmd, void* data) {
     return 0;
 }
 
-uint8_t* dmaDevice::map(void* addr, size_t, uint32_t, uint32_t, size_t) {
+uint8_t* dmaDevice::map(u8* addr, size_t, uint32_t, uint32_t, size_t) {
     //__debugbreak();
     return reinterpret_cast<uint8_t*>(-1);
 }

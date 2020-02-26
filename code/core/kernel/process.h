@@ -47,10 +47,12 @@ public:
 
     // gets the module
     SharedPtr<prx_module> getPrx(std::string_view name);
-    SharedPtr<prx_module> getPrx(uint32_t handle);
+    SharedPtr<prx_module> getPrx(u32 handle);
 
     inline prx_list_t& prx_list() { return modules; }
     inline exec_module& main_exec() { return *main_module; }
+
+    inline auto& getNextTls() { return nextTlsSlot; }
 
 private:
     SharedPtr<exec_module> main_module;
@@ -59,13 +61,16 @@ private:
     std::string name;
 
     // the id of this process
-    uint32_t pid;
+    u32 pid;
 
     // our prx module collection
     prx_list_t modules;
 
     // core ref
     core::System& sys;
+
+    // TODO: reuse free slots
+    std::atomic<u16> nextTlsSlot = 0;
 };
 
 // currently executed process

@@ -7,26 +7,19 @@
  * in the root of the source tree.
  */
 
-// This file was generated on 05/02/2020
+// This file was generated on 26/02/2020
 
 #include <base.h>
 #include "kernel/module.h"
 
-int PS4ABI lk_sceKernelBatchMap1()
+namespace {
+
+int PS4ABI sceKernelIsModuleLoaded()
 {
 	LOG_UNIMPLEMENTED;
 	return 0;
 }
 
-int PS4ABI lk_sceKernelMapDirectMemory1()
-{
-	LOG_UNIMPLEMENTED;
-	return 0;
 }
 
-int PS4ABI lk_sceKernelMapNamedDirectMemory1()
-{
-	LOG_UNIMPLEMENTED;
-	return 0;
-}
-
+IMP_FUNC(sceKernelIsModuleLoaded)

@@ -59,27 +59,28 @@ int PS4ABI sys_dynlib_get_info_ex(uint32_t handle, int32_t ukn /*always 1*/,
     std::memset(dyn_info, 0, sizeof(dynlib_info_ex));
 
     dyn_info->size = sizeof(dynlib_info_ex);
-    dyn_info->handle = mod->handle();
+    dyn_info->handle = static_cast<i32>(mod->handle());
+
     std::strncpy(dyn_info->name, mod->name.c_str(), 256);
     std::memcpy(dyn_info->segs, mod->segments, sizeof(mod->segments));
 
-    dyn_info->seg_count = 2;
-    dyn_info->ref_count = 1;
+    dyn_info->seg_count = 0 /*2*/;
+    dyn_info->ref_count = mod.use_count();
 
-    if (mod->tlsInfo) {
-        dyn_info->tls_index = 0xFF; // BUG
-        dyn_info->tls_align = mod->tlsInfo->align;
-        dyn_info->tls_init_size = mod->tlsInfo->filesz;
-        dyn_info->tls_size = mod->tlsInfo->memsz;
-        dyn_info->tls_init_addr = static_cast<uintptr_t>(mod->tlsInfo->vaddr);
+    if (mod->tlsAddr) {
+        dyn_info->tls_index = mod->tlsSlot;
+        dyn_info->tls_align = mod->tlsAlign;
+        dyn_info->tls_init_size = mod->tlsfSize;
+        dyn_info->tls_size = mod->tlsSize;
+        dyn_info->tls_init_addr = mod->tlsAddr;
     }
 
-    dyn_info->init_proc_addr = reinterpret_cast<uintptr_t>(mod->initAddr);
-    dyn_info->fini_proc_addr = reinterpret_cast<uintptr_t>(mod->finiAddr);
+    dyn_info->init_proc_addr = mod->initAddr;
+    dyn_info->fini_proc_addr = mod->finiAddr;
 
-    dyn_info->eh_frame_addr = reinterpret_cast<uintptr_t>(mod->ehFrameAddr);
-    dyn_info->eh_frame_hdr_addr = reinterpret_cast<uintptr_t>(mod->ehFrameheaderAddr);
+    dyn_info->eh_frame_addr = mod->ehFrameAddr;
     dyn_info->eh_frame_size = mod->ehFrameSize;
+    dyn_info->eh_frame_hdr_addr = mod->ehFrameheaderAddr;
     dyn_info->eh_frame_hdr_size = mod->ehFrameheaderSize;
     return 0;
 }

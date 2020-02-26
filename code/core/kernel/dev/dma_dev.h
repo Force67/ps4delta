@@ -18,6 +18,6 @@ public:
     dmaDevice(process*);
 
     int32_t ioctl(uint32_t command, void* args) override;
-    uint8_t* map(void*, size_t, uint32_t, uint32_t, size_t) override;
+    uint8_t* map(u8*, size_t, uint32_t, uint32_t, size_t) override;
 };
 }

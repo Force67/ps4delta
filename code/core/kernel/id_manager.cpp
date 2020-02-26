@@ -120,7 +120,7 @@ bool idManager::keep(uint32_t handle) {
     return false;
 }
 
-bool idManager::add(s_object* obj, uint32_t& handleOut) {
+bool idManager::add(object* obj, uint32_t& handleOut) {
     std::lock_guard lock(omutex);
 
     uint32_t slot = 0, handle = 0;
@@ -187,12 +187,12 @@ bool idManager::release(uint32_t handle) {
     return true;
 }
 
-s_object* idManager::get(uint32_t handle) {
+object* idManager::get(uint32_t handle) {
     std::lock_guard lock(omutex);
 
     // Lower 2 bits are ignored.
     uint32_t slot = handle >> 2;
-    s_object* obj = nullptr;
+    object* obj = nullptr;
 
     // Verify slot.
     if (slot < tableCap) {

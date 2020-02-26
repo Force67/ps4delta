@@ -14,6 +14,8 @@
 #include <utl/fxm.h>
 #include <config.h>
 
+#include "loader/elf.h"
+
 #include <xbyak.h>
 
 #include "core.h"
@@ -111,7 +113,7 @@ void process::run() {
     using exit_func_t = PS4ABI void (*)();
     using main_init_t = PS4ABI void (*)(void*, exit_func_t);
 
-    init_modules(*this, false);
+    initModules(*this, false);
 
     union stack_entry {
         const void* ptr;

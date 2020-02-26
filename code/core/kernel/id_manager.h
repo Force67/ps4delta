@@ -25,11 +25,11 @@ public:
 
     void reset();
     void purge();
-    bool add(s_object*, uint32_t&);
+    bool add(object*, uint32_t&);
     bool remove(uint32_t);
     bool release(uint32_t);
     bool keep(uint32_t);
-    s_object* get(uint32_t);
+    object* get(uint32_t);
 
 private:
     bool resize(uint32_t newCap);
@@ -39,7 +39,7 @@ private:
 
     struct entry {
         int refCount = 0;
-        s_object* obj = nullptr;
+        object* obj = nullptr;
     };
 
     entry* findEntry(uint32_t);
