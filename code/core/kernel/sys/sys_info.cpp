@@ -12,6 +12,8 @@
 
 #include <intrin.h>
 
+#include "kernel/process.h"
+
 namespace kern {
 int sys_budget_get_ptype();
 
@@ -56,10 +58,11 @@ int PS4ABI sys_sysctl(int* name, uint32_t namelen, void* oldp, size_t* oldlenp, 
 
     // kern.userstack
     else if (name[0] == 1 && name[1] == 33 && namelen == 2) {
-        __debugbreak();
-        //auto& info = process::getActive()->getEnv();
-        //*static_cast<void**>(oldp) = info.userStack + info.userStackSize;
-        //std::printf("userstack -> base %p, end %p\n", info.userStack, oldp);
+        u8* stack = activeProc()->getStack();
+        if (!stack) return -1;
+
+        // the stack grows from top to bottom
+        *static_cast<void**>(oldp) = stack + user_stack_size;
         return 0;
     }
 

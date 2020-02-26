@@ -35,6 +35,7 @@ end
 workspace "PS4Delta"
     configurations { "Debug", "Release" }
     architecture "x86_64"
+    vectorextensions "AVX2"
 
     -- build output directories
     location "../build"

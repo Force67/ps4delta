@@ -27,6 +27,8 @@ enum process_type {
     process_worker
 };
 
+constexpr size_t user_stack_size = 20 * 1024 * 1024;
+
 class process {
 public:
     using prx_list_t = std::vector<SharedPtr<prx_module>>;
@@ -53,6 +55,7 @@ public:
     inline exec_module& main_exec() { return *main_module; }
 
     inline auto& getNextTls() { return nextTlsSlot; }
+    inline u8* getStack() { return userStack; }
 
 private:
     SharedPtr<exec_module> main_module;
@@ -71,6 +74,8 @@ private:
 
     // TODO: reuse free slots
     std::atomic<u16> nextTlsSlot = 0;
+
+    u8* userStack = nullptr;
 };
 
 // currently executed process

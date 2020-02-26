@@ -41,7 +41,10 @@ UniquePtr<process> process::create(core::System& sys, std::string name) {
     // set that process active
     current_proc = proc.get();
 
-    LOG_INFO("process::create {} with pid {}", proc->name, proc->pid);
+    // and create the user stack
+    proc->userStack = memory::alloc(user_stack_size, memory::app);
+
+    LOG_INFO("process::create {} with pid {}, userstack @ {}", proc->name, proc->pid, fmt::ptr(proc->userStack));
     return proc;
 }
 
@@ -68,7 +71,7 @@ SharedPtr<prx_module> process::loadPrx(std::string_view name) {
 }
 
 SharedPtr<prx_module> process::getPrx(std::string_view name) {
-    auto iter = std::find_if(modules.begin(), modules.end(),
+   auto iter = std::find_if(modules.begin(), modules.end(),
                              [&name](const auto& e) { return e->name == name; });
 
    if (iter != modules.end())

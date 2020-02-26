@@ -24,17 +24,18 @@
 namespace kern {
 u8* PS4ABI sys_mmap(u8* addr, size_t size, u32 prot, u32 flags, u32 fd, size_t offset) {
 
-    if (!addr && !(flags & mFlags::fixed))
-        addr = reinterpret_cast<u8*>(0x2'0000'0000);
+    //if (!addr && !(flags & mFlags::fixed))
+    //    addr = reinterpret_cast<u8*>(0x2'0000'0000);
 
     // bad behaviour caused by return address check in
     // sceKernelMapNamedSystemFlexibleMemory
     if (addr == reinterpret_cast<u8*>(0x8'8000'0000))
         __debugbreak();
 
-    // FOR NOW we only select user block
-    auto block = memory::manager()->getBlock(addr, memory::user);
+    // select our memory block by address
+    auto block = memory::manager()->getBlock(addr);
     if (!block) {
+        __debugbreak();
         LOG_ERROR("SYS: Unable to select proper memory block");
         return reinterpret_cast<u8*>(-1); // TODO: some sort of autocastable macro?
     }
@@ -45,8 +46,14 @@ u8* PS4ABI sys_mmap(u8* addr, size_t size, u32 prot, u32 flags, u32 fd, size_t o
     // do the actual allocation
     u8* ptr = block->xalloc(addr, size, flags, (memory::page_flags)hack, 0x1000 * 4 /*PS4 PAGE is 16 kib*/);
 
+    //FIXME; FIXED CHECKS
+    if (!memory::manager()->getBlock(nullptr, memory::user)->check(addr) && !ptr) {
+        ptr = block->alloc(size, flags, (memory::page_flags)hack, 0x1000 * 4);
+    }
+
     if (!ptr) {
-        LOG_ERROR("SYS: Unable to alloc at address {} in user pool", ptr);
+        __debugbreak();
+        LOG_ERROR("SYS: Unable to alloc at address {} in pool {}", fmt::ptr(ptr), fmt::ptr(block->base));
         return reinterpret_cast<u8*>(-1); // TODO: some sort of autocastable macro?
     }
 

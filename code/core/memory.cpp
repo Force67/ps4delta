@@ -20,8 +20,6 @@ constexpr size_t AMD64_PAGE_MASK = (AMD64_PAGE_SIZE - 1);
 constexpr size_t PS4_PAGE_SIZE = 1024 * 16;
 constexpr size_t PS4_PAGE_MASK = (PS4_PAGE_SIZE - 1);
 
-constexpr size_t USER_STACK = 20 * 1024 * 1024;
-
 static const init_info* g_areas = nullptr;
 
 // pre-alloc hook
@@ -51,8 +49,7 @@ block::~block() {
         decommit(a.first);
 }
 
-u8* block::xalloc(u8* targetAddress, size_t size, u32 flags, page_flags prot,
-                       u32 align) {
+u8* block::xalloc(u8* targetAddress, size_t size, u32 flags, page_flags prot, u32 align) {
 
     const uintptr_t addr = reinterpret_cast<uintptr_t>(targetAddress);
     if (!size || prot & page_allocated || (size | addr) % PS4_PAGE_SIZE)
@@ -75,12 +72,13 @@ u8* block::xalloc(u8* targetAddress, size_t size, u32 flags, page_flags prot,
 
     const u32 disp = targetAddress - base;
 
-    for (size_t i = disp / AMD64_PAGE_SIZE; i < disp / AMD64_PAGE_SIZE + block_size / AMD64_PAGE_SIZE; i++) {
+    for (size_t i = disp / AMD64_PAGE_SIZE;
+         i < disp / AMD64_PAGE_SIZE + block_size / AMD64_PAGE_SIZE; i++) {
         auto& pinfo = pages[i];
 
-        if (pinfo) {
-            // attempting to map at owned memory?
-            __debugbreak();
+        if (!pinfo) {
+            // attempting to map at unowned memory?
+            //__debugbreak();
             return nullptr;
         }
 
@@ -252,14 +250,16 @@ SharedPtr<block> vmManager::getBlock(u8* addr, memory_location loc) {
         return block;
     }
 
-    if (!addr)
-        return nullptr;
+    // by addr
+    return addr ? getBlock(addr) : nullptr;
+}
 
-    // by address
-    for (auto& b : blocks) {
-        if (b->check(addr))
-            return b;
-    }
+SharedPtr<block> vmManager::getBlock(u8* addr) {
+    auto iter = std::find_if(blocks.begin(), blocks.end(),
+                             [&addr](const auto& b) { return b->check(addr); });
+
+    if (iter != blocks.end())
+        return (*iter);
 
     return nullptr;
 }
