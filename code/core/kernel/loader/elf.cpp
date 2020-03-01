@@ -121,8 +121,6 @@ static loadStatus load_exec(elfObject& elf, exec_module& exec) {
             if (info->magic != 0x4942524F /*'ORBI'*/)
                 return loadStatus::ErrorProcInfo;
 
-            LOG_INFO("** sdk version: {0:x}", info->sdk_version);
-
             exec.param = info;
             break;
         }
@@ -164,8 +162,6 @@ static loadStatus load_exec(elfObject& elf, exec_module& exec) {
         hash[4 + i * 2] = pal[exec.sha1[i] >> 4];
         hash[5 + i * 2] = pal[exec.sha1[i] & 15];
     }
-
-    LOG_INFO("EXEC module hash {}", hash);
 
     exec.moduleHash = std::move(hash);
 
@@ -216,8 +212,6 @@ static loadStatus load_prx(elfObject& elf, prx_module& prx) {
             if (info->magic != 0x3c13f4bf)
                 return loadStatus::ErrorModuleInfo;
 
-            LOG_INFO("** sdk version: {0:x}", info->sdk_version);
-
             prx.param = info;
             break;
         }
@@ -233,8 +227,6 @@ static loadStatus load_prx(elfObject& elf, prx_module& prx) {
         hash[4 + i * 2] = pal[prx.sha1[i] >> 4];
         hash[5 + i * 2] = pal[prx.sha1[i] & 15];
     }
-
-    LOG_INFO("PRX module hash {}, loaded at {}", hash, fmt::ptr(prx.base));
 
     prx.moduleHash = std::move(hash);
 
@@ -262,7 +254,7 @@ inline const char* elf_to_string(u32 type) {
     }
 }
 
-bool loadElf(sce_module& elf, std::string_view path) {
+bool loadElf(sce_module& elf, const std::string& path) {
     utl::File file(path);
     if (!file.IsOpen()) {
         __debugbreak();
@@ -390,51 +382,6 @@ bool loadElf(sce_module& elf, std::string_view path) {
 
     LOG_INFO("Loaded {} as {} at {}", elf.name, elf_to_string(elfObj.header.type),
              fmt::ptr(elf.base));
-    return true;
-}
-
-// sys_dynlib_process_needed_and_relocate
-
-// FIXME: unfuck this
-bool initModules(process& proc, bool phase2) {
-    using mod_init_t = int PS4ABI (*)(size_t, const void*, void*);
-    auto& main_mod = proc.main_exec();
-    main_mod.loadNeededPrx();
-
-    for (auto& mod : proc.prx_list()) {
-        if (!mod->started)
-            continue;
-
-        if (!mod->resolveImports() || !mod->doRelocations()) {
-            LOG_ERROR("failed to finalize module {}", mod->name);
-            return false;
-        }
-    }
-
-    if (!main_mod.resolveImports() || !main_mod.doRelocations()) {
-        LOG_ERROR("failed to finalize main module!!! {}", main_mod.name);
-        return false;
-    }
-
-    if (phase2) {
-        for (auto& mod : proc.prx_list()) {
-            if (!mod->started)
-                continue;
-
-            std::string longName = "BaOKcng8g88#" + mod->name + "#" + mod->name;
-
-            uintptr_t start_address = 0;
-            if (!mod->resolveObfSymbol(longName.c_str(), start_address)) {
-                start_address = reinterpret_cast<uintptr_t>(mod->entry);
-            }
-
-            if (start_address) {
-                auto module_init = reinterpret_cast<mod_init_t>(start_address);
-                module_init(0, nullptr, nullptr); /*argc, argv, retaddr*/
-            }
-        }
-    }
-
     return true;
 }
 } // namespace kern

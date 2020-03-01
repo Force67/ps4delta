@@ -112,6 +112,7 @@ int PS4ABI sys_dynlib_get_obj_member(uint32_t handle, uint8_t index, void** valu
     auto mod = activeProc()->getPrx(handle);
     if (!mod) return -1;
 
+
     *value = static_cast<void*>(mod->initAddr);
     return 0;
 }
@@ -134,8 +135,11 @@ int PS4ABI sys_dynlib_get_list(uint32_t* handles, size_t maxCount, size_t* count
 
     int listCount = 0;
     for (auto& mod : list) {
+        std::printf("MODULE %s -> gets handle %d\n", mod->name.c_str(), mod->handle());
+
+        if (listCount++ > maxCount) break;
+
         *(handles++) = mod->handle();
-        listCount++;
     }
 
     *count = listCount;

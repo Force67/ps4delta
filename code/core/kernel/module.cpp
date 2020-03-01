@@ -499,7 +499,7 @@ sce_module::sce_module(process& proc) :
     object(object::kind::dynlib), parentProc(&proc) 
 {}
 
-SharedPtr<exec_module> exec_module::load(process& proc, std::string_view path) {
+SharedPtr<exec_module> exec_module::load(process& proc, const std::string &path) {
     // direct path
     auto exec = std::make_shared<exec_module>(proc);
     return loadElf(*exec, path) ? exec : nullptr;

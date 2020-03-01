@@ -8,6 +8,8 @@
  */
 
 #include <base.h>
+#include <logger/logger.h>
+
 #include "memory.h"
 
 namespace memory {
@@ -221,6 +223,12 @@ bool vmManager::init() {
     blocks.push_back(std::make_shared<block>(g_areas->procMirror));
     blocks.push_back(std::make_shared<block>(g_areas->exec));
     blocks.push_back(std::make_shared<block>(g_areas->debug));
+
+    LOG_INFO("ProcArea {} ({})\nApp {} ({})\nExecArea {} ({})\nDebugArea {} ({})",
+             fmt::ptr(g_areas->proc.ptr), g_areas->proc.size, 
+             fmt::ptr(g_areas->procMirror.ptr), g_areas->procMirror.size, 
+             fmt::ptr(g_areas->exec.ptr), g_areas->exec.size, 
+             fmt::ptr(g_areas->debug.ptr),g_areas->debug.size);
 
     /*auto* memBase = reserve(0x2'0000'0000);
     if (!memBase)

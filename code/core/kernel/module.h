@@ -168,7 +168,7 @@ class exec_module final : public sce_module {
 public:
     exec_module(process& p) : sce_module(p) {}
 
-    static SharedPtr<exec_module> load(process&, std::string_view path);
+    static SharedPtr<exec_module> load(process&, const std::string&);
 
 public:
     process_param* param = nullptr;

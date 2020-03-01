@@ -12,8 +12,10 @@
 namespace kern {
 int PS4ABI sys_ioctl(uint32_t fd, uint32_t cmd, void* data) {
     auto* obj = utl::fxm<idManager>::get().get(fd);
-    if (obj)
+    if (obj) {
+        __debugbreak();
         return static_cast<device*>(obj)->ioctl(cmd, data);
+    }
     else {
         __debugbreak();
     }

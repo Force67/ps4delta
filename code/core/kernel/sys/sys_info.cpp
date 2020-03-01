@@ -68,7 +68,7 @@ int PS4ABI sys_sysctl(int* name, uint32_t namelen, void* oldp, size_t* oldlenp, 
 
     // kern.pagesize
     else if (name[0] == 6 && name[1] == 7 && namelen == 2) {
-        *reinterpret_cast<uint32_t*>(oldp) = 4096;
+        *reinterpret_cast<uint32_t*>(oldp) = 1024 * 16;
         return 0;
     }
 

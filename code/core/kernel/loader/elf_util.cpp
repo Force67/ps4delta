@@ -12,6 +12,8 @@
 #include <cstring>
 #include <crypto/sha1.h>
 
+#include "kernel/process.h"
+
 namespace kern {
 static const char base64Lookup[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
@@ -68,5 +70,46 @@ void encode_nid(const char* name, uint8_t* x) {
 
     // uint8_t out[11]{};
     obfuscate_sym(target, x, 11);
+}
+
+bool relocate_modules(process& proc) {
+    for (auto& mod : proc.prx_list()) {
+        if (mod->started) {
+            if (!mod->resolveImports() ||
+                !mod->doRelocations()) {
+                LOG_ERROR("failed to finalize module {}", mod->name);
+                return false;
+            }
+        }
+    }
+
+    auto& main_mod = proc.main_exec();
+    if (!main_mod.resolveImports() || 
+        !main_mod.doRelocations()) {
+        LOG_ERROR("failed to finalize main module!!! {}", main_mod.name);
+        return false;
+    }
+
+    return true;
+}
+
+void start_modules(process& proc) {
+    using mod_init_t = int PS4ABI (*)(size_t, const void*, void*);
+    for (auto& mod : proc.prx_list()) {
+        if (!mod->started)
+            continue;
+
+        std::string longName = "BaOKcng8g88#" + mod->name + "#" + mod->name;
+
+        uintptr_t start_address = 0;
+        if (!mod->resolveObfSymbol(longName.c_str(), start_address)) {
+            start_address = reinterpret_cast<uintptr_t>(mod->entry);
+        }
+
+        if (start_address) {
+            auto module_init = reinterpret_cast<mod_init_t>(start_address);
+            module_init(0, nullptr, nullptr); /*argc, argv, retaddr*/
+        }
+    }
 }
 } // namespace util

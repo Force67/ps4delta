@@ -37,14 +37,21 @@ int PS4ABI sys_sigaction(int how, void (*cb)(void*, void*, void*)) {
     return 0;
 }
 
-/*does not belong here*/
-uint32_t PS4ABI sys_namedobj_create(const char* name, void* arg2, uint32_t arg3) {
-    // object is refcounted
-    auto* obj = new object(object::kind::namedobj);
-    obj->name = name;
+struct named_object final : public object {
+    named_object(const char *name) : object(object::kind::namedobj) {
+        this->name = name;
+    }
 
+    void* userPtr = nullptr;
+};
+
+/*does not belong here*/
+uint32_t PS4ABI sys_namedobj_create(const char* name, void* ptr, uint32_t arg3) {
+    auto* obj = new named_object(name);
+    obj->userPtr = ptr;
+    __debugbreak();
     uint32_t handle = obj->handle();
-    std::printf("creating named obj %s -> %d, with arg 2 %p\n", name, handle, arg2);
+    std::printf("creating named obj %s userptr %p\n", name, ptr);
     return handle;
 }
 
@@ -101,7 +108,7 @@ int PS4ABI sys_regmgr_call(uint32_t op, uint32_t id, void* result, void* value, 
 }
 
 int PS4ABI sys_getpid() {
-    return 0x1337;
+    return 123;
 }
 
 int PS4ABI sys_write(uint32_t fd, const void* buf, size_t nbytes) {
@@ -109,7 +116,7 @@ int PS4ABI sys_write(uint32_t fd, const void* buf, size_t nbytes) {
     {
         auto b = static_cast<const char*>(buf);
         for (size_t i = 0; i < nbytes; ++i, ++b) {
-            printf("%c", *b);
+            std::putchar(*b);
         }
         return 0;
     }

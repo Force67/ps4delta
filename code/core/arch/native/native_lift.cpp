@@ -155,7 +155,8 @@ void codeLift::emit_syscall(uint8_t* base, uint32_t idx) {
     }
 }
 
-/*fetch fs base ptr from current process*/
+// active process thread base
+// returns into RAX
 static PS4ABI void* getFsBase() {
     auto* proc = kern::activeProc();
     if (!proc) return nullptr;
@@ -202,13 +203,20 @@ void codeLift::emit_fsbase(uint8_t* base) {
         fsGen(Xbyak::Reg64 reg, uint32_t disp, uint8_t size) {
             int idx = reg.getIdx();
 
-            mov(rax, reinterpret_cast<uintptr_t>(&getFsBase));
-            call(rax);
+            // YEA, you could abuse RAX; i know
 
-            // sysv returns directly into rax
-            if (idx != Xbyak::Reg64::RAX) {
-                mov(reg, rax);
-            }
+            // backup RDI
+            push(rdi);
+
+            // fetch active base
+            mov(rdi, reinterpret_cast<uintptr_t>(&getFsBase));
+            call(rdi);
+
+            // if not rax, we need to put it in the register
+            if (idx != Xbyak::Reg64::RAX) mov(reg, rax);
+
+            // restore RDI
+            pop(rdi);
 
             if (disp)
                 add(reg, disp);

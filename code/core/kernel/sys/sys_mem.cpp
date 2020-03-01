@@ -63,7 +63,7 @@ u8* PS4ABI sys_mmap(u8* addr, size_t size, u32 prot, u32 flags, u32 fd, size_t o
 
     if (fd != -1) {
         if (auto* dev = utl::fxm<idManager>::get().get(fd)) {
-
+            __debugbreak();
             // notify device of memory allocation
             static_cast<device*>(dev)->map(ptr, size, prot, flags, offset);
         }
@@ -79,6 +79,7 @@ int PS4ABI sys_mprotect(u8*, size_t len, int prot) {
 }
 
 int PS4ABI sys_mname(u8* ptr, size_t len, const char* name, void*) {
+    LOG_WARNING("tagged {} with name {}", fmt::ptr(ptr), name);
     //__debugbreak();
     #if 0
     auto* info = proc->getVma().get(ptr);

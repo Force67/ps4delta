@@ -14,7 +14,7 @@
 #include <utl/fxm.h>
 #include <config.h>
 
-#include "loader/elf.h"
+#include "loader/elf_util.h"
 
 #include <xbyak.h>
 
@@ -52,21 +52,20 @@ process::process(core::System& s) : sys(s) {}
 
 SharedPtr<prx_module> process::loadPrx(std::string_view name) {
     auto prx = getPrx(name);
+    if (prx) return prx;
+
+    prx = prx_module::load(*this, name);
     if (!prx) {
-        // TODO: this is a _bit_ ugly
-        prx = prx_module::load(*this, name);
-        if (!prx) {
-            __debugbreak();
-            return nullptr;
-        }
-
-        // add it to our collection
-        prx->started = true;
-        modules.push_back(prx);
-
-        // load dependencies
-        prx->loadNeededPrx();
+        __debugbreak();
+        return nullptr;
     }
+
+    // add it to our collection
+    prx->started = true;
+    modules.push_back(prx);
+
+    // load sub dependencies
+    prx->loadNeededPrx();
     return prx;
 }
 
@@ -104,8 +103,12 @@ bool process::load(const std::string &path) {
     }
 
     // load the eboot
-    if ((main_module = exec_module::load(*this, path)))
+    if ((main_module = exec_module::load(*this, path))) {
+        // load linked dependencies of eboot
+        main_module->started = true;
+        main_module->loadNeededPrx();
         return true;
+    }
 
     return false;
 }
@@ -118,7 +121,7 @@ void process::run() {
     using exit_func_t = PS4ABI void (*)();
     using main_init_t = PS4ABI void (*)(void*, exit_func_t);
 
-    initModules(*this, false);
+    relocate_modules(*this);
 
     union stack_entry {
         const void* ptr;

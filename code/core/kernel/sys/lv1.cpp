@@ -123,7 +123,7 @@ uintptr_t lv1_get(uint32_t sid) {
     constexpr auto memberCount = sizeof(syscall_dpt) / sizeof(syscall_Reg);
     LOG_ASSERT(sid < memberCount);
 
-#if 0
+#if 1
     return reinterpret_cast<uintptr_t>(
         emitCallReporter(syscall_dpt[sid].name, sid, syscall_dpt[sid].ptr));
 #else
