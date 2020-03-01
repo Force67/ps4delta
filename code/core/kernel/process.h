@@ -51,12 +51,10 @@ public:
     SharedPtr<prx_module> getPrx(std::string_view name);
     SharedPtr<prx_module> getPrx(u32 handle);
 
-    inline prx_list_t& prx_list() { return modules; }
-    inline exec_module& main_exec() { return *main_module; }
+    inline auto& prx_list() { return modules; }
+    inline auto& main_exec() { return *main_module; }
 
     inline auto& getNextTls() { return nextTlsSlot; }
-    inline u8* getStack() { return userStack; }
-
 private:
     SharedPtr<exec_module> main_module;
 
@@ -75,7 +73,12 @@ private:
     // TODO: reuse free slots
     std::atomic<u16> nextTlsSlot = 0;
 
+public:
+    // pointer to the user stack
     u8* userStack = nullptr;
+
+    // pointer to the thread memory base
+    u8* fsBase = nullptr;
 };
 
 // currently executed process

@@ -14,14 +14,16 @@
 
 namespace kern {
 int PS4ABI sys_thr_self(uint32_t* tid) {
-    /*todo: kthread*/
-    *tid = 0xF00D;
-    return 135;
+
+    __debugbreak();
+    *tid = 0;
+    return 0;
 }
 
 int PS4ABI sys_rtprio_thread(int a1, uint64_t a2, thread_prio* rtp) {
     rtp->type = 3; /*normal time sharing process*/
     rtp->prio = 1; /*almost highest prio*/
+    __debugbreak();
     return 0;
 }
 

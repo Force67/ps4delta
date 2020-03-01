@@ -157,9 +157,10 @@ void codeLift::emit_syscall(uint8_t* base, uint32_t idx) {
 
 /*fetch fs base ptr from current process*/
 static PS4ABI void* getFsBase() {
-    __debugbreak();
-    return nullptr;
-    //return kern::process::getActive()->getEnv().fsBase;
+    auto* proc = kern::activeProc();
+    if (!proc) return nullptr;
+
+    return proc->fsBase;
 }
 
 /*this implementation is based on uplift*/

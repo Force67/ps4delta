@@ -24,8 +24,8 @@
 namespace kern {
 u8* PS4ABI sys_mmap(u8* addr, size_t size, u32 prot, u32 flags, u32 fd, size_t offset) {
 
-    //if (!addr && !(flags & mFlags::fixed))
-    //    addr = reinterpret_cast<u8*>(0x2'0000'0000);
+    if (!addr && !(flags & mFlags::fixed))
+        addr = reinterpret_cast<u8*>(0x2'0000'0000);
 
     // bad behaviour caused by return address check in
     // sceKernelMapNamedSystemFlexibleMemory

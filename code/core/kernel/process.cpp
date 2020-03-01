@@ -87,6 +87,8 @@ SharedPtr<prx_module> process::getPrx(uint32_t handle) {
     if (iter != modules.end())
         return *iter;
 
+    __debugbreak();
+
     return nullptr;
 }
 

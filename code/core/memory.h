@@ -63,8 +63,8 @@ public:
         return 0;
     }
 
-    u8* alloc(size_t size, u32, page_flags, u32 align);
-    u8* xalloc(u8*, size_t size, u32, page_flags, u32);
+    u8* alloc(size_t size, u32, u8, u32 align);
+    u8* xalloc(u8*, size_t size, u32, u8, u32);
 
     void free(u8*);
 
@@ -78,7 +78,7 @@ public:
 
 private:
     std::mutex writer_lock;
-    std::vector<std::atomic<page_flags>> pages;
+    std::vector<std::atomic<u8>> pages;
     std::unordered_map<u8*, u8> allocations;
 };
 

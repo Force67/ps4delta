@@ -16,7 +16,7 @@ qt = premake.extensions.qt
 
 local function get_git_info()
     branch_name = "unknown_branch"
-    commit_hash = "unknowm_commit"
+    commit_hash = "unknown_commit"
 
     local f = io.popen('git symbolic-ref --short -q HEAD', 'r')
     local temp = f:read("*a")

@@ -60,8 +60,7 @@ int PS4ABI sys_sysarch(int num, void* args) {
     // amd64_set_fsbase
     if (num == 129) {
         auto fsbase = *static_cast<void**>(args);
-        __debugbreak();
-        // proc::getActive()->getEnv().fsBase = fsbase;
+        activeProc()->fsBase = static_cast<u8*>(fsbase);
         return 0;
     }
     __debugbreak();
