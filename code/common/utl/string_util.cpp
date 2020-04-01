@@ -10,6 +10,7 @@
 
 #ifdef _WIN32
 #include <Windows.h>
+#include <shellapi.h>
 #endif
 
 namespace utl {
@@ -143,6 +144,29 @@ std::string utf16_to_utf8(const std::wstring& input) {
 
 std::wstring utf8_to_utf16_w(const std::string& input) {
     return CPToUTF16(CP_UTF8, input);
+}
+
+// from: https://github.com/wine-mirror/wine/blob/master/dlls/mscoree/corruntimehost.c#L1062
+void init_utf8_args(int& argc, char*** argv) {
+    int size = 0, i;
+    auto **argvw = CommandLineToArgvW(GetCommandLineW(), &argc);
+
+    for (i = 0; i < argc; i++) {
+        size += sizeof(char*);
+        size += WideCharToMultiByte(CP_UTF8, 0, argvw[i], -1, NULL, 0, NULL, NULL);
+    }
+    size += sizeof(char*);
+
+    *argv = (char**)HeapAlloc(GetProcessHeap(), 0, size);
+    char *current_arg = (char*)(*argv + argc + 1);
+
+    for (i = 0; i < argc; i++) {
+        (*argv)[i] = current_arg;
+        current_arg += WideCharToMultiByte(CP_UTF8, 0, argvw[i], -1, current_arg, size, NULL, NULL);
+    }
+
+    (*argv)[argc] = nullptr;
+    HeapFree(GetProcessHeap(), 0, argvw);
 }
 
 #endif

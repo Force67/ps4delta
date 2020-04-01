@@ -20,6 +20,7 @@
 #include "ui/mainwindow.h"
 
 #include <config.h>
+#include <main.h>
 #include <core.h>
 
 inline std::string sstr(const QString& _in) {
@@ -30,38 +31,37 @@ class deltaApp final : public QApplication {
 public:
     deltaApp(int& argc, char** argv) : QApplication(argc, argv) {}
 
-    bool init();
+    bool init() {
+        LOG_INFO("Initializing delta qt app " rsc_copyright " at " GIT_BRANCH
+                 "-" GIT_COMMIT);
+
+        auto& sys = core::System::get();
+        if (!sys.init())
+            return false;
+
+        if (!headless)
+            window = std::make_unique<mainWindow>(sys);
+        else
+            LOG_INFO("Starting in headless mode");
+
+        if (window)
+            window->init();
+
+        return true;
+    }
 
 private:
     std::unique_ptr<mainWindow> window;
     bool headless = false;
 };
 
-bool deltaApp::init() {
-    LOG_INFO("Initializing delta qt app " rsc_copyright " at " DELTA_BRANCH "-" DELTA_COMMITHASH);
-
-    auto& sys = core::System::get();
-    if (!sys.init())
-        return false;
-
-    if (!headless)
-        window = std::make_unique<mainWindow>(sys);
-    else
-        LOG_INFO("Starting in headless mode");
-
-    if (window)
-        window->init();
-
-    return true;
-}
-
 #ifdef _WIN32
 
 #include <Windows.h>
 #include <memory.h>
-#include <utl/mcrt_win.h>
+#include <utl/string_util.h>
 
-static void applyQtFixups() {
+static void applyQtFixes() {
     using NtQueryTimerResolution_t = LONG(WINAPI*)(PULONG, PULONG, PULONG);
     using NtSetTimerResolution_t = LONG(WINAPI*)(ULONG, BOOLEAN, PULONG);
 
@@ -71,16 +71,20 @@ static void applyQtFixups() {
     auto NtSetTimerResolution_f =
         reinterpret_cast<NtSetTimerResolution_t>(GetProcAddress(hNtLib, "NtSetTimerResolution"));
 
-    // qt resets our timer, so wet set it back manually
-    ULONG min_res, max_res, orig_res, new_res;
-    if (NtQueryTimerResolution_f(&min_res, &max_res, &orig_res) == 0)
-        NtSetTimerResolution_f(max_res, TRUE, &new_res);
+    if (NtQueryTimerResolution_f && NtSetTimerResolution_f) {
+        // qt resets our timer, so wet set it back manually
+        ULONG min_res, max_res, orig_res, new_res;
+        if (NtQueryTimerResolution_f(&min_res, &max_res, &orig_res) == 0)
+            NtSetTimerResolution_f(max_res, TRUE, &new_res);
+    }
 
+    // don't even get me started on how stupid
+    // locales are
     setlocale(LC_ALL, "C");
 }
 #endif
 
-inline int deltaMain(int argc, char** argv) {
+inline int dmain(int argc, char** argv) {
     // create log sinks
     utl::createLogger(true);
 
@@ -101,7 +105,7 @@ inline int deltaMain(int argc, char** argv) {
     QScopedPointer<deltaApp> app(new deltaApp(argc, argv));
 
 #ifdef _WIN32
-    applyQtFixups();
+    applyQtFixes();
 #endif
 
     QCommandLineParser parser;
@@ -138,18 +142,4 @@ inline int deltaMain(int argc, char** argv) {
     return 0;
 }
 
-#ifdef _WIN32
-EXPORT int delta_main(memory::init_info& info) {
-    // pre init hook
-    memory::preinit(info);
-
-    int32_t nArgs = 0;
-    auto** args = utl::cmdl_to_argv(GetCommandLineA(), nArgs);
-
-    return deltaMain(nArgs, args);
-}
-#else
-EXPORT int delta_main(int argc, char** argv) {
-    return deltaMain(argc, argv);
-}
-#endif
+DELTA_MAIN(dmain);

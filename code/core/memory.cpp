@@ -208,6 +208,17 @@ void block::free(u8* ptr) {
     }
 }
 
+void block::logDebugStats() {
+    size_t memUsed = 0;
+
+    // count used memory
+    for (auto& a : allocations)
+        memUsed += a.second * AMD64_PAGE_SIZE;
+
+    double percentUsed = (memUsed / (size / 100));
+    LOG_INFO("Percent used {} ({}/{} bytes)", percentUsed, memUsed, size);
+}
+
 vmManager::vmManager() {
     s_instance = this;
 }
@@ -217,26 +228,17 @@ vmManager* vmManager::get() {
 }
 
 bool vmManager::init() {
-    // register the 'default' memory areas available for every
-    // ps4 user mode process
+    // register static chunks with block list
     blocks.push_back(std::make_shared<block>(g_areas->proc));
     blocks.push_back(std::make_shared<block>(g_areas->procMirror));
     blocks.push_back(std::make_shared<block>(g_areas->exec));
     blocks.push_back(std::make_shared<block>(g_areas->debug));
 
-    LOG_INFO("ProcArea {} ({})\nApp {} ({})\nExecArea {} ({})\nDebugArea {} ({})",
-             fmt::ptr(g_areas->proc.ptr), g_areas->proc.size, 
-             fmt::ptr(g_areas->procMirror.ptr), g_areas->procMirror.size, 
-             fmt::ptr(g_areas->exec.ptr), g_areas->exec.size, 
-             fmt::ptr(g_areas->debug.ptr),g_areas->debug.size);
-
-    /*auto* memBase = reserve(0x2'0000'0000);
-    if (!memBase)
-        return false;
-
-    userStack = reserve(userStackSize);
-
-    */
+    LOG_INFO("** Memory Blocks **");
+    LOG_INFO(">> Proc Area {}, {}", fmt::ptr(g_areas->proc.ptr), g_areas->proc.size);
+    LOG_INFO(">> App Area {}, {}", fmt::ptr(g_areas->procMirror.ptr), g_areas->procMirror.size);
+    LOG_INFO(">> Exec Area {}, {}", fmt::ptr(g_areas->exec.ptr), g_areas->exec.size);
+    LOG_INFO(">> Debug Area {}, {}", fmt::ptr(g_areas->debug.ptr), g_areas->debug.size);
     return true;
 }
 

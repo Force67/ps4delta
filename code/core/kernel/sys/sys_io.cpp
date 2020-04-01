@@ -36,6 +36,7 @@ static device* make_device(const char* deviceName) {
     if (xname.find("dmem") != -1)
         dev = new dmaDevice(proc);
 
+    if (dev) dev->name = deviceName;
     return dev;
 }
 
@@ -56,7 +57,7 @@ int PS4ABI sys_open(const char* path, uint32_t flags, uint32_t mode) {
                 return -1;
             }
 
-            return dev->handle();
+            return static_cast<int>(dev->handle());
         } else
             __debugbreak();
         return -1;
@@ -68,6 +69,7 @@ int PS4ABI sys_open(const char* path, uint32_t flags, uint32_t mode) {
 
 int PS4ABI sys_close(uint32_t fd) {
     if (fd != -1) {
+        __debugbreak();
         utl::fxm<idManager>::get().release(fd);
         return 0;
     }
@@ -75,4 +77,16 @@ int PS4ABI sys_close(uint32_t fd) {
     LOG_WARNING("failed to release handle {}", fd);
     return -1;
 }
-} // namespace krnl
+
+int PS4ABI sys_ioctl(uint32_t fd, uint32_t cmd, void* data) {
+    auto* obj = utl::fxm<idManager>::get().get(fd);
+    if (obj) {
+        __debugbreak();
+        return static_cast<device*>(obj)->ioctl(cmd, data);
+    } else {
+        __debugbreak();
+    }
+
+    return 0;
+}
+} // namespace kern

@@ -101,7 +101,7 @@ int PS4ABI sys_dynlib_dlsym(uint32_t handle, const char* symName, void** sym) {
 
         return 0;
     }
-    LOG_WARNING("unable to find export {} ({})", symName, handle);
+
     *sym = nullptr;
     return -1;
 }
@@ -135,13 +135,11 @@ int PS4ABI sys_dynlib_get_list(uint32_t* handles, size_t maxCount, size_t* count
 
     int listCount = 0;
     for (auto& mod : list) {
-        std::printf("MODULE %s -> gets handle %d\n", mod->name.c_str(), mod->handle());
-
         if (listCount++ > maxCount) break;
-
         *(handles++) = mod->handle();
     }
 
+   // *(handles++) = activeProc()->main_exec().handle();
     *count = listCount;
     return 0;
 }

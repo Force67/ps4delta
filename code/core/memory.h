@@ -51,6 +51,8 @@ enum page_flags : u8 {
     page_readable = (1 << 0),
     page_writable = (1 << 1),
     page_executable = (1 << 2),
+
+    // internal
     page_allocated = (1 << 7),
 };
 
@@ -72,6 +74,8 @@ public:
         return ptr >= base && ptr <= base + size;
     }
 
+    void logDebugStats();
+
 public:
     const u8* base;
     const size_t size;
@@ -92,7 +96,6 @@ public:
     u8* alloc(u8 *ptr, size_t size, memory_location, u32 align);
     SharedPtr<block> getBlock(u8* loc, memory_location);
     SharedPtr<block> getBlock(u8* loc);
-
 private:
 
    // u8* alloc(u8* base, size_t size, utl::ppt);

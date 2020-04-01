@@ -43,12 +43,21 @@ std::string make_abs_path(std::string_view rel) {
 }
 
 static std::string get_home_dir() {
-    PWSTR localPath = nullptr;
-    if (FAILED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &localPath)))
-        __debugbreak();
-    auto newPath = utl::utf16_to_utf8(localPath);
-    CoTaskMemFree(localPath);
-    return newPath;
+    HANDLE hToken = nullptr;
+    if (OpenProcessToken(GetCurrentProcess(), TOKEN_ALL_ACCESS, &hToken)) {
+        wchar_t* localPath = nullptr;
+        if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, hToken, &localPath))) {
+            auto newPath = utl::utf16_to_utf8(localPath);
+            CoTaskMemFree(localPath);
+            CloseHandle(hToken);
+            return newPath;
+        }
+        CloseHandle(hToken);
+    }
+    volatile auto x = GetLastError();
+    x = x;
+    __debugbreak();
+    return "";
 }
 
 bool exists(std::string_view rel) {
@@ -81,7 +90,7 @@ std::string make_app_path(app_path path, std::string_view rel /* = nullptr */) {
         case app_path::data_dir: {
 
             // TODO: change backslashes
-            newPath = get_home_dir() + "\\" + FXNAME + "\\";
+            newPath = get_home_dir() + "\\" + PRJ_NAME + "\\";
             if (!exists(newPath))
                 make_dir(newPath);
 

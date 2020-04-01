@@ -25,5 +25,8 @@ std::u16string utf8_to_utf16(const std::string& input);
 #ifdef _WIN32
 std::string utf16_to_utf8(const std::wstring& input);
 std::wstring utf8_to_utf16_w(const std::string& str);
+
+// initializes utf8 command line arguments
+void init_utf8_args(int& argc, char*** argv);
 #endif
 }

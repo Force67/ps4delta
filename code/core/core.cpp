@@ -60,6 +60,7 @@ void System::load(const std::string& dir) {
     }
 
     LOG_INFO("System load OK");
+    mem_mgr->getBlock(nullptr, memory::exec)->logDebugStats();
     main_proc->run();
 }
 

@@ -21,7 +21,7 @@
 #include "sys_mem.h"
 #include "sys_net.h"
 #include "sys_thread.h"
-#include "sys_vfs.h"
+#include "sys_io.h"
 
 namespace kern {
 int sys_write(uint32_t fd, const void* buf, size_t nbytes);

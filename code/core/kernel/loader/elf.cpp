@@ -10,12 +10,16 @@
 #include "elf.h"
 #include "memory.h"
 
-#include "arch/native/native_lift.h"
+#include "arch/x64/x64_emitter.h"
 #include "formats/elf_object.h"
 
 #include "kernel/process.h"
 
 #include <crypto/sha1.h>
+
+#ifdef _M_AMD64
+using emitter_t = arch::X64Emitter;
+#endif
 
 namespace kern {
 using namespace formats;
@@ -28,7 +32,7 @@ static loadStatus patch_module(elfObject& elf, sce_module& mod) {
     // recompile unsupported instructions
     for (auto& p : elf.programs) {
         if (p.type == PT_LOAD && (p.flags & PF_X)) {
-            codeLift lift(rip);
+            emitter_t lift(rip);
             LOG_ASSERT(lift.init());
 
             if (!lift.transform(mod.base + p.vaddr, p.memsz))
@@ -61,6 +65,7 @@ static loadStatus patch_module(elfObject& elf, sce_module& mod) {
     // built in hack: enable rtld debug messages on 5.05
     if (mod.moduleHash == "PRX-f1d3ebb39f0e011286a43ceb1ef87d462b87b86f") {
         *(uint32_t*)(mod.base + 0x68264) = UINT32_MAX;
+        *(uint8_t*)(mod.base + 0x2FFA7) = 0xCC;
     } /* else if (mod.moduleHash == "PRX-dfb5aa182bee65859d19d16792940fd282489384") {
          *(uint8_t*)(mod.base + 0x23A20) = 0xCC;
      }*/

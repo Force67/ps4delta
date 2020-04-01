@@ -84,7 +84,7 @@ static void raise_err(const wchar_t* msg) {
         }
     }
 
-    msgBox(nullptr, msg, FXNAME_WIDE, MB_ICONERROR);
+    msgBox(nullptr, msg, PRJ_NAME_WIDE, MB_ICONERROR);
 }
 
 static bool reserve_blocks() {

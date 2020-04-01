@@ -22,12 +22,14 @@
 #include "memory.h"
 
 namespace kern {
-u8* PS4ABI sys_mmap(u8* addr, size_t size, u32 prot, u32 flags, u32 fd, size_t offset) {
+// enum mprotFlags : uint32_t { none, exec = 1, write = 2, read = 4 };
 
+
+u8* PS4ABI sys_mmap(u8* addr, size_t size, u32 prot, u32 flags, u32 fd, size_t offset) {
     if (!addr && !(flags & mFlags::fixed))
         addr = reinterpret_cast<u8*>(0x2'0000'0000);
 
-    // bad behaviour caused by return address check in
+    // bad behavior caused by return address check in
     // sceKernelMapNamedSystemFlexibleMemory
     if (addr == reinterpret_cast<u8*>(0x8'8000'0000))
         __debugbreak();
@@ -40,15 +42,20 @@ u8* PS4ABI sys_mmap(u8* addr, size_t size, u32 prot, u32 flags, u32 fd, size_t o
         return reinterpret_cast<u8*>(-1); // TODO: some sort of autocastable macro?
     }
 
-    // FIXME, use real ppt
-    const u32 hack = memory::page_executable | memory::page_writable | memory::page_readable;
+    // translate native page flags
+    u32 ppt = 0;
+    if (prot & mprotFlags::exec)
+        ppt |= memory::page_executable;
+    if (prot & mprotFlags::read)
+        ppt |= memory::page_readable;
+    if (prot & mprotFlags::write)
+        ppt |= memory::page_writable;
 
-    // do the actual allocation
-    u8* ptr = block->xalloc(addr, size, flags, (memory::page_flags)hack, 0x1000 * 4 /*PS4 PAGE is 16 kib*/);
+    u8* ptr = block->xalloc(addr, size, flags, ppt, 0x1000 * 4 /*PS4 PAGE is 16 kib*/);
 
     //FIXME; FIXED CHECKS
     if (!memory::manager()->getBlock(nullptr, memory::user)->check(addr) && !ptr) {
-        ptr = block->alloc(size, flags, (memory::page_flags)hack, 0x1000 * 4);
+        ptr = block->alloc(size, flags, ppt, 0x1000 * 4);
     }
 
     if (!ptr) {
@@ -64,22 +71,23 @@ u8* PS4ABI sys_mmap(u8* addr, size_t size, u32 prot, u32 flags, u32 fd, size_t o
     if (fd != -1) {
         if (auto* dev = utl::fxm<idManager>::get().get(fd)) {
             __debugbreak();
-            // notify device of memory allocation
             static_cast<device*>(dev)->map(ptr, size, prot, flags, offset);
         }
     }
 
-    std::printf("mmap req %p -> dest %p|%x|%p\n", addr, ptr, size, _ReturnAddress());
+    std::printf("mmap at %p -> dest %p|%x|%p\n", addr, ptr, size, _ReturnAddress());
     return ptr;
 }
 
-int PS4ABI sys_mprotect(u8*, size_t len, int prot) {
+int PS4ABI sys_mprotect(u8*, size_t len, u32 prot) {
     // TODO
     return 0;
 }
 
 int PS4ABI sys_mname(u8* ptr, size_t len, const char* name, void*) {
-    LOG_WARNING("tagged {} with name {}", fmt::ptr(ptr), name);
+    std::printf("mname: %p-%p=%s\n", ptr, &ptr[len] - 1, name);
+
+   // LOG_WARNING("tagged {} with name {}", fmt::ptr(ptr), name);
     //__debugbreak();
     #if 0
     auto* info = proc->getVma().get(ptr);

@@ -49,7 +49,7 @@ struct named_object final : public object {
 uint32_t PS4ABI sys_namedobj_create(const char* name, void* ptr, uint32_t arg3) {
     auto* obj = new named_object(name);
     obj->userPtr = ptr;
-    __debugbreak();
+
     uint32_t handle = obj->handle();
     std::printf("creating named obj %s userptr %p\n", name, ptr);
     return handle;

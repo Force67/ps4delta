@@ -11,11 +11,7 @@
 #include <string>
 #include <vector>
 
-#ifdef _WIN32
-#include <Windows.h>
-#include <memory.h>
-#include <utl/mcrt_win.h>
-#endif
+#include <main.h>
 
 #include <config.h>
 #include <core.h>
@@ -27,7 +23,7 @@ class glfwApp {
 
 };
 
-int deltaMain(int argc, char** argv) {
+static int dmain(int argc, char** argv) {
     // create log sinks
     utl::createLogger(true);
 
@@ -54,7 +50,6 @@ int deltaMain(int argc, char** argv) {
             xargv.emplace_back(argv[i]);
 
         sys.argv = std::move(xargv);
-
         // not blocking
         sys.load(sys.argv[0]);
     }
@@ -62,19 +57,4 @@ int deltaMain(int argc, char** argv) {
     return 0;
 }
 
-#ifdef _WIN32
-EXPORT int delta_main(memory::init_info& info) {
-    // initialize the virtual memory manager
-    memory::preinit(info);
-
-    // convert command line to c style command line
-    int32_t nArgs = 0;
-    auto** args = utl::cmdl_to_argv(GetCommandLineA(), nArgs);
-
-    return deltaMain(nArgs, args);
-}
-#else
-EXPORT int delta_main(int argc, char** argv) {
-    return deltaMain(argc, argv);
-}
-#endif
+DELTA_MAIN(dmain);

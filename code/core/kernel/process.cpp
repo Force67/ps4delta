@@ -27,7 +27,7 @@ namespace kern {
 config::opt<bool> hleKernel{"kern.useHLE", "HLE the kernel module", true};
 
 // currently executed process
-static process* current_proc{nullptr};
+process* current_proc{nullptr};
 
 UniquePtr<process> process::create(core::System& sys, std::string name) {
     auto proc = std::make_unique<process>(sys);

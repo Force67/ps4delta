@@ -23,7 +23,7 @@ enum mFlags : uint32_t {
 uint8_t* PS4ABI sys_mmap(u8* addr, size_t size, uint32_t prot, uint32_t flags, uint32_t fd,
                          size_t offset);
 int PS4ABI sys_mname(uint8_t*, size_t len, const char* name, void*);
-int PS4ABI sys_mprotect(uint8_t*, size_t len, int prot);
+int PS4ABI sys_mprotect(uint8_t*, size_t len, u32 prot);
 int PS4ABI sys_mdbg_service(uint32_t op, void*, void*, void*);
 
 /*direct memory access*/
