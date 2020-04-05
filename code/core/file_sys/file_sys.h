@@ -22,8 +22,6 @@ class File;
 namespace fs {
 class fileSystem {
 public:
-    static UniquePtr<fileSystem> create();
-
     bool mount(std::string_view vpath, std::string_view path);
     std::string get(std::string_view vpath);
 

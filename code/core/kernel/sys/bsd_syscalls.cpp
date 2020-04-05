@@ -11,7 +11,7 @@
 #include <logger/logger.h>
 
 #include "kernel/id_manager.h"
-#include "kernel/process.h"
+#include "kernel/kernel_state.h"
 
 namespace kern {
 int PS4ABI sys_exit() {
@@ -67,7 +67,7 @@ int PS4ABI sys_sysarch(int num, void* args) {
     // amd64_set_fsbase
     if (num == 129) {
         auto fsbase = *static_cast<void**>(args);
-        activeProc()->fsBase = static_cast<u8*>(fsbase);
+        active_proc()->fsBase = static_cast<u8*>(fsbase);
         return 0;
     }
     __debugbreak();

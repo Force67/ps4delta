@@ -12,7 +12,7 @@
 
 #include <intrin.h>
 
-#include "kernel/process.h"
+#include "kernel/kernel_state.h"
 
 namespace kern {
 int sys_budget_get_ptype();
@@ -58,7 +58,7 @@ int PS4ABI sys_sysctl(int* name, uint32_t namelen, void* oldp, size_t* oldlenp, 
 
     // kern.userstack
     else if (name[0] == 1 && name[1] == 33 && namelen == 2) {
-        u8* stack = activeProc()->userStack;
+        u8* stack = active_proc()->userStack;
         if (!stack) return -1;
 
         // the stack grows from top to bottom

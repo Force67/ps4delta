@@ -14,7 +14,7 @@
 #include "kernel/dev/dma_dev.h"
 #include "kernel/dev/gc_dev.h"
 #include "kernel/dev/tty6_dev.h"
-#include "kernel/process.h"
+#include "kernel/kernel_state.h"
 
 #include <utl/object_ref.h>
 
@@ -23,7 +23,7 @@ static device* make_device(const char* deviceName) {
     std::string_view xname(deviceName);
 
     device* dev = nullptr;
-    auto* proc = activeProc();
+    auto* proc = active_proc();
     if (xname == "console")
         dev = new consoleDevice(proc);
     if (xname == "deci_tty6")

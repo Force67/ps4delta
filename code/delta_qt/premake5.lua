@@ -33,7 +33,8 @@ project "delta-qt"
         "capstone",
         "zlib",
 		"fmtlib",
-        "yaml-cpp"
+        "yaml-cpp",
+        "simdjson"
     }
 
     files {

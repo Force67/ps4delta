@@ -10,43 +10,37 @@
 
 #include <base.h>
 
-#include <string>
-#include <vector>
-
 #include "memory.h"
 #include "video_core.h"
 #include "file_sys/file_sys.h"
+#include "kernel/kernel_state.h"
 
-#include "kernel/process.h"
+#include "tools/patch_engine.h"
 
-namespace core {
-using argvList = std::vector<std::string>;
-
-enum class backend {
-    native,
-};
-
+// System holds the master instances
+// of all subsystems
 class System {
 public:
-    inline static System& get() { return s_instance; }
-
     System();
+    ~System();
 
-    bool init();
-    void load(const std::string& fromdir);
+    bool setup(video_core::RenderWindow&);
+    void load(const std::string&);
 
     inline memory::vmManager& mem() { return *mem_mgr; }
     inline fs::fileSystem& file_system() { return *file_sys; }
+    inline tools::PatchEngine& patch_man() { return *patch_engine; }
 
 public:
+    using argvList = std::vector<std::string>;
     argvList argv;
 
 private:
-    static System s_instance;
-
     UniquePtr<memory::vmManager> mem_mgr;
     UniquePtr<video_core::renderInterface> renderer;
     UniquePtr<fs::fileSystem> file_sys;
-    UniquePtr<kern::process> main_proc;
+    UniquePtr<kern::KernelState> kernel_state;
+    UniquePtr<tools::PatchEngine> patch_engine;
 };
-}
+
+System* system_state();

@@ -16,6 +16,7 @@
 #include "kernel/process.h"
 
 #include <crypto/sha1.h>
+#include <core.h>
 
 #ifdef _M_AMD64
 using emitter_t = arch::X64Emitter;
@@ -40,7 +41,10 @@ static loadStatus patch_module(elfObject& elf, sce_module& mod) {
         }
     }
 
-#if 0
+    // ask patch engine if we may patch the file
+    system_state()->patch_man().applyPatches(mod.moduleHash, mod.base, mod.mappedSize);
+
+    #if 0
     // and lastly, apply page protections
     for (auto& s : elf.programs) {
         u32 perm = s.flags & (PF_R | PF_W | PF_X);
@@ -61,14 +65,6 @@ static loadStatus patch_module(elfObject& elf, sce_module& mod) {
         utl::protectMem(mod.base + s.vaddr, s.filesz, trans_perm(perm));
     }
 #endif
-
-    // built in hack: enable rtld debug messages on 5.05
-    if (mod.moduleHash == "PRX-f1d3ebb39f0e011286a43ceb1ef87d462b87b86f") {
-        *(uint32_t*)(mod.base + 0x68264) = UINT32_MAX;
-        *(uint8_t*)(mod.base + 0x2FFA7) = 0xCC;
-    } /* else if (mod.moduleHash == "PRX-dfb5aa182bee65859d19d16792940fd282489384") {
-         *(uint8_t*)(mod.base + 0x23A20) = 0xCC;
-     }*/
 
     return loadStatus::Success;
 }
@@ -161,7 +157,7 @@ static loadStatus load_exec(elfObject& elf, exec_module& exec) {
     sha1_finish(&sha, exec.sha1);
 
     // inspired by rpcs3 :)
-    std::string hash("EXC-0000000000000000000000000000000000000000");
+    std::string hash("ELF-0000000000000000000000000000000000000000");
     for (u32 i = 0; i < 20; i++) {
         constexpr auto pal = "0123456789abcdef";
         hash[4 + i * 2] = pal[exec.sha1[i] >> 4];
@@ -169,6 +165,7 @@ static loadStatus load_exec(elfObject& elf, exec_module& exec) {
     }
 
     exec.moduleHash = std::move(hash);
+    exec.mappedSize = loadSize;
 
     const auto patch_result = patch_module(elf, exec);
     if (patch_result != loadStatus::Success)
@@ -234,6 +231,7 @@ static loadStatus load_prx(elfObject& elf, prx_module& prx) {
     }
 
     prx.moduleHash = std::move(hash);
+    prx.mappedSize = loadSize;
 
     const auto patch_result = patch_module(elf, prx);
     if (patch_result != loadStatus::Success)

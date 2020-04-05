@@ -6,10 +6,28 @@
  * Copyright 2019-2020 Force67.
  * For information regarding licensing see LICENSE
  * in the root of the source tree.
+ *
+ * providing compiler independant base types
  */
 
 #include <memory>
 #include <cstdint>
+
+// std::bitcast support for pre-cpp20, stolen from rpcs3
+#if defined(__cpp_lib_bit_cast) && (__cpp_lib_bit_cast >= 201806L)
+#include <bit>
+#else
+namespace std {
+template <class To, class From, typename = std::enable_if_t<sizeof(To) == sizeof(From)>>
+constexpr To bit_cast(const From& from) noexcept {
+    static_assert(sizeof(To) == sizeof(From), "std::bit_cast<>: incompatible type size");
+
+    To result;
+    std::memcpy(&result, &from, sizeof(From));
+    return result;
+}
+} // namespace std
+#endif
 
 /*short typedefs*/
 using u8 = uint8_t;
@@ -21,6 +39,28 @@ using i8 = int8_t;
 using i16 = int16_t;
 using i32 = int32_t;
 using i64 = int64_t;
+
+using f32 = float;
+using f64 = double;
+
+union alignas(2) f16 {
+    u16 _u16;
+    u8 _u8[2];
+
+    explicit f16(u16 raw) {
+        _u16 = raw;
+    }
+
+    explicit operator f32() const {
+        // See http://stackoverflow.com/a/26779139
+        // The conversion doesn't handle NaN/Inf
+        u32 raw = ((_u16 & 0x8000) << 16) |             // Sign (just moved)
+                  (((_u16 & 0x7c00) + 0x1C000) << 13) | // Exponent ( exp - 15 + 127)
+                  ((_u16 & 0x03FF) << 13);              // Mantissa
+
+        return std::bit_cast<f32>(raw);
+    }
+};
 
 template<class T>
 using SharedPtr = std::shared_ptr<T>;

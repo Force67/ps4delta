@@ -10,7 +10,7 @@
 #include <base.h>
 #include <logger/logger.h>
 
-#include "kernel/process.h"
+#include "kernel/kernel_state.h"
 #include "kernel/loader/elf_util.h"
 
 #include "error_table.h"
@@ -29,7 +29,7 @@ int PS4ABI sys_dynlib_get_info(uint32_t handle, dynlib_info* dyn_info) {
         return SysError::eINVAL;
     }
 
-    auto mod = activeProc()->getPrx(handle);
+    auto mod = active_proc()->getPrx(handle);
     if (!mod)
         return SysError::eSRCH;
 
@@ -52,7 +52,7 @@ int PS4ABI sys_dynlib_get_info_ex(uint32_t handle, int32_t ukn /*always 1*/,
         return SysError::eINVAL;
     }
 
-    auto mod = activeProc()->getPrx(handle);
+    auto mod = active_proc()->getPrx(handle);
     if (!mod)
         return SysError::eSRCH;
 
@@ -86,7 +86,7 @@ int PS4ABI sys_dynlib_get_info_ex(uint32_t handle, int32_t ukn /*always 1*/,
 }
 
 int PS4ABI sys_dynlib_dlsym(uint32_t handle, const char* symName, void** sym) {
-    auto prx = activeProc()->getPrx(handle);
+    auto prx = active_proc()->getPrx(handle);
     if (!prx) return -1;
 
     LOG_INFO("{},{}", prx->name, symName);
@@ -109,7 +109,7 @@ int PS4ABI sys_dynlib_dlsym(uint32_t handle, const char* symName, void** sym) {
 int PS4ABI sys_dynlib_get_obj_member(uint32_t handle, uint8_t index, void** value) {
     if (index != 1) return SysError::eINVAL;
 
-    auto mod = activeProc()->getPrx(handle);
+    auto mod = active_proc()->getPrx(handle);
     if (!mod) return -1;
 
 
@@ -118,7 +118,7 @@ int PS4ABI sys_dynlib_get_obj_member(uint32_t handle, uint8_t index, void** valu
 }
 
 int PS4ABI sys_dynlib_get_proc_param(void** data, size_t* size) {
-    auto& mod = activeProc()->main_exec();
+    auto& mod = active_proc()->main_exec();
     if (mod.param) {
         *data = reinterpret_cast<void*>(mod.param);
         *size = mod.param->size;
@@ -131,7 +131,7 @@ int PS4ABI sys_dynlib_get_proc_param(void** data, size_t* size) {
 }
 
 int PS4ABI sys_dynlib_get_list(uint32_t* handles, size_t maxCount, size_t* count) {
-    auto& list = activeProc()->prx_list();
+    auto& list = active_proc()->prx_list();
 
     int listCount = 0;
     for (auto& mod : list) {

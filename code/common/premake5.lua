@@ -8,7 +8,8 @@ project "common"
         ".",
 		"./utl",
         "../vendor/fmtlib/include",
-        "../vendor/yaml-cpp/include"
+        "../vendor/yaml-cpp/include",
+        "../vendor/simdjson/include"
     }
 
     files {

@@ -17,9 +17,7 @@
 #include "object.h"
 #include "id_manager.h"
 
-namespace core {
 class System;
-}
 
 namespace kern {
 enum process_type {
@@ -33,9 +31,9 @@ class process {
 public:
     using prx_list_t = std::vector<SharedPtr<prx_module>>;
 
-    static UniquePtr<process> create(core::System&, std::string name);
+    static UniquePtr<process> create(System&, std::string name);
 
-    process(core::System&);
+    process(System&);
 
     // load executable and prx files
     bool load(const std::string&);
@@ -68,7 +66,7 @@ private:
     prx_list_t modules;
 
     // core ref
-    core::System& sys;
+    System& sys;
 
     // TODO: reuse free slots
     std::atomic<u16> nextTlsSlot = 0;
@@ -80,7 +78,4 @@ public:
     // pointer to the thread memory base
     u8* fsBase = nullptr;
 };
-
-// currently executed process
-process* activeProc();
 }

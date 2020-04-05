@@ -11,7 +11,6 @@
 #include <utl/file.h>
 #include <utl/mem.h>
 #include <utl/path.h>
-#include <utl/fxm.h>
 #include <config.h>
 
 #include "loader/elf_util.h"
@@ -26,20 +25,10 @@
 namespace kern {
 config::opt<bool> hleKernel{"kern.useHLE", "HLE the kernel module", true};
 
-// currently executed process
-process* current_proc{nullptr};
-
-UniquePtr<process> process::create(core::System& sys, std::string name) {
+UniquePtr<process> process::create(System& sys, std::string name) {
     auto proc = std::make_unique<process>(sys);
     proc->name = std::move(name);
     proc->pid = 1;
-
-    // ensure IDM exists
-    if (utl::fxm<idManager>::empty())
-        utl::fxm<idManager>::make();
-
-    // set that process active
-    current_proc = proc.get();
 
     // and create the user stack
     proc->userStack = memory::alloc(user_stack_size, memory::app);
@@ -48,7 +37,7 @@ UniquePtr<process> process::create(core::System& sys, std::string name) {
     return proc;
 }
 
-process::process(core::System& s) : sys(s) {}
+process::process(System& s) : sys(s) {}
 
 SharedPtr<prx_module> process::loadPrx(std::string_view name) {
     auto prx = getPrx(name);
@@ -152,9 +141,5 @@ void process::run() {
         start = reinterpret_cast<main_init_t>(main_module->entry);
 
     return start(stack.get(), shutdownHandler);
-}
-
-process* activeProc() {
-    return current_proc;
 }
 } // namespace kern

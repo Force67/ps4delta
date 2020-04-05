@@ -15,7 +15,8 @@ project "core"
         "../vendor/capstone/include",
         "../vendor/zlib",
         "../vendor/xbyak/xbyak",
-        "../vendor/yaml-cpp/include"
+        "../vendor/yaml-cpp/include",
+        "../vendor/simdjson/include"
     }
 
     links {

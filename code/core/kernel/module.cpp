@@ -127,7 +127,7 @@ bool sce_module::resolveObfSymbol(const char* name, uintptr_t& ptrOut) {
     if (lib == libs.end() || mod == mods.end())
         return false;
 
-    // was the func overriden?
+    // was the func overridden?
     if (hleKernel) {
         ptrOut = get_static_func((*mod).name, fid);
         if (ptrOut)
@@ -506,12 +506,10 @@ SharedPtr<exec_module> exec_module::load(process& proc, const std::string &path)
 }
 
 SharedPtr<prx_module> prx_module::load(process& proc, std::string_view path) {
-    auto& fs = core::System::get().file_system();
-
     // this is temporary uglyness
     // TODO: choose path
     // SHOULD BE MOVED INTO LDR
-    auto pathX = fs.get("/system/common/lib/" + std::string(path) + ".sprx");
+    auto pathX = system_state()->file_system().get("/system/common/lib/" + std::string(path) + ".sprx");
 
     auto prx = std::make_shared<prx_module>(proc);
     return loadElf(*prx, pathX) ? prx : nullptr;

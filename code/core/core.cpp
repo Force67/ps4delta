@@ -14,30 +14,48 @@
 #include "core.h"
 
 #include <utl/mem.h>
+#include <utl/path.h>
+
 #include "arch/arch.h"
 
 #include <config.h>
 
-namespace core {
-System System::s_instance;
+static System* g_system = nullptr;
+
+System* system_state() {
+    return g_system;
+}
 
 System::System() {
     mem_mgr = std::make_unique<memory::vmManager>();
+    file_sys = std::make_unique<fs::fileSystem>();
+    patch_engine = std::make_unique<tools::PatchEngine>();
+
+    // the kernel core
+    kernel_state = std::make_unique<kern::KernelState>(*this);
+
+    // global instance
+    g_system = this;
 }
 
-bool System::init() {
+System::~System() {
+    g_system = nullptr;
+}
+
+bool System::setup(video_core::RenderWindow& videoOut) {
+    // create memory manager, everything depends on it
     if (!mem_mgr->init()) {
         LOG_ERROR("Failed to map/initialize system memory");
         return false;
     }
 
-    file_sys = fs::fileSystem::create();
-    if (!file_sys) {
-        LOG_ERROR("Failed to mount virtual file system paths");
-        return false;
-    }
+    // patch engine, for in memory patches (maybe belong in "memory" folder)?
+    patch_engine->load();
 
-    // null, till we implement a real one
+    // temp thing.. should be kept in a folder like "firmware" or so
+    file_sys->mount("/system/common/lib", utl::make_app_path(utl::data_dir, "lib"));
+
+    // create the gpu
     constexpr auto target = video_core::renderBackend::null;
     renderer = video_core::createRenderer(target);
     if (!renderer) {
@@ -50,18 +68,9 @@ bool System::init() {
 }
 
 void System::load(const std::string& dir) {
-    main_proc = kern::process::create(*this, "main");
-    if (!main_proc)
-        return;
+    // TODO: content manager check; SFO etc
 
-    if (!main_proc->load(dir)) {
-        LOG_ERROR("System load FAILED");
-        return;
+    if (!kernel_state->LoadAndExecuteProc(dir)) {
+        LOG_ERROR("Failed to load and start process");
     }
-
-    LOG_INFO("System load OK");
-    mem_mgr->getBlock(nullptr, memory::exec)->logDebugStats();
-    main_proc->run();
 }
-
-} // namespace core

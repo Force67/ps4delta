@@ -63,8 +63,9 @@ project "glfw"
         "glfw/include",
         "glfw/src"
     }
-    
-    defines "_GLFW_WIN32"
+	
+	filter "system:windows"
+        defines { "_GLFW_WIN32", "GLFW_EXPOSE_NATIVE_WIN32" }
     
     files
     {   
@@ -112,5 +113,24 @@ project "yaml-cpp"
     {   
         "yaml-cpp/src/**.cpp",
         "yaml-cpp/include/**.h",
+    }
+    
+project "simdjson"
+    language "C++"
+    kind "StaticLib"
+    
+    includedirs
+    {
+        "simdjson/include",
+    }
+    
+    files
+    {   
+        "simdjson/src/**.cpp",
+        "simdjson/src/**.h",
+    }
+
+    removefiles {
+        "simdjson/src/arm64/**.h",
     }
     

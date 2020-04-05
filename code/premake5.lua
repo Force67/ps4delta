@@ -34,8 +34,7 @@ end
 
 workspace "PS4Delta"
     configurations { "Debug", "Release", "Shipping" }
-    platforms {"win64", "linux", "orbis"}
-
+	
     filter {"system:windows or system:linux"}
         flags "MultiProcessorCompile"
         architecture "x86_64"

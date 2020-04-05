@@ -16,7 +16,7 @@
 
 namespace config {
 bool load() {
-    auto path = utl::make_app_path(utl::data_dir, "delta.yml");
+    auto path = utl::make_app_path(utl::data_dir, "config.yml");
 
     // no config? write one
     if (!utl::exists(path))
@@ -64,7 +64,7 @@ bool load() {
 }
 
 bool save() {
-    auto path = utl::make_app_path(utl::data_dir, "delta.yml");
+    auto path = utl::make_app_path(utl::data_dir, "config.yml");
 
     try {
         utl::File out(path, utl::fileMode::write);

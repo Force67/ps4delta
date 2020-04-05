@@ -25,6 +25,12 @@ public:
     virtual void requestScreenshot() = 0;
 };
 
+class RenderWindow {
+public:
+    virtual void* getHandle() = 0;
+    virtual void getDimensions(int32_t& width, int32_t& height) = 0;
+};
+
 class nullRenderer : public renderInterface {
 public:
     bool init() override { return true; }

@@ -8,14 +8,14 @@
  */
 
 #include "object.h"
-#include "id_manager.h"
+#include "kernel_state.h"
 
 namespace kern {
 object::object(kind type) : 
     type(type) 
 {
     uint32_t temp = 0;
-    utl::fxm<idManager>::get().add(this, temp);
+    kernel_state()->idm().add(this, temp);
 }
 
 void object::release() {
@@ -28,10 +28,10 @@ void object::retain() {
 }
 
 void object::retainHandle() {
-    utl::fxm<idManager>::get().keep(handleCollection[0]);
+    kernel_state()->idm().keep(handleCollection[0]);
 }
 
 void object::releaseHandle() {
-    utl::fxm<idManager>::get().release(handleCollection[0]);
+    kernel_state()->idm().release(handleCollection[0]);
 }
 } // namespace krnl
